@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
+import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
 import {
   MapPin,
   Award,
@@ -422,15 +423,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 bg-[#E8720C] rounded-lg flex items-center justify-center">
-            <Tractor size={18} className="text-white" />
-          </div>
-          <span
-            className="text-[#E8720C] text-xl"
-            style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-          >
-            Tractor Sewa
-          </span>
+          <img src={tractorSevaLogo} alt="Tractor Seva" className="h-10 w-auto" />
         </Link>
 
         {/* Desktop nav */}
@@ -631,7 +624,7 @@ export const MOCK_HARVESTERS = [
 
 export const MOCK_BLOGS = [
   { id: 1, title: "5 Tips to Maintain Your Combine Harvester Before Rabi Season", category: "Machine Maintenance", shortDescription: "Proper maintenance before the harvest season ensures your machine performs at its best and avoids costly breakdowns during peak time.", date: "Mar 15, 2025" },
-  { id: 2, title: "How Farmers in Punjab are Using Tech to Find Operators Faster", category: "Success Stories", shortDescription: "A look at how digital platforms like Tractor Sewa are helping farmers in Punjab reduce harvest delays by connecting with verified machine operators.", date: "Feb 28, 2025" },
+  { id: 2, title: "How Farmers in Punjab are Using Tech to Find Operators Faster", category: "Success Stories", shortDescription: "A look at how digital platforms like Tractor Seva are helping farmers in Punjab reduce harvest delays by connecting with verified machine operators.", date: "Feb 28, 2025" },
   { id: 3, title: "Kharif Harvesting Guide: Crop-by-Crop Breakdown for 2025", category: "Harvesting Tips", shortDescription: "Complete guide to Kharif crop harvesting — including paddy, soybean, maize, and sugarcane — with the right machines and timing for each.", date: "Jan 10, 2025" },
   { id: 4, title: "Understanding Harvester Rental Rates Across Indian States", category: "Agri News", shortDescription: "State-wise comparison of combine harvester rental rates for the 2024-25 season, including breakdown of fuel, operator, and transport costs.", date: "Dec 05, 2024" },
 ];

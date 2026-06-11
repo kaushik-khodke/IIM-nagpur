@@ -27,6 +27,7 @@ import {
   MOCK_BLOGS,
 } from "./shared";
 import { ThreeBackground } from "./ThreeBackground";
+import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
 
 export function Landing() {
   const [operators, setOperators] = useState<typeof MOCK_OPERATORS>([]);
@@ -335,14 +336,14 @@ export function Landing() {
             Ready to grow your harvest business?
           </h2>
           <p className="text-orange-100 text-lg mb-8">
-            Join thousands of farmers and operators across India who are already using Tractor Sewa.
+            Join thousands of farmers and operators across India who are already using Tractor Seva.
           </p>
           <Link
             to="/register"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#E8720C] rounded-xl hover:bg-orange-50 transition-colors shadow-lg"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
           >
-            Join Tractor Sewa Free <ArrowRight size={18} />
+            Join Tractor Seva Free <ArrowRight size={18} />
           </Link>
         </div>
       </section>
@@ -352,12 +353,7 @@ export function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 grid md:grid-cols-4 gap-10">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-[#E8720C] rounded-lg flex items-center justify-center">
-                <Tractor size={18} className="text-white" />
-              </div>
-              <span className="text-white text-xl" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
-                Tractor Sewa
-              </span>
+              <img src={tractorSevaLogo} alt="Tractor Seva" className="h-10 w-auto brightness-0 invert" />
             </div>
             <p className="text-orange-200 text-sm leading-relaxed">
               India's trusted platform for connecting farmers with harvester operators and machinery.
@@ -388,7 +384,7 @@ export function Landing() {
           ))}
         </div>
         <div className="border-t border-orange-900/50 py-6 text-center text-orange-300 text-sm">
-          © 2025 Tractor Sewa. Made for Indian Farmers 🇮🇳
+          © 2025 Tractor Seva. Made for Indian Farmers 🇮🇳
         </div>
       </footer>
     </div>

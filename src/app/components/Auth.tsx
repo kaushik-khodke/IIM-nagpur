@@ -16,6 +16,7 @@ import {
 import { TractorIllustration, WheatWatermark } from "./shared";
 import { ThreeBackground } from "./ThreeBackground";
 import { toast } from "sonner";
+import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
 
 const INDIAN_STATES = [
   "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa",
@@ -44,7 +45,7 @@ export function Login() {
       // const res = await fetch('/api/auth/login', { method:'POST', body: JSON.stringify({email,password}), headers:{'Content-Type':'application/json'} });
       await new Promise((r) => setTimeout(r, 1000));
       localStorage.setItem("tractorsewa_token", "mock_token_" + Date.now());
-      toast.success("Welcome back to Tractor Sewa!");
+      toast.success("Welcome back to Tractor Seva!");
       navigate("/dashboard");
     } catch {
       toast.error("Login failed. Please try again.");
@@ -92,12 +93,7 @@ export function Login() {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 bg-[#E8720C] rounded-lg flex items-center justify-center">
-              <Tractor size={16} className="text-white" />
-            </div>
-            <span className="text-[#E8720C] font-bold" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Tractor Sewa
-            </span>
+            <img src={tractorSevaLogo} alt="Tractor Seva" className="h-9 w-auto" />
           </div>
           <h1
             className="text-2xl text-[#1C1008] mb-1"
@@ -155,7 +151,7 @@ export function Login() {
               {loading ? (
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
-                <>Login to Tractor Sewa <ArrowRight size={16} /></>
+                <>Login to Tractor Seva <ArrowRight size={16} /></>
               )}
             </button>
           </form>
@@ -212,7 +208,7 @@ export function Register() {
     try {
       await new Promise((r) => setTimeout(r, 1000));
       localStorage.setItem("tractorsewa_token", "mock_token_" + Date.now());
-      toast.success("Account created! Welcome to Tractor Sewa 🌾");
+      toast.success("Account created! Welcome to Tractor Seva 🌾");
       navigate("/dashboard");
     } catch {
       toast.error("Registration failed. Please try again.");
@@ -239,7 +235,7 @@ export function Register() {
             className="text-3xl text-[#1C1008] mt-6 mb-3"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
           >
-            Join Tractor Sewa 🌾
+            Join Tractor Seva 🌾
           </h2>
           <p className="text-[#78716C]">
             Connect with 500+ operators and grow your harvest business across India.

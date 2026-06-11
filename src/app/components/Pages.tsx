@@ -1092,7 +1092,7 @@ export function BlogDetail() {
             <li>Digital platforms reduce time to find operators by 70%</li>
           </ul>
           <p>
-            Platforms like Tractor Sewa are revolutionizing how farmers and operators connect across India, making it easier than ever to find the right machinery and skills for each harvest season.
+            Platforms like Tractor Seva are revolutionizing how farmers and operators connect across India, making it easier than ever to find the right machinery and skills for each harvest season.
           </p>
         </div>
 
@@ -1103,7 +1103,7 @@ export function BlogDetail() {
               <span className="text-white font-bold">A</span>
             </div>
             <div>
-              <p className="text-[#1C1008] text-sm" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Tractor Sewa Agri Team</p>
+              <p className="text-[#1C1008] text-sm" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Tractor Seva Agri Team</p>
               <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Agriculture Expert</span>
             </div>
           </div>
