@@ -237,11 +237,6 @@ export function Register() {
     }
   };
 
-  const roles = [
-    { id: "owner" as const, emoji: "🚜", label: "Harvester Owner" },
-    { id: "operator" as const, emoji: "👨‍🌾", label: "Operator" },
-    { id: "both" as const, emoji: "🤝", label: "Both" },
-  ];
 
   return (
     <div className="min-h-screen flex">
@@ -328,27 +323,6 @@ export function Register() {
               />
             </div>
 
-            {/* Role */}
-            <div>
-              <label className="text-sm text-[#78716C] block mb-2">I am a...</label>
-              <div className="grid grid-cols-3 gap-2">
-                {roles.map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => setRole(r.id)}
-                    className={`py-3 px-2 rounded-xl text-xs border-2 transition-all text-center ${
-                      role === r.id
-                        ? "border-[#E8720C] bg-orange-50 text-[#E8720C]"
-                        : "border-[#E7E0D5] bg-white text-[#78716C] hover:border-orange-200"
-                    }`}
-                  >
-                    <div className="text-lg mb-0.5">{r.emoji}</div>
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* State */}
             <select
