@@ -88,7 +88,7 @@ export function Landing() {
         <WheatWatermark className="right-10 top-10" />
         <WheatWatermark className="left-5 bottom-10" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 grid md:grid-cols-5 gap-12 items-center">
+        <div className="relative z-10 w-full mx-auto px-4 sm:px-6 grid md:grid-cols-5 gap-12 items-center">
           {/* Left */}
           <motion.div
             className="md:col-span-3"
@@ -170,7 +170,7 @@ export function Landing() {
 
       {/* ---- STATS BAR ---- */}
       <section className="bg-[#E8720C] py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+        <div className="w-full mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
             { num: "500+", label: "Operators Registered" },
             { num: "200+", label: "Harvesters Listed" },
@@ -194,7 +194,7 @@ export function Landing() {
       </section>
 
       {/* ---- HOW IT WORKS ---- */}
-      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="py-20 w-full mx-auto px-4 sm:px-6">
         <div className="text-center mb-14">
           <h2
             className="text-4xl text-[#1C1008] mb-3"
@@ -239,7 +239,7 @@ export function Landing() {
 
       {/* ---- FEATURES ---- */}
       <section className="py-20 bg-gradient-to-br from-[#FEF3E2] to-[#F0FDF4]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="w-full mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
             <h2
               className="text-4xl text-[#1C1008] mb-3"
@@ -278,7 +278,7 @@ export function Landing() {
       </section>
 
       {/* ---- OPERATORS ---- */}
-      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="py-20 w-full mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between mb-8">
           <h2
             className="text-3xl text-[#1C1008]"
@@ -309,7 +309,7 @@ export function Landing() {
 
       {/* ---- HARVESTERS ---- */}
       <section className="py-20 bg-[#FDFAF4]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="w-full mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between mb-8">
             <h2
               className="text-3xl text-[#1C1008]"
@@ -340,7 +340,7 @@ export function Landing() {
       </section>
 
       {/* ---- BLOGS ---- */}
-      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6">
+      <section className="py-20 w-full mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between mb-8">
           <h2
             className="text-3xl text-[#1C1008]"
@@ -386,7 +386,7 @@ export function Landing() {
 
       {/* ---- FOOTER ---- */}
       <footer className="bg-[#1C1008] text-orange-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 grid md:grid-cols-4 gap-10">
+        <div className="w-full mx-auto px-4 sm:px-6 py-16 grid md:grid-cols-4 gap-10">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <img src={tractorSevaLogo} alt="Tractor Seva" className="h-10 w-auto brightness-0 invert" />

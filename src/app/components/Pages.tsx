@@ -155,7 +155,7 @@ export function ExploreHarvesters() {
   return (
     <div className="min-h-screen bg-[#FDFAF4]">
       <Navbar variant="auth" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader
           title="Browse Harvesters 🚜"
           subtitle={`${filtered.length} machines available`}
@@ -367,7 +367,7 @@ export function HarvesterDetail() {
   return (
     <div className="min-h-screen bg-[#FDFAF4]">
       <Navbar variant="auth" />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <Link to="/harvesters" className="inline-flex items-center gap-2 text-[#78716C] text-sm mb-6 hover:text-[#E8720C]">
           <ArrowLeft size={16} /> Back to Harvesters
         </Link>
@@ -594,7 +594,7 @@ export function ExploreOperators() {
   return (
     <div className="min-h-screen bg-[#FDFAF4]">
       <Navbar variant="auth" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader title="Find Operators 👨‍🌾" subtitle={`${filtered.length} operators available`} />
 
         <div className="bg-white rounded-2xl p-4 border border-[#E7E0D5] shadow-sm mb-8">
@@ -733,7 +733,7 @@ export function OperatorProfile() {
         <div className="h-48 bg-gradient-to-r from-[#E8720C] via-[#D97706] to-[#15803D] rounded-b-3xl overflow-hidden">
           <WheatWatermark className="right-10 top-0 opacity-[0.06]" />
         </div>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-16">
+        <div className="w-full mx-auto px-4 sm:px-6 -mt-16">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden">
               {operator.image_path ? (
@@ -1700,7 +1700,7 @@ export function Requests() {
   return (
     <div className="min-h-screen bg-[#FDFAF4]">
       <Navbar variant="auth" />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader
           title="Browse Requirements 📋"
           action={
@@ -2182,7 +2182,7 @@ export function Blogs() {
   return (
     <div className="min-h-screen bg-[#FDFAF4]">
       <Navbar variant="public" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader title="Harvesting Knowledge 📚" subtitle="Tips, guides, and stories from the field" />
 
         <div className="relative mb-4">
@@ -2401,7 +2401,7 @@ export function Profile() {
         <div className="h-52 bg-gradient-to-r from-[#E8720C] to-[#15803D] rounded-b-3xl overflow-hidden">
           <WheatWatermark className="right-10 top-0 opacity-[0.06]" />
         </div>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-16">
+        <div className="w-full mx-auto px-4 sm:px-6 -mt-16">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden">
               <span className="text-white text-3xl font-bold">{user.name?.charAt(0)}</span>
@@ -2602,9 +2602,9 @@ export function Messages() {
   return (
     <div className="min-h-screen bg-[#FDFAF4]">
       <Navbar variant="auth" />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+      <div className="w-full mx-auto px-4 sm:px-6 py-6">
         <PageHeader title="Messages 💬" />
-        <div className="bg-white rounded-2xl border border-[#E7E0D5] overflow-hidden shadow-[0_2px_16px_rgba(232,114,12,0.06)] flex" style={{ height: "60vh" }}>
+        <div className="bg-white rounded-2xl border border-[#E7E0D5] overflow-hidden shadow-[0_2px_16px_rgba(232,114,12,0.06)] flex" style={{ height: "calc(100vh - 200px)", minHeight: "500px" }}>
           {/* Sidebar */}
           <div className={`w-full md:w-72 border-r border-[#E7E0D5] flex-shrink-0 overflow-y-auto ${active ? "hidden md:block" : ""}`}>
             {loading ? (
@@ -3199,7 +3199,7 @@ export function AdminPortal() {
 
       {/* Admin Title Banner */}
       <div className="bg-[#1E293B] border-b border-slate-700 py-6 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="w-full mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-orange-500" style={{ fontFamily: "'Sora', sans-serif" }}>
               Admin Control Center ⚙️
@@ -3214,7 +3214,7 @@ export function AdminPortal() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="w-full mx-auto px-4 sm:px-6 py-8">
         
         {/* Navigation Tabs */}
         <div className="flex border-b border-slate-700 mb-8 overflow-x-auto gap-1">

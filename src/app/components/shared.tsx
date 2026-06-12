@@ -501,7 +501,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 
   return (
     <nav className="sticky top-0 z-50 bg-[#FDFAF4]/95 backdrop-blur-sm border-b border-[#E7E0D5]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div className="w-full mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <img src={tractorSevaLogo} alt="Tractor Seva" className="h-10 w-auto" />
