@@ -17,6 +17,7 @@ import {
   Profile,
   Messages,
   EditProfile,
+  AdminPortal,
 } from "./components/Pages";
 import { ProtectedRoute } from "./components/shared";
 
@@ -131,6 +132,14 @@ export default function App() {
           element={
             <ProtectedPage>
               <EditProfile />
+            </ProtectedPage>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedPage>
+              <AdminPortal />
             </ProtectedPage>
           }
         />

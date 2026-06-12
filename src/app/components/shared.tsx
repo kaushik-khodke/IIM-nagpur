@@ -24,7 +24,7 @@ import {
   AlertCircle,
   InboxIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -251,7 +251,6 @@ export function WheatWatermark({ className = "" }: { className?: string }) {
   );
 }
 
-// ---- Operator Card ----
 export function OperatorCard({
   id,
   name,
@@ -259,6 +258,8 @@ export function OperatorCard({
   experience,
   machineExpertise,
   availability,
+  imagePath,
+  isOwner,
 }: {
   id: string | number;
   name: string;
@@ -266,16 +267,27 @@ export function OperatorCard({
   experience: number;
   machineExpertise: string[];
   availability: string;
+  imagePath?: string;
+  isOwner?: boolean;
 }) {
   return (
     <Link to={`/operators/${id}`} className="block group">
       <div className="bg-white rounded-2xl overflow-hidden border border-[#E7E0D5] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
         <div className="h-20 bg-gradient-to-r from-green-50 to-orange-50 relative">
+          {isOwner && (
+            <span className="absolute top-3 left-3 text-xs px-2 py-1 bg-green-100 border border-green-200 text-green-700 rounded-full font-semibold shadow-sm z-10">
+              My Listing
+            </span>
+          )}
           <WheatWatermark className="right-0 top-0" />
         </div>
         <div className="px-4 pb-4 -mt-8">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center ring-2 ring-white ring-offset-1 mb-3">
-            <span className="text-white text-xl font-bold">{name.charAt(0)}</span>
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center ring-2 ring-white ring-offset-1 mb-3 overflow-hidden">
+            {imagePath ? (
+              <img src={imagePath} alt={name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white text-xl font-bold">{name.charAt(0)}</span>
+            )}
           </div>
           <h3
             className="text-[#1C1008] text-base mb-0.5"
@@ -321,19 +333,33 @@ export function HarvesterCard({
   model,
   location,
   ownerName,
+  imagePath,
+  isOwner,
 }: {
   id: string | number;
+  name?: string;
   machineName: string;
   company: string;
   model: string;
   location: string;
   ownerName: string;
+  imagePath?: string;
+  isOwner?: boolean;
 }) {
   return (
     <Link to={`/harvesters/${id}`} className="block group">
       <div className="bg-white rounded-2xl overflow-hidden border border-[#E7E0D5] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
-        <div className="h-44 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center relative">
-          <TractorIllustration size={130} />
+        <div className="h-44 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center relative overflow-hidden">
+          {imagePath ? (
+            <img src={imagePath} alt={machineName} className="w-full h-full object-cover" />
+          ) : (
+            <TractorIllustration size={130} />
+          )}
+          {isOwner && (
+            <span className="absolute top-3 left-3 text-xs px-2 py-1 bg-green-100 border border-green-200 text-green-700 rounded-full font-semibold shadow-sm">
+              My Listing
+            </span>
+          )}
           <span className="absolute top-3 right-3 text-xs px-2 py-1 bg-white border border-[#E7E0D5] rounded-full text-[#78716C] shadow-sm">
             {company}
           </span>
@@ -408,6 +434,8 @@ export function BlogCard({
 // ---- Navbar ----
 export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userName, setUserName] = useState("User");
+  const [userRole, setUserRole] = useState("operator");
   const navigate = useNavigate();
 
   const logout = () => {
@@ -415,8 +443,62 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
     navigate("/");
   };
 
-  const userName = "Rajesh";
   const token = localStorage.getItem("tractorsewa_token");
+  const isAuthenticated = !!token;
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      fetch("/api/auth/me", {
+        headers: { "Authorization": `Bearer ${token}` }
+      })
+        .then(res => {
+          if (!res.ok) {
+            logout();
+            throw new Error("Session invalid");
+          }
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.name) {
+            setUserName(data.name);
+            setUserRole(data.role || "operator");
+          } else {
+            logout();
+          }
+        })
+        .catch(err => console.error("Error fetching user in Navbar:", err));
+    }
+  }, [isAuthenticated, token]);
+
+  const navItems = userRole === 'admin'
+    ? [
+        { to: "/admin", label: "Admin Dashboard", icon: <Settings size={15} /> },
+        { to: "/blogs", label: "Blogs", icon: <BookOpen size={15} /> }
+      ]
+    : [
+        { to: "/dashboard", label: "Home", icon: <Home size={15} /> },
+        { to: "/harvesters", label: "Harvesters", icon: <Tractor size={15} /> },
+        { to: "/operators", label: "Operators", icon: <User size={15} /> },
+        { to: "/messages", label: "Messages", icon: <MessageSquare size={15} /> },
+        { to: "/blogs", label: "Blogs", icon: <BookOpen size={15} /> },
+      ];
+
+  const mobileItems = userRole === 'admin'
+    ? [
+        { to: "/admin", label: "Admin Dashboard" },
+        { to: "/blogs", label: "Blogs" }
+      ]
+    : [
+        { to: "/dashboard", label: "Dashboard" },
+        { to: "/harvesters", label: "Harvesters" },
+        { to: "/operators", label: "Operators" },
+        { to: "/messages", label: "Messages" },
+        { to: "/blogs", label: "Blogs" },
+        { to: "/add-harvester", label: "Add Harvester" },
+        { to: "/add-operator", label: "Add Operator" },
+        { to: "/profile", label: "My Profile" },
+        { to: "/requests", label: "My Requests" },
+      ];
 
   return (
     <nav className="sticky top-0 z-50 bg-[#FDFAF4]/95 backdrop-blur-sm border-b border-[#E7E0D5]">
@@ -427,15 +509,9 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         </Link>
 
         {/* Desktop nav */}
-        {variant === "auth" && (
+        {isAuthenticated && (
           <div className="hidden md:flex items-center gap-6">
-            {[
-              { to: "/dashboard", label: "Home", icon: <Home size={15} /> },
-              { to: "/harvesters", label: "Harvesters", icon: <Tractor size={15} /> },
-              { to: "/operators", label: "Operators", icon: <User size={15} /> },
-              { to: "/messages", label: "Messages", icon: <MessageSquare size={15} /> },
-              { to: "/blogs", label: "Blogs", icon: <BookOpen size={15} /> },
-            ].map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -449,32 +525,36 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 
         {/* Right actions */}
         <div className="flex items-center gap-3">
-          {variant === "auth" ? (
+          {isAuthenticated ? (
             <>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-[#E8720C] text-white rounded-xl text-sm hover:bg-[#C9610A] transition-colors">
-                    <Plus size={15} /> Add Listing <ChevronDown size={13} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-white border border-[#E7E0D5] rounded-xl">
-                  <DropdownMenuItem asChild>
-                    <Link to="/add-harvester" className="flex items-center gap-2 cursor-pointer">
-                      <Tractor size={15} /> Add Harvester
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/add-operator" className="flex items-center gap-2 cursor-pointer">
-                      <User size={15} /> Add Operator
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {userRole !== 'admin' && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-[#E8720C] text-white rounded-xl text-sm hover:bg-[#C9610A] transition-colors">
+                      <Plus size={15} /> Add Listing <ChevronDown size={13} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-white border border-[#E7E0D5] rounded-xl">
+                    <DropdownMenuItem asChild>
+                      <Link to="/add-harvester" className="flex items-center gap-2 cursor-pointer">
+                        <Tractor size={15} /> Add Harvester
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/add-operator" className="flex items-center gap-2 cursor-pointer">
+                        <User size={15} /> Add Operator
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
-              <button className="relative p-2 rounded-xl hover:bg-orange-50 transition-colors">
-                <Bell size={20} className="text-[#78716C]" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[#E8720C] rounded-full" />
-              </button>
+              {userRole !== 'admin' && (
+                <Link to="/messages" className="relative p-2 rounded-xl hover:bg-orange-50 transition-colors">
+                  <Bell size={20} className="text-[#78716C]" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#E8720C] rounded-full" />
+                </Link>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -483,26 +563,36 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-white border border-[#E7E0D5] rounded-xl">
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
-                      <User size={15} /> View Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/harvesters" className="flex items-center gap-2 cursor-pointer">
-                      <Tractor size={15} /> My Harvesters
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/requests" className="flex items-center gap-2 cursor-pointer">
-                      <FileText size={15} /> My Requests
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile/edit" className="flex items-center gap-2 cursor-pointer">
-                      <Settings size={15} /> Settings
-                    </Link>
-                  </DropdownMenuItem>
+                  {userRole === 'admin' ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                        <Settings size={15} /> Admin Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                          <User size={15} /> View Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/harvesters" className="flex items-center gap-2 cursor-pointer">
+                          <Tractor size={15} /> My Harvesters
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/requests" className="flex items-center gap-2 cursor-pointer">
+                          <FileText size={15} /> My Requests
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile/edit" className="flex items-center gap-2 cursor-pointer">
+                          <Settings size={15} /> Settings
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={logout}
@@ -542,19 +632,9 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden bg-[#FDFAF4] border-t border-[#E7E0D5] px-4 py-4 space-y-2">
-          {variant === "auth" ? (
+          {isAuthenticated ? (
             <>
-              {[
-                { to: "/dashboard", label: "Dashboard" },
-                { to: "/harvesters", label: "Harvesters" },
-                { to: "/operators", label: "Operators" },
-                { to: "/messages", label: "Messages" },
-                { to: "/blogs", label: "Blogs" },
-                { to: "/add-harvester", label: "Add Harvester" },
-                { to: "/add-operator", label: "Add Operator" },
-                { to: "/profile", label: "My Profile" },
-                { to: "/requests", label: "My Requests" },
-              ].map((item) => (
+              {mobileItems.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
@@ -603,28 +683,4 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-// ---- Mock data ----
-export const MOCK_OPERATORS = [
-  { id: 1, name: "Rajesh Kumar", location: "Ludhiana, Punjab", experience: 8, machineExpertise: ["Combine Harvester", "Wheat Harvester", "Rice Harvester"], availability: "Available", phone: "98765XXXXX" },
-  { id: 2, name: "Suresh Patel", location: "Ahmedabad, Gujarat", experience: 5, machineExpertise: ["Sugarcane Harvester", "Maize Harvester"], availability: "Busy", phone: "87654XXXXX" },
-  { id: 3, name: "Mohan Singh", location: "Jaipur, Rajasthan", experience: 12, machineExpertise: ["Combine Harvester", "Rice Harvester"], availability: "Available", phone: "76543XXXXX" },
-  { id: 4, name: "Arun Verma", location: "Patna, Bihar", experience: 6, machineExpertise: ["Wheat Harvester", "Maize Harvester", "Rice Harvester"], availability: "Available", phone: "65432XXXXX" },
-  { id: 5, name: "Kishan Yadav", location: "Varanasi, UP", experience: 9, machineExpertise: ["Combine Harvester", "Sugarcane Harvester"], availability: "Not Available", phone: "54321XXXXX" },
-  { id: 6, name: "Ramesh Sharma", location: "Bhopal, MP", experience: 4, machineExpertise: ["Rice Harvester", "Wheat Harvester"], availability: "Available", phone: "43210XXXXX" },
-];
 
-export const MOCK_HARVESTERS = [
-  { id: 1, machineName: "John Deere S660", company: "John Deere", model: "S660 Combine", location: "Amritsar, Punjab", ownerName: "Gurpreet Singh", phone: "91234XXXXX" },
-  { id: 2, machineName: "Mahindra Arjun 605", company: "Mahindra", model: "Arjun 605 DI", location: "Nashik, Maharashtra", ownerName: "Sunil Pawar", phone: "81234XXXXX" },
-  { id: 3, machineName: "Claas Lexion 600", company: "Claas", model: "Lexion 600", location: "Karnal, Haryana", ownerName: "Harpal Singh", phone: "71234XXXXX" },
-  { id: 4, machineName: "New Holland TC5.90", company: "New Holland", model: "TC5.90", location: "Indore, MP", ownerName: "Ravi Gupta", phone: "61234XXXXX" },
-  { id: 5, machineName: "Preet 987", company: "Preet", model: "987 Combine", location: "Hisar, Haryana", ownerName: "Jagdev Bishnoi", phone: "51234XXXXX" },
-  { id: 6, machineName: "Sonalika Worldtrac 75", company: "Sonalika", model: "Worldtrac 75", location: "Hoshiarpur, Punjab", ownerName: "Balwinder Gill", phone: "41234XXXXX" },
-];
-
-export const MOCK_BLOGS = [
-  { id: 1, title: "5 Tips to Maintain Your Combine Harvester Before Rabi Season", category: "Machine Maintenance", shortDescription: "Proper maintenance before the harvest season ensures your machine performs at its best and avoids costly breakdowns during peak time.", date: "Mar 15, 2025" },
-  { id: 2, title: "How Farmers in Punjab are Using Tech to Find Operators Faster", category: "Success Stories", shortDescription: "A look at how digital platforms like Tractor Seva are helping farmers in Punjab reduce harvest delays by connecting with verified machine operators.", date: "Feb 28, 2025" },
-  { id: 3, title: "Kharif Harvesting Guide: Crop-by-Crop Breakdown for 2025", category: "Harvesting Tips", shortDescription: "Complete guide to Kharif crop harvesting — including paddy, soybean, maize, and sugarcane — with the right machines and timing for each.", date: "Jan 10, 2025" },
-  { id: 4, title: "Understanding Harvester Rental Rates Across Indian States", category: "Agri News", shortDescription: "State-wise comparison of combine harvester rental rates for the 2024-25 season, including breakdown of fuel, operator, and transport costs.", date: "Dec 05, 2024" },
-];

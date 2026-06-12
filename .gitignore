@@ -10,6 +10,11 @@ build/
 .env
 .env.local
 .env.*.local
+**/.env
+**/.env.local
+
+# Local User Uploads (images & attachments)
+server/uploads/
 
 # IDE / Editor
 .vscode/

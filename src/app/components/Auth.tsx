@@ -41,10 +41,17 @@ export function Login() {
     }
     setLoading(true);
     try {
-      // Mock auth — replace with real API call
-      // const res = await fetch('/api/auth/login', { method:'POST', body: JSON.stringify({email,password}), headers:{'Content-Type':'application/json'} });
-      await new Promise((r) => setTimeout(r, 1000));
-      localStorage.setItem("tractorsewa_token", "mock_token_" + Date.now());
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Login failed");
+        return;
+      }
+      localStorage.setItem("tractorsewa_token", data.token);
       toast.success("Welcome back to Tractor Seva!");
       navigate("/dashboard");
     } catch {
@@ -202,12 +209,25 @@ export function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name || !email || !password || !phone) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
     if (!agreed) { toast.error("Please agree to the Terms of Service"); return; }
     if (password !== confirmPass) { toast.error("Passwords do not match"); return; }
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 1000));
-      localStorage.setItem("tractorsewa_token", "mock_token_" + Date.now());
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role, state, phone })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Registration failed");
+        return;
+      }
+      localStorage.setItem("tractorsewa_token", data.token);
       toast.success("Account created! Welcome to Tractor Seva 🌾");
       navigate("/dashboard");
     } catch {

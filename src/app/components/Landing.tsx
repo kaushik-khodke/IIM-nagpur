@@ -22,28 +22,44 @@ import {
   TractorIllustration,
   WheatWatermark,
   SkeletonCard,
-  MOCK_OPERATORS,
-  MOCK_HARVESTERS,
-  MOCK_BLOGS,
 } from "./shared";
 import { ThreeBackground } from "./ThreeBackground";
 import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
 
 export function Landing() {
-  const [operators, setOperators] = useState<typeof MOCK_OPERATORS>([]);
-  const [harvesters, setHarvesters] = useState<typeof MOCK_HARVESTERS>([]);
-  const [blogs, setBlogs] = useState<typeof MOCK_BLOGS>([]);
+  const [operators, setOperators] = useState<any[]>([]);
+  const [harvesters, setHarvesters] = useState<any[]>([]);
+  const [blogs, setBlogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setOperators(MOCK_OPERATORS.slice(0, 4));
-      setHarvesters(MOCK_HARVESTERS.slice(0, 4));
-      setBlogs(MOCK_BLOGS.slice(0, 3));
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        const opsRes = await fetch('/api/operators?limit=4');
+        if (opsRes.ok) {
+          const opsData = await opsRes.json();
+          setOperators(opsData);
+        }
+
+        const harvsRes = await fetch('/api/harvesters?limit=4');
+        if (harvsRes.ok) {
+          const harvsData = await harvsRes.json();
+          setHarvesters(harvsData);
+        }
+
+        const blogsRes = await fetch('/api/blogs?limit=3');
+        if (blogsRes.ok) {
+          const blogsData = await blogsRes.json();
+          setBlogs(blogsData);
+        }
+      } catch (err) {
+        console.error("Error fetching landing page data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
   const steps = [
@@ -277,7 +293,17 @@ export function Landing() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {loading
             ? Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)
-            : operators.map((op) => <OperatorCard key={op.id} {...op} />)}
+            : operators.length > 0 ? (
+                operators.map((op) => <OperatorCard key={op.id} {...op} />)
+              ) : (
+                <div className="col-span-full bg-white rounded-2xl p-8 text-center border border-[#E7E0D5]">
+                  <p className="text-[#78716C] mb-4">No operators registered yet. Be the first to join!</p>
+                  <Link to="/register" className="inline-flex items-center gap-2 px-4 py-2 bg-[#E8720C] text-white rounded-xl text-sm font-medium hover:bg-[#C9610A] transition-colors">
+                    Register as Operator
+                  </Link>
+                </div>
+              )
+          }
         </div>
       </section>
 
@@ -298,7 +324,17 @@ export function Landing() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {loading
               ? Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)
-              : harvesters.map((h) => <HarvesterCard key={h.id} {...h} />)}
+              : harvesters.length > 0 ? (
+                  harvesters.map((h) => <HarvesterCard key={h.id} {...h} />)
+                ) : (
+                  <div className="col-span-full bg-white rounded-2xl p-8 text-center border border-[#E7E0D5]">
+                    <p className="text-[#78716C] mb-4">No harvesters listed yet. List your machine to reach farmers!</p>
+                    <Link to="/register" className="inline-flex items-center gap-2 px-4 py-2 bg-[#15803D] text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
+                      List Your Harvester
+                    </Link>
+                  </div>
+                )
+            }
           </div>
         </div>
       </section>
