@@ -22,6 +22,7 @@ import {
   TractorIllustration,
   WheatWatermark,
   SkeletonCard,
+  AuthChooserDialog,
 } from "./shared";
 import { ThreeBackground } from "./ThreeBackground";
 import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
@@ -31,6 +32,11 @@ export function Landing() {
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Dialog State
+  const [chooserOpen, setChooserOpen] = useState(false);
+  const [chooserMode, setChooserMode] = useState<"login" | "register">("login");
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -112,8 +118,11 @@ export function Landing() {
             </p>
             <div className="flex flex-wrap gap-4 mb-8">
               <button
-                onClick={() => navigate("/register")}
-                className="flex items-center gap-2 px-6 py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)]"
+                onClick={() => {
+                  setChooserMode("register");
+                  setChooserOpen(true);
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
               >
                 Get Started <ArrowRight size={18} />
               </button>
@@ -298,7 +307,15 @@ export function Landing() {
               ) : (
                 <div className="col-span-full bg-white rounded-2xl p-8 text-center border border-[#E7E0D5]">
                   <p className="text-[#78716C] mb-4">No operators registered yet. Be the first to join!</p>
-                  <Link to="/register" className="inline-flex items-center gap-2 px-4 py-2 bg-[#E8720C] text-white rounded-xl text-sm font-medium hover:bg-[#C9610A] transition-colors">
+                  <Link
+                    to="/register"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setChooserMode("register");
+                      setChooserOpen(true);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#E8720C] text-white rounded-xl text-sm font-medium hover:bg-[#C9610A] transition-colors"
+                  >
                     Register as Operator
                   </Link>
                 </div>
@@ -329,7 +346,15 @@ export function Landing() {
                 ) : (
                   <div className="col-span-full bg-white rounded-2xl p-8 text-center border border-[#E7E0D5]">
                     <p className="text-[#78716C] mb-4">No harvesters listed yet. List your machine to reach farmers!</p>
-                    <Link to="/register" className="inline-flex items-center gap-2 px-4 py-2 bg-[#15803D] text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
+                    <Link
+                      to="/register"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setChooserMode("register");
+                        setChooserOpen(true);
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#15803D] text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors"
+                    >
                       List Your Harvester
                     </Link>
                   </div>
@@ -376,6 +401,11 @@ export function Landing() {
           </p>
           <Link
             to="/register"
+            onClick={(e) => {
+              e.preventDefault();
+              setChooserMode("register");
+              setChooserOpen(true);
+            }}
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#E8720C] rounded-xl hover:bg-orange-50 transition-colors shadow-lg"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
           >
@@ -410,7 +440,21 @@ export function Landing() {
               <ul className="space-y-2">
                 {col.links.map((l) => (
                   <li key={l.to}>
-                    <Link to={l.to} className="text-orange-200 text-sm hover:text-[#E8720C] transition-colors">
+                    <Link
+                      to={l.to}
+                      onClick={(e) => {
+                        if (l.to === "/login") {
+                          e.preventDefault();
+                          setChooserMode("login");
+                          setChooserOpen(true);
+                        } else if (l.to === "/register") {
+                          e.preventDefault();
+                          setChooserMode("register");
+                          setChooserOpen(true);
+                        }
+                      }}
+                      className="text-orange-200 text-sm hover:text-[#E8720C] transition-colors"
+                    >
                       {l.label}
                     </Link>
                   </li>
@@ -423,6 +467,13 @@ export function Landing() {
           © 2025 Tractor Seva. Made for Indian Farmers 🇮🇳
         </div>
       </footer>
+
+      {/* Auth Chooser Dialog */}
+      <AuthChooserDialog
+        isOpen={chooserOpen}
+        onClose={() => setChooserOpen(false)}
+        initialMode={chooserMode}
+      />
     </div>
   );
 }

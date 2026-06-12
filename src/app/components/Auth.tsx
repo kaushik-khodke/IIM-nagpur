@@ -52,8 +52,11 @@ export function Login() {
         return;
       }
       localStorage.setItem("tractorsewa_token", data.token);
+      localStorage.removeItem("tractorsewa_preview_mode");
       toast.success("Welcome back to Tractor Seva!");
-      navigate("/dashboard");
+      const redirectPath = localStorage.getItem("tractorsewa_redirect_after_auth") || "/dashboard";
+      localStorage.removeItem("tractorsewa_redirect_after_auth");
+      navigate(redirectPath);
     } catch {
       toast.error("Login failed. Please try again.");
     } finally {
@@ -228,8 +231,11 @@ export function Register() {
         return;
       }
       localStorage.setItem("tractorsewa_token", data.token);
+      localStorage.removeItem("tractorsewa_preview_mode");
       toast.success("Account created! Welcome to Tractor Seva 🌾");
-      navigate("/dashboard");
+      const redirectPath = localStorage.getItem("tractorsewa_redirect_after_auth") || "/dashboard";
+      localStorage.removeItem("tractorsewa_redirect_after_auth");
+      navigate(redirectPath);
     } catch {
       toast.error("Registration failed. Please try again.");
     } finally {

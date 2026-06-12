@@ -1,5 +1,12 @@
 import { ReactNode } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLocation, Navigate } from "react-router";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
 import {
   MapPin,
@@ -270,8 +277,19 @@ export function OperatorCard({
   imagePath?: string;
   isOwner?: boolean;
 }) {
+  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isPreview) {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent("trigger-auth-required", {
+        detail: { redirectPath: `/operators/${id}` }
+      }));
+    }
+  };
+
   return (
-    <Link to={`/operators/${id}`} className="block group">
+    <Link to={`/operators/${id}`} onClick={handleClick} className="block group">
       <div className="bg-white rounded-2xl overflow-hidden border border-[#E7E0D5] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
         <div className="h-20 bg-gradient-to-r from-green-50 to-orange-50 relative">
           {isOwner && (
@@ -346,8 +364,19 @@ export function HarvesterCard({
   imagePath?: string;
   isOwner?: boolean;
 }) {
+  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isPreview) {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent("trigger-auth-required", {
+        detail: { redirectPath: `/harvesters/${id}` }
+      }));
+    }
+  };
+
   return (
-    <Link to={`/harvesters/${id}`} className="block group">
+    <Link to={`/harvesters/${id}`} onClick={handleClick} className="block group">
       <div className="bg-white rounded-2xl overflow-hidden border border-[#E7E0D5] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
         <div className="h-44 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center relative overflow-hidden">
           {imagePath ? (
@@ -431,20 +460,145 @@ export function BlogCard({
   );
 }
 
+// ---- Auth Chooser Dialog ----
+export function AuthChooserDialog({
+  isOpen,
+  onClose,
+  initialMode = "login",
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  initialMode?: "login" | "register";
+}) {
+  const navigate = useNavigate();
+
+  const handleProceed = () => {
+    onClose();
+    navigate(initialMode === "register" ? "/register" : "/login");
+  };
+
+  const handleMaybeLater = () => {
+    localStorage.setItem("tractorsewa_preview_mode", "true");
+    localStorage.removeItem("tractorsewa_token"); // Clear any invalid token
+    onClose();
+    navigate("/dashboard");
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md bg-[#FDFAF4] border-[#E7E0D5] p-6 rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-2xl text-[#1C1008] text-center" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
+            Experience Tractor Seva 🌾
+          </DialogTitle>
+          <DialogDescription className="text-[#78716C] text-center mt-2 leading-relaxed text-sm">
+            Login or Sign Up to get full access to operators, harvesters, listings, and messages. Or preview the dashboard first.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 mt-4">
+          <button
+            onClick={handleProceed}
+            className="w-full py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors text-sm font-semibold shadow-[0_4px_14px_rgba(232,114,12,0.2)]"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+          >
+            Proceed to {initialMode === "register" ? "Sign Up" : "Login"}
+          </button>
+          <button
+            onClick={handleMaybeLater}
+            className="w-full py-3 border-2 border-[#E7E0D5] bg-white text-[#78716C] hover:bg-orange-50 hover:text-[#E8720C] transition-colors rounded-xl text-sm font-semibold"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+          >
+            Maybe Later
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---- Auth Required Dialog ----
+export function AuthRequiredDialog({
+  isOpen,
+  onClose,
+  targetPath,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  targetPath?: string;
+}) {
+  const navigate = useNavigate();
+
+  const handleAction = (mode: "login" | "register") => {
+    if (targetPath) {
+      localStorage.setItem("tractorsewa_redirect_after_auth", targetPath);
+    }
+    onClose();
+    navigate(mode === "register" ? "/register" : "/login");
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md bg-[#FDFAF4] border-[#E7E0D5] p-6 rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl text-[#1C1008] text-center" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
+            Authentication Required 🔒
+          </DialogTitle>
+          <DialogDescription className="text-[#78716C] text-center mt-2 leading-relaxed text-sm">
+            You need an active account to view operator profiles, browse harvesters, view requests, or send messages.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 mt-4">
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => handleAction("login")}
+              className="py-3 border-2 border-[#E8720C] text-[#E8720C] hover:bg-orange-50 rounded-xl text-sm font-semibold transition-colors"
+              style={{ fontFamily: "'Sora', sans-serif" }}
+            >
+              Login
+            </button>
+            <button
+              onClick={() => handleAction("register")}
+              className="py-3 bg-[#E8720C] text-white hover:bg-[#C9610A] rounded-xl text-sm font-semibold transition-colors shadow-[0_4px_14px_rgba(232,114,12,0.2)]"
+              style={{ fontFamily: "'Sora', sans-serif" }}
+            >
+              Sign Up
+            </button>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 border border-[#E7E0D5] bg-white text-[#78716C] hover:bg-gray-50 transition-colors rounded-xl text-xs font-medium"
+          >
+            Back to Preview
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ---- Navbar ----
 export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userName, setUserName] = useState("User");
   const [userRole, setUserRole] = useState("operator");
+
+  // Dialog state
+  const [chooserOpen, setChooserOpen] = useState(false);
+  const [chooserMode, setChooserMode] = useState<"login" | "register">("login");
+  const [authRequiredOpen, setAuthRequiredOpen] = useState(false);
+  const [pendingPath, setPendingPath] = useState("");
+
   const navigate = useNavigate();
 
   const logout = () => {
     localStorage.removeItem("tractorsewa_token");
+    localStorage.removeItem("tractorsewa_preview_mode");
     navigate("/");
   };
 
   const token = localStorage.getItem("tractorsewa_token");
   const isAuthenticated = !!token;
+  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
 
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -469,6 +623,29 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         .catch(err => console.error("Error fetching user in Navbar:", err));
     }
   }, [isAuthenticated, token]);
+
+  // Listen for the global trigger-auth-required event
+  useEffect(() => {
+    const handleAuthRequiredEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const path = customEvent.detail?.redirectPath || "";
+      setPendingPath(path);
+      setAuthRequiredOpen(true);
+    };
+
+    window.addEventListener("trigger-auth-required", handleAuthRequiredEvent);
+    return () => {
+      window.removeEventListener("trigger-auth-required", handleAuthRequiredEvent);
+    };
+  }, []);
+
+  const handleNavbarAuthClick = (e: React.MouseEvent, mode: "login" | "register") => {
+    if (variant === "public" && !isPreview) {
+      e.preventDefault();
+      setChooserMode(mode);
+      setChooserOpen(true);
+    }
+  };
 
   const navItems = userRole === 'admin'
     ? [
@@ -508,12 +685,19 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         </Link>
 
         {/* Desktop nav */}
-        {isAuthenticated && (
+        {(isAuthenticated || isPreview) && (
           <div className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
+                onClick={(e) => {
+                  if (isPreview && item.to !== "/dashboard" && item.to !== "/blogs") {
+                    e.preventDefault();
+                    setPendingPath(item.to);
+                    setAuthRequiredOpen(true);
+                  }
+                }}
                 className="flex items-center gap-1.5 text-sm text-[#78716C] hover:text-[#E8720C] transition-colors"
               >
                 {item.icon} {item.label}
@@ -606,12 +790,14 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
             <>
               <Link
                 to="/login"
+                onClick={(e) => handleNavbarAuthClick(e, "login")}
                 className="hidden sm:block px-4 py-2 border-2 border-[#E8720C] text-[#E8720C] rounded-xl text-sm hover:bg-orange-50 transition-colors"
               >
                 Login
               </Link>
               <Link
                 to="/register"
+                onClick={(e) => handleNavbarAuthClick(e, "register")}
                 className="px-4 py-2 bg-[#E8720C] text-white rounded-xl text-sm hover:bg-[#C9610A] transition-colors"
               >
                 Sign Up →
@@ -631,30 +817,54 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden bg-[#FDFAF4] border-t border-[#E7E0D5] px-4 py-4 space-y-2">
-          {isAuthenticated ? (
+          {(isAuthenticated || isPreview) ? (
             <>
-              {mobileItems.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setMobileOpen(false)}
-                  className="block py-2 text-[#78716C] hover:text-[#E8720C] transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <button onClick={logout} className="block py-2 text-red-600 w-full text-left">
-                Logout
-              </button>
+              {mobileItems.map((item) => {
+                const isRestricted = isPreview && item.to !== "/dashboard" && item.to !== "/blogs";
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={(e) => {
+                      if (isRestricted) {
+                        e.preventDefault();
+                        setPendingPath(item.to);
+                        setAuthRequiredOpen(true);
+                      }
+                      setMobileOpen(false);
+                    }}
+                    className="block py-2 text-[#78716C] hover:text-[#E8720C] transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+              {isAuthenticated && (
+                <button onClick={logout} className="block py-2 text-red-600 w-full text-left">
+                  Logout
+                </button>
+              )}
             </>
           ) : (
             <>
-              <Link to="/login" onClick={() => setMobileOpen(false)} className="block py-2 text-[#78716C]">Login</Link>
-              <Link to="/register" onClick={() => setMobileOpen(false)} className="block py-2 text-[#E8720C]">Sign Up</Link>
+              <Link to="/login" onClick={(e) => { handleNavbarAuthClick(e, "login"); setMobileOpen(false); }} className="block py-2 text-[#78716C]">Login</Link>
+              <Link to="/register" onClick={(e) => { handleNavbarAuthClick(e, "register"); setMobileOpen(false); }} className="block py-2 text-[#E8720C]">Sign Up</Link>
             </>
           )}
         </div>
       )}
+
+      {/* Modals */}
+      <AuthChooserDialog
+        isOpen={chooserOpen}
+        onClose={() => setChooserOpen(false)}
+        initialMode={chooserMode}
+      />
+      <AuthRequiredDialog
+        isOpen={authRequiredOpen}
+        onClose={() => setAuthRequiredOpen(false)}
+        targetPath={pendingPath}
+      />
     </nav>
   );
 }
@@ -662,7 +872,24 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 // ---- Protected Route ----
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem("tractorsewa_token");
+  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+  const location = useLocation();
+
   if (!token) {
+    if (isPreview) {
+      if (location.pathname === "/dashboard") {
+        return <>{children}</>;
+      }
+      return (
+        <Navigate
+          to={`/dashboard?auth_required=true&redirect_path=${encodeURIComponent(
+            location.pathname + location.search
+          )}`}
+          replace
+        />
+      );
+    }
+
     return (
       <div className="min-h-screen bg-[#FDFAF4] flex items-center justify-center">
         <div className="text-center">

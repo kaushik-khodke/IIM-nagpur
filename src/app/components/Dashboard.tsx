@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "motion/react";
 import {
   Tractor,
@@ -17,6 +17,7 @@ import {
   HarvesterCard,
   SkeletonCard,
   WheatWatermark,
+  AuthChooserDialog,
 } from "./shared";
 
 export function Dashboard() {
@@ -26,7 +27,32 @@ export function Dashboard() {
   const [userName, setUserName] = useState("User");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // URL query params
+  const [searchParams, setSearchParams] = useSearchParams();
+  const authRequired = searchParams.get("auth_required") === "true";
+  const redirectPath = searchParams.get("redirect_path") || "";
+
+  // Preview / Chooser State
+  const [chooserOpen, setChooserOpen] = useState(false);
+  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (authRequired) {
+      window.dispatchEvent(
+        new CustomEvent("trigger-auth-required", {
+          detail: { redirectPath },
+        })
+      );
+      // Clean up search parameters from the URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("auth_required");
+      newParams.delete("redirect_path");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [authRequired, redirectPath, searchParams, setSearchParams]);
 
   useEffect(() => {
     const token = localStorage.getItem("tractorsewa_token");
@@ -122,6 +148,18 @@ export function Dashboard() {
     <div className="min-h-screen bg-[#FDFAF4]">
       <Navbar variant="auth" />
 
+      {isPreview && (
+        <div className="bg-orange-50 border-b border-orange-200 text-orange-800 px-4 py-3 text-center text-sm font-medium flex items-center justify-center gap-2">
+          <span>You are viewing the dashboard in Guest Preview Mode.</span>
+          <button
+            onClick={() => setChooserOpen(true)}
+            className="px-3 py-1 bg-[#E8720C] text-white hover:bg-[#C9610A] transition-colors rounded-lg text-xs font-semibold cursor-pointer"
+          >
+            Log In / Sign Up
+          </button>
+        </div>
+      )}
+
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
 
 
@@ -152,6 +190,16 @@ export function Dashboard() {
               <div>
                 <Link
                   to="/harvesters"
+                  onClick={(e) => {
+                    if (isPreview) {
+                      e.preventDefault();
+                      window.dispatchEvent(
+                        new CustomEvent("trigger-auth-required", {
+                          detail: { redirectPath: "/harvesters" },
+                        })
+                      );
+                    }
+                  }}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-white text-orange-600 rounded-xl text-sm hover:bg-orange-50 transition-colors"
                   style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
                 >
@@ -182,6 +230,16 @@ export function Dashboard() {
               <div>
                 <Link
                   to="/operators"
+                  onClick={(e) => {
+                    if (isPreview) {
+                      e.preventDefault();
+                      window.dispatchEvent(
+                        new CustomEvent("trigger-auth-required", {
+                          detail: { redirectPath: "/operators" },
+                        })
+                      );
+                    }
+                  }}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-white text-green-700 rounded-xl text-sm hover:bg-green-50 transition-colors"
                   style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
                 >
@@ -234,7 +292,20 @@ export function Dashboard() {
             >
               Recent Operators
             </h2>
-            <Link to="/operators" className="text-[#E8720C] text-sm hover:underline flex items-center gap-1">
+            <Link
+              to="/operators"
+              onClick={(e) => {
+                if (isPreview) {
+                  e.preventDefault();
+                  window.dispatchEvent(
+                    new CustomEvent("trigger-auth-required", {
+                      detail: { redirectPath: "/operators" },
+                    })
+                  );
+                }
+              }}
+              className="text-[#E8720C] text-sm hover:underline flex items-center gap-1"
+            >
               View All <ArrowRight size={14} />
             </Link>
           </div>
@@ -269,7 +340,20 @@ export function Dashboard() {
             >
               Recent Harvesters
             </h2>
-            <Link to="/harvesters" className="text-[#E8720C] text-sm hover:underline flex items-center gap-1">
+            <Link
+              to="/harvesters"
+              onClick={(e) => {
+                if (isPreview) {
+                  e.preventDefault();
+                  window.dispatchEvent(
+                    new CustomEvent("trigger-auth-required", {
+                      detail: { redirectPath: "/harvesters" },
+                    })
+                  );
+                }
+              }}
+              className="text-[#E8720C] text-sm hover:underline flex items-center gap-1"
+            >
               View All <ArrowRight size={14} />
             </Link>
           </div>
@@ -298,6 +382,12 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      <AuthChooserDialog
+        isOpen={chooserOpen}
+        onClose={() => setChooserOpen(false)}
+        initialMode="login"
+      />
     </div>
   );
 }
