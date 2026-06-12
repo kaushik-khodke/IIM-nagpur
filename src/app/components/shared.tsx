@@ -479,7 +479,6 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         { to: "/dashboard", label: "Home", icon: <Home size={15} /> },
         { to: "/harvesters", label: "Harvesters", icon: <Tractor size={15} /> },
         { to: "/operators", label: "Operators", icon: <User size={15} /> },
-        { to: "/messages", label: "Messages", icon: <MessageSquare size={15} /> },
         { to: "/blogs", label: "Blogs", icon: <BookOpen size={15} /> },
       ];
 

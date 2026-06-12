@@ -16,23 +16,58 @@ Make sure you have the following installed on your system:
 
 ---
 
+
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+Follow these steps to start the database (either using the live shared database or a local instance), the backend API server, and the frontend development server.
 
-Open a terminal in the project root directory and run:
+### 1. Set Up the Database (Choose Option A or B)
+
+#### Option A: Connect to the Live Shared Cloud Database (Recommended)
+We have a live MySQL database hosted on Aiven. By using this database, all team members will share the same real-time data.
+* **No database installation is required** on your local machine.
+* Simply create a `.env` file inside the `server/` directory and use the shared connection credentials (ask for the password/host or copy them from the shared group).
+* Make sure `DB_SSL_REQUIRED=true` is set. The `ca.pem` certificate is already included in the `server/` directory to secure the connection.
+
+#### Option B: Run a Local Database Instance (MariaDB)
+If you want to work completely offline, you can run a local MariaDB/MySQL instance:
+* **In PowerShell:**
+  ```powershell
+  & "d:\DEKSTOP_\PROJECT\Tracker-seva\mariadb-extracted\mariadb-10.11.8-winx64\bin\mariadbd.exe" --defaults-file="d:\DEKSTOP_\PROJECT\Tracker-seva\mariadb-data\my.ini"
+  ```
+* **In Command Prompt (cmd):**
+  ```cmd
+  "d:\DEKSTOP_\PROJECT\Tracker-seva\mariadb-extracted\mariadb-10.11.8-winx64\bin\mariadbd.exe" --defaults-file="d:\DEKSTOP_\PROJECT\Tracker-seva\mariadb-data\my.ini"
+  ```
+* *Keep this terminal running.*
+
+---
+
+### 2. Start the Backend API Server
+
+Open a second terminal window, navigate to the `server` directory, and start the Express server:
 
 ```bash
-pnpm install
+cd d:\DEKSTOP_\PROJECT\Tracker-seva\IIM-nagpur\server
+npm install
+npm run dev
 ```
 
-### 2. Start the Development Server
+*Keep this terminal running.* The backend API will be available at `http://localhost:5000`.
+
+---
+
+### 3. Start the Frontend Development Server
+
+Open a third terminal window, navigate to the `IIM-nagpur` root directory, and start the React/Vite development server:
 
 ```bash
+cd d:\DEKSTOP_\PROJECT\Tracker-seva\IIM-nagpur
+pnpm install
 pnpm run dev
 ```
 
-The app will be available at **http://localhost:5173** (default Vite port).
+The app will be available at **http://localhost:5173**.
 
 ---
 
@@ -80,6 +115,34 @@ Review and Enhance UI/
 │   └── styles/             # Global styles
 └── guidelines/             # Design guidelines
 ```
+
+---
+
+## 🗄️ Database Setup for Team Members / Friends
+
+When you push code using Git, your friends will **only** get files located inside the `IIM-nagpur` repository. They will **not** receive the `mariadb-extracted` (binary) or `mariadb-data` (database files) directories, as those reside outside of the repository folder.
+
+However, the project is fully portable. Your friends can set up their own database easily without needing your database files:
+
+### 1. Install a Local MySQL or MariaDB Instance
+Your friends should install a standard MySQL or MariaDB server locally. They can do this in several ways:
+- **MariaDB Server Installer** (Official installer for Windows/macOS/Linux)
+- **MySQL Community Server Installer** (Official installer)
+- **XAMPP / WampServer** (Includes a preconfigured MariaDB instance)
+- **Docker** (Run `docker run --name mysql-db -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -d mariadb`)
+
+### 2. Configure Environment Variables
+Inside the `IIM-nagpur/server` directory:
+1. Copy [server/.env.example](file:///d:/DEKSTOP_/PROJECT/Tracker-seva/IIM-nagpur/server/.env.example) to a new file named `.env`.
+2. Edit `.env` to match their local database configuration (e.g., set `DB_USER`, `DB_PASSWORD`, and `DB_PORT`).
+
+### 3. Automatic DB and Table Initialization
+When they run the backend server (`npm run dev` in `IIM-nagpur/server`), the backend code will **automatically**:
+- Create the database named `tractorsewa` (or whatever `DB_NAME` is in `.env`) if it doesn't exist.
+- Generate all necessary tables (`users`, `operators`, `harvesters`, `requests`, `messages`, `blogs`).
+- Seed the default administrator account (`admin@123` / `123admin@`).
+
+No SQL scripts need to be run manually.
 
 ---
 

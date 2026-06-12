@@ -1,12 +1,25 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+const fs = require('fs');
+const path = require('path');
+
 const dbConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
-  port: process.env.DB_PORT || 3306,
+  port: parseInt(process.env.DB_PORT || '3306', 10),
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
 };
+
+// Auto-detect and configure SSL if ca.pem exists in the server folder
+const caPath = process.env.DB_SSL_CA_PATH || path.join(__dirname, 'ca.pem');
+if (process.env.DB_SSL_REQUIRED === 'true' || fs.existsSync(caPath)) {
+  dbConfig.ssl = {
+    rejectUnauthorized: true,
+    ca: fs.readFileSync(caPath).toString()
+  };
+}
+
 
 let pool = null;
 
