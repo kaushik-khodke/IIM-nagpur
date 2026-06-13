@@ -426,19 +426,31 @@ export function BlogCard({
   category,
   shortDescription,
   date,
+  imageUrl,
 }: {
   id: string | number;
   title: string;
   category: string;
   shortDescription: string;
   date: string;
+  imageUrl?: string;
 }) {
   const { t } = useTranslation(["pages"]);
+  
+  const fallbackImages = [
+    "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1592982537447-6f233c7f12e2?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1495107334309-fcf20504a5ab?auto=format&fit=crop&q=80&w=800"
+  ];
+  const imgIndex = typeof id === 'number' ? id % fallbackImages.length : String(id).length % fallbackImages.length;
+  const finalImageUrl = imageUrl || fallbackImages[imgIndex];
+
   return (
     <Link to={`/blogs/${id}`} className="block group">
       <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300">
-        <div className="h-48 bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-          <BookOpen size={48} className="text-blue-300" />
+        <div className="h-48 bg-gray-200 overflow-hidden">
+          <img src={finalImageUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         </div>
         <div className="p-5">
           <div className="flex items-center gap-2 mb-3">
