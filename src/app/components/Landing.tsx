@@ -109,7 +109,7 @@ export function Landing() {
       {/* ---- HERO & STATS WRAPPER ---- */}
       <div className="flex flex-col min-h-[calc(100vh-64px)]">
         {/* ---- HERO ---- */}
-        <section className="relative flex-1 overflow-hidden bg-gradient-to-br from-[#ffffff] via-[#F4F6FA] to-[#F4F6FA] py-12 md:py-16 flex items-center">
+        <section className="relative flex-1 overflow-hidden bg-gradient-to-br from-[#ffffff] via-[#F4F6FA] to-[#F4F6FA] pt-4 pb-12 md:pt-6 md:pb-16 flex items-center">
         {/* 3D Tractor Background */}
         <div className="absolute inset-y-0 right-0 w-full md:w-1/2 z-0 opacity-80">
           <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
@@ -220,7 +220,7 @@ export function Landing() {
       </section>
 
       {/* ---- STATS BAR ---- */}
-      <section className="bg-[#172263] py-6 shrink-0">
+      <section className="bg-[#172263] py-3 shrink-0">
         <div className="w-full mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
             { num: 500, label: "Operators Registered" },
@@ -246,7 +246,7 @@ export function Landing() {
       </div>
 
       {/* ---- HOW IT WORKS ---- */}
-      <section className="py-20 w-full mx-auto px-4 sm:px-6 min-h-[calc(100vh-64px)] flex flex-col justify-center">
+      <section id="how-it-works" className="py-20 w-full mx-auto px-4 sm:px-6 min-h-[calc(100vh-64px)] flex flex-col justify-center">
         <div className="text-center mb-14">
           <h2
             className="text-4xl text-[#1A1A1A] mb-3"
@@ -290,7 +290,7 @@ export function Landing() {
       </section>
 
       {/* ---- FEATURES ---- */}
-      <section className="py-20 bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA]">
+      <section id="features" className="py-20 bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA]">
         <div className="w-full mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
             <h2
@@ -322,83 +322,7 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ---- OPERATORS ---- */}
-      <section className="py-20 w-full mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between mb-8">
-          <h2
-            className="text-3xl text-[#1A1A1A]"
-            style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-          >
-            {t("operators.title", { ns: "dashboard" })}
-          </h2>
-          <Link to="/operators" className="text-[#172263] text-sm font-medium hover:underline flex items-center gap-1">
-            View All <ArrowRight size={15} />
-          </Link>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {loading
-            ? Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)
-            : operators.length > 0 ? (
-                operators.map((op) => <OperatorCard key={op.id} {...op} />)
-              ) : (
-                <div className="col-span-full bg-white rounded-2xl p-8 text-center border border-[#E2E8F0]">
-                  <p className="text-[#57585A] mb-4">No operators registered yet. Be the first to join!</p>
-                  <Link
-                    to="/register"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setChooserMode("register");
-                      setChooserOpen(true);
-                    }}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#172263] text-white rounded-xl text-sm font-medium hover:bg-[#11194A] transition-colors"
-                  >
-                    Register as Operator
-                  </Link>
-                </div>
-              )
-          }
-        </div>
-      </section>
 
-      {/* ---- HARVESTERS ---- */}
-      <section className="py-20 bg-[#ffffff]">
-        <div className="w-full mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between mb-8">
-            <h2
-              className="text-3xl text-[#1A1A1A]"
-              style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-            >
-              {t("harvesters.title", { ns: "dashboard" })}
-            </h2>
-            <Link to="/harvesters" className="text-[#172263] text-sm font-medium hover:underline flex items-center gap-1">
-              View All <ArrowRight size={15} />
-            </Link>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {loading
-              ? Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)
-              : harvesters.length > 0 ? (
-                  harvesters.map((h) => <HarvesterCard key={h.id} {...h} />)
-                ) : (
-                  <div className="col-span-full bg-white rounded-2xl p-8 text-center border border-[#E2E8F0]">
-                    <p className="text-[#57585A] mb-4">No harvesters listed yet. List your machine to reach farmers!</p>
-                    <Link
-                      to="/register"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setChooserMode("register");
-                        setChooserOpen(true);
-                      }}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#15803D] text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors"
-                    >
-                      List Your Harvester
-                    </Link>
-                  </div>
-                )
-            }
-          </div>
-        </div>
-      </section>
 
       {/* ---- BLOGS ---- */}
       <section className="py-20 w-full mx-auto px-4 sm:px-6">
@@ -420,39 +344,13 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ---- CTA BANNER ---- */}
-      <section className="relative overflow-hidden py-20">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#172263] to-[#15803D]" />
-        <WheatWatermark className="left-10 top-0 opacity-[0.05]" />
-        <WheatWatermark className="right-10 bottom-0 opacity-[0.05]" />
-        <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <h2
-            className="text-white text-4xl mb-4"
-            style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-          >
-            Ready to grow your harvest business?
-          </h2>
-          <p className="text-blue-100 text-lg mb-8">
-            Join thousands of farmers and operators across India who are already using Tractor Seva.
-          </p>
-          <Link
-            to="/register"
-            onClick={(e) => {
-              e.preventDefault();
-              setChooserMode("register");
-              setChooserOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#172263] rounded-xl hover:bg-blue-50 transition-colors shadow-lg"
-            style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
-          >
-            {t("landing.joinNow", { ns: "pages" })} <ArrowRight size={18} />
-          </Link>
-        </div>
-      </section>
+
       </main>
 
       {/* ---- FOOTER ---- */}
-      <CinematicFooter />
+      <div id="contact">
+        <CinematicFooter />
+      </div>
 
       {/* Auth Chooser Dialog */}
       <AuthChooserDialog

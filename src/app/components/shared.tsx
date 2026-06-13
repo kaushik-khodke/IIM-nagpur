@@ -438,6 +438,7 @@ export function BlogCard({
   const { t } = useTranslation(["pages"]);
   
   const fallbackImages = [
+    "/blog-punjab-farmers.png",
     "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800",
     "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800",
     "https://images.unsplash.com/photo-1592982537447-6f233c7f12e2?auto=format&fit=crop&q=80&w=800",
@@ -450,7 +451,17 @@ export function BlogCard({
     <Link to={`/blogs/${id}`} className="block group">
       <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300">
         <div className="h-48 bg-gray-200 overflow-hidden">
-          <img src={finalImageUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <img
+            src={finalImageUrl}
+            alt={title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (target.src !== window.location.origin + "/blog-punjab-farmers.png") {
+                target.src = "/blog-punjab-farmers.png";
+              }
+            }}
+          />
         </div>
         <div className="p-5">
           <div className="flex items-center gap-2 mb-3">
@@ -730,14 +741,39 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 
   return (
     <nav className="sticky top-0 z-50 bg-[#ffffff]/95 backdrop-blur-sm border-b border-[#E2E8F0]">
-      <div className="w-full mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div className="w-full mx-auto px-4 sm:px-6 h-16 flex items-center justify-between relative">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <img src={tractorSevaLogo} alt="Tractor Seva" className="h-10 w-auto" />
         </Link>
 
         {/* Desktop nav */}
-        {(isAuthenticated || isPreview) && (
+        {variant === "public" ? (
+          <div className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
+            {[
+              { label: "Home", anchor: "top" },
+              { label: "How it Works", anchor: "how-it-works" },
+              { label: "Features", anchor: "features" },
+              { label: "Contact", anchor: "contact" },
+            ].map((item) => (
+              <a
+                key={item.anchor}
+                href={`#${item.anchor}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (item.anchor === "top") {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  } else {
+                    document.getElementById(item.anchor)?.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
+                className="text-sm text-[#57585A] hover:text-[#172263] transition-colors cursor-pointer"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+        ) : (isAuthenticated || isPreview) && (
           <div className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
               <Link
