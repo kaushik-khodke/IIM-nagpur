@@ -88,7 +88,7 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 
 // 2. Auth Routes
 app.post('/api/auth/register', async (req, res) => {
-  const { name, email, password, role, state, phone } = req.body;
+  const { name, email, password, state, phone } = req.body;
   if (!name || !email || !password || !phone) {
     return res.status(400).json({ error: 'Please provide name, email, password and phone number' });
   }
@@ -103,19 +103,11 @@ app.post('/api/auth/register', async (req, res) => {
     const userId = require('crypto').randomUUID();
     await db.query(
       'INSERT INTO users (id, name, email, password, role, state, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [userId, name, email, hashedPassword, role || 'operator', state || null, phone]
+      [userId, name, email, hashedPassword, 'user', state || null, phone]
     );
 
-    if (role === 'operator' || role === 'both') {
-      const expertiseStr = JSON.stringify([]);
-      await db.query(
-        'INSERT INTO operators (id, user_id, name, location, state, experience, machine_expertise, availability, phone, whatsapp, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [require('crypto').randomUUID(), userId, name, state || 'Not specified', state || 'Not specified', 0, expertiseStr, 'Available', phone, phone, 'Registered operator profile.']
-      );
-    }
-
     const token = jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, user: { id: userId, name, email, role } });
+    res.status(201).json({ token, user: { id: userId, name, email } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -145,7 +137,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -184,7 +176,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 
 // 3. User Profile Update
 app.put('/api/profile', authenticateToken, async (req, res) => {
-  const { name, location, state, phone, experience, machineExpertise, availability, description, whatsapp } = req.body;
+  const { name, state, phone } = req.body;
   if (!name || !phone) {
     return res.status(400).json({ error: 'Name and phone are required' });
   }
@@ -194,27 +186,6 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
       'UPDATE users SET name = ?, state = ?, phone = ? WHERE id = ?',
       [name, state || null, phone, req.user.id]
     );
-
-    // Get the user's role to check if they should have an operator profile
-    const [users] = await db.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
-    const role = users[0]?.role;
-
-    if (role === 'operator' || role === 'both') {
-      const [existing] = await db.query('SELECT id FROM operators WHERE user_id = ?', [req.user.id]);
-      const expertiseStr = machineExpertise ? (Array.isArray(machineExpertise) ? JSON.stringify(machineExpertise) : JSON.stringify([machineExpertise])) : JSON.stringify([]);
-      
-      if (existing.length > 0) {
-        await db.query(
-          'UPDATE operators SET name = ?, location = ?, state = ?, phone = ?, experience = ?, machine_expertise = ?, availability = ?, description = ?, whatsapp = ? WHERE user_id = ?',
-          [name, location || '', state || '', phone, parseInt(experience) || 0, expertiseStr, availability || 'Available', description || null, whatsapp || phone, req.user.id]
-        );
-      } else {
-        await db.query(
-          'INSERT INTO operators (user_id, name, location, state, experience, machine_expertise, availability, phone, whatsapp, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [req.user.id, name, location || 'Not specified', state || 'Not specified', parseInt(experience) || 0, expertiseStr, availability || 'Available', phone, whatsapp || phone, description || 'Registered operator profile.']
-        );
-      }
-    }
 
     res.json({ message: 'Profile updated successfully' });
   } catch (error) {
@@ -923,10 +894,9 @@ app.post('/api/admin/users/bulk', authenticateToken, isAdmin, csvUpload.single('
     const emailIdx = headers.indexOf('email');
     const phoneIdx = headers.indexOf('phone');
     const stateIdx = headers.indexOf('state');
-    const roleIdx = headers.indexOf('role');
 
-    if (nameIdx === -1 || emailIdx === -1 || phoneIdx === -1 || stateIdx === -1 || roleIdx === -1) {
-      return res.status(400).json({ error: 'Invalid CSV format. Missing required headers: name, email, phone, state, role.' });
+    if (nameIdx === -1 || emailIdx === -1 || phoneIdx === -1 || stateIdx === -1) {
+      return res.status(400).json({ error: 'Invalid CSV format. Missing required headers: name, email, phone, state.' });
     }
 
     const bcrypt = require('bcryptjs');
@@ -961,9 +931,8 @@ app.post('/api/admin/users/bulk', authenticateToken, isAdmin, csvUpload.single('
       const email = cells[emailIdx];
       const phone = cells[phoneIdx];
       const state = cells[stateIdx];
-      const role = cells[roleIdx].toLowerCase();
 
-      if (!name || !email || !phone || !state || !role) {
+      if (!name || !email || !phone || !state) {
         reports.failed++;
         reports.errors.push(`Row ${i + 1}: Missing required cell fields.`);
         continue;
@@ -973,13 +942,6 @@ app.post('/api/admin/users/bulk', authenticateToken, isAdmin, csvUpload.single('
       if (!emailRegex.test(email)) {
         reports.failed++;
         reports.errors.push(`Row ${i + 1}: Invalid email address "${email}".`);
-        continue;
-      }
-
-      const validRoles = ['operator', 'harvester', 'both'];
-      if (!validRoles.includes(role)) {
-        reports.failed++;
-        reports.errors.push(`Row ${i + 1}: Invalid role "${role}". Must be one of: operator, harvester, both.`);
         continue;
       }
 
@@ -995,16 +957,8 @@ app.post('/api/admin/users/bulk', authenticateToken, isAdmin, csvUpload.single('
         const userId = crypto.randomUUID();
         await db.query(
           'INSERT INTO users (id, name, email, password, role, state, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [userId, name, email, hashedPassword, role, state, phone]
+          [userId, name, email, hashedPassword, 'user', state, phone]
         );
-
-        if (role === 'operator' || role === 'both') {
-          const expertiseStr = JSON.stringify([]);
-          await db.query(
-            'INSERT INTO operators (id, user_id, name, location, state, experience, machine_expertise, availability, phone, whatsapp, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [crypto.randomUUID(), userId, name, state, state, 0, expertiseStr, 'Available', phone, phone, 'Bulk uploaded operator profile.']
-          );
-        }
 
         reports.success++;
       } catch (err) {

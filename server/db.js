@@ -64,7 +64,7 @@ async function initializeDatabase() {
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        role VARCHAR(50) DEFAULT 'operator',
+        role VARCHAR(50) DEFAULT 'user',
         state VARCHAR(100) DEFAULT NULL,
         phone VARCHAR(20) DEFAULT NULL,
         is_blocked TINYINT(1) DEFAULT 0,
