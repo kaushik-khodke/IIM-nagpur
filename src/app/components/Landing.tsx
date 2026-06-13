@@ -27,6 +27,8 @@ import {
   AuthChooserDialog,
 } from "./shared";
 import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
+import { Canvas } from "@react-three/fiber";
+import { TractorModel } from "@/components/ui/Tractor3D";
 import { CinematicFooter } from "@/components/motion-footer";
 import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import {
@@ -105,8 +107,15 @@ export function Landing() {
 
       {/* ---- HERO ---- */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#ffffff] via-[#F4F6FA] to-[#F4F6FA] py-20 md:py-28 min-h-[calc(100vh-64px)] flex items-center">
-        <WheatWatermark className="right-10 top-10" />
-        <WheatWatermark className="left-5 bottom-10" />
+        {/* 3D Tractor Background */}
+        <div className="absolute inset-y-0 right-0 w-full md:w-1/2 z-0 opacity-80">
+          <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
+            <TractorModel />
+          </Canvas>
+        </div>
+
+        <WheatWatermark className="right-10 top-10 z-0" />
+        <WheatWatermark className="left-5 bottom-10 z-0" />
 
         <div className="relative z-10 w-full mx-auto px-4 sm:px-6 grid md:grid-cols-5 gap-12 items-center">
           {/* Left */}
@@ -154,38 +163,7 @@ export function Landing() {
             </div>
           </motion.div>
 
-          {/* Right card */}
-          <motion.div
-            className="md:col-span-2"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-          >
-            <div className="relative bg-gradient-to-br from-blue-50 to-green-50 rounded-3xl border border-[#E2E8F0] p-8 shadow-[0_8px_32px_rgba(232,114,12,0.12)]">
-              <div className="flex justify-center mb-4">
-                <TractorIllustration size={160} />
-              </div>
-              <div className="absolute top-4 right-4 bg-white shadow-md rounded-xl px-3 py-2 text-xs font-medium text-[#1A1A1A] border border-[#E2E8F0]">
-                🌾 Harvesting Rabi &amp; Kharif Crops
-              </div>
-              <div className="absolute top-16 left-0 -translate-x-4 bg-white shadow-md rounded-xl px-3 py-2 text-xs font-medium text-[#1A1A1A] border border-[#E2E8F0]">
-                ✅ 500+ Operators Online
-              </div>
-              <div className="absolute bottom-16 right-0 translate-x-4 bg-white shadow-md rounded-xl px-3 py-2 text-xs font-medium text-[#1A1A1A] border border-[#E2E8F0]">
-                🌾 Wheat · Rice · Maize · Sugarcane
-              </div>
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                <div className="bg-white/80 rounded-xl p-3 text-center">
-                  <p className="text-[#172263] text-lg" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>500+</p>
-                  <p className="text-xs text-[#57585A]">Operators</p>
-                </div>
-                <div className="bg-white/80 rounded-xl p-3 text-center">
-                  <p className="text-[#15803D] text-lg" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>200+</p>
-                  <p className="text-xs text-[#57585A]">Machines</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+
         </div>
       </section>
 
