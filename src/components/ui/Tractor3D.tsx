@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { useGLTF, Environment, Float, Center, OrbitControls } from "@react-three/drei";
+import { useGLTF, Environment, Float, Center, OrbitControls, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 
 export function TractorModel() {
@@ -24,7 +24,13 @@ export function TractorModel() {
       <Environment preset="city" />
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-      <OrbitControls enableZoom={false} enablePan={false} target={[0, 0, 0]} />
+      <OrbitControls 
+        enableZoom={false} 
+        enablePan={false} 
+        target={[0, 0, 0]} 
+        autoRotate={true}
+        autoRotateSpeed={0.5}
+      />
       
       <Float
         speed={1.5} // Animation speed
@@ -40,6 +46,16 @@ export function TractorModel() {
           />
         </Center>
       </Float>
+      
+      {/* Soft shadow on the floor */}
+      <ContactShadows 
+        position={[0, -1.5, 0]} 
+        opacity={0.6} 
+        scale={8} 
+        blur={2} 
+        far={4.5} 
+        color="#172263"
+      />
     </>
   );
 }

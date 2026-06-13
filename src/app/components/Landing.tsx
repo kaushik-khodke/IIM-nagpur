@@ -163,7 +163,56 @@ export function Landing() {
             </div>
           </motion.div>
 
+          {/* Right Floating Stats (Over the 3D Tractor) */}
+          <div className="md:col-span-2 relative h-[400px] w-full pointer-events-none hidden md:block">
+            {/* Top Right Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              className="absolute top-10 right-0 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl px-5 py-3 border border-white/40 flex items-center gap-3"
+            >
+              <div className="bg-green-100 p-2 rounded-full">
+                <CheckCircle size={18} className="text-green-600" />
+              </div>
+              <div>
+                <p className="text-[#1A1A1A] font-bold text-sm">500+ Operators</p>
+                <p className="text-[#57585A] text-xs">Online Now</p>
+              </div>
+            </motion.div>
 
+            {/* Bottom Left Badge */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7, duration: 0.8 }}
+              className="absolute bottom-20 -left-12 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl px-5 py-3 border border-white/40 flex items-center gap-3"
+            >
+              <div className="bg-blue-100 p-2 rounded-full">
+                <Star size={18} className="text-blue-600" />
+              </div>
+              <div>
+                <p className="text-[#1A1A1A] font-bold text-sm">Top Rated</p>
+                <p className="text-[#57585A] text-xs">Verified Profiles</p>
+              </div>
+            </motion.div>
+
+            {/* Bottom Right Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9, duration: 0.8 }}
+              className="absolute bottom-5 right-10 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl px-5 py-3 border border-white/40 flex items-center gap-3"
+            >
+              <div className="bg-orange-100 p-2 rounded-full">
+                <Wheat size={18} className="text-orange-600" />
+              </div>
+              <div>
+                <p className="text-[#1A1A1A] font-bold text-sm">Multiple Crops</p>
+                <p className="text-[#57585A] text-xs">Wheat, Rice & more</p>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
