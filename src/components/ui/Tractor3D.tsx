@@ -32,20 +32,14 @@ export function TractorModel() {
         autoRotateSpeed={0.5}
       />
       
-      <Float
-        speed={1.5} // Animation speed
-        rotationIntensity={0.2} // XYZ rotation intensity
-        floatIntensity={0.5} // Up/down float intensity
-      >
-        <Center position={[0, -0.4, 0]}>
-          <primitive 
-            ref={modelRef} 
-            object={scene} 
-            scale={0.028} 
-            rotation={[0, -Math.PI / 4, 0]}
-          />
-        </Center>
-      </Float>
+      <Center position={[0, -0.4, 0]}>
+        <primitive 
+          ref={modelRef} 
+          object={scene} 
+          scale={0.028} 
+          rotation={[0, -Math.PI / 4, 0]}
+        />
+      </Center>
       
       {/* Soft shadow on the floor */}
       <ContactShadows 

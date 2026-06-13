@@ -16,6 +16,7 @@ import {
   Globe,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import CountUp from "@/components/ui/CountUp";
 import {
   Navbar,
   OperatorCard,
@@ -105,8 +106,10 @@ export function Landing() {
       <main className="relative z-10 bg-[#ffffff] shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-b-3xl">
         <Navbar variant="public" />
 
-      {/* ---- HERO ---- */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#ffffff] via-[#F4F6FA] to-[#F4F6FA] py-20 md:py-28 min-h-[calc(100vh-64px)] flex items-center">
+      {/* ---- HERO & STATS WRAPPER ---- */}
+      <div className="flex flex-col min-h-[calc(100vh-64px)]">
+        {/* ---- HERO ---- */}
+        <section className="relative flex-1 overflow-hidden bg-gradient-to-br from-[#ffffff] via-[#F4F6FA] to-[#F4F6FA] py-12 md:py-16 flex items-center">
         {/* 3D Tractor Background */}
         <div className="absolute inset-y-0 right-0 w-full md:w-1/2 z-0 opacity-80">
           <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
@@ -186,7 +189,7 @@ export function Landing() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.7, duration: 0.8 }}
-              className="absolute bottom-20 -left-12 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl px-5 py-3 border border-white/40 flex items-center gap-3"
+              className="absolute bottom-20 -left-32 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl px-5 py-3 border border-white/40 flex items-center gap-3"
             >
               <div className="bg-blue-100 p-2 rounded-full">
                 <Star size={18} className="text-blue-600" />
@@ -217,32 +220,33 @@ export function Landing() {
       </section>
 
       {/* ---- STATS BAR ---- */}
-      <section className="bg-[#172263] py-10">
+      <section className="bg-[#172263] py-6 shrink-0">
         <div className="w-full mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { num: "500+", label: "Operators Registered" },
-            { num: "200+", label: "Harvesters Listed" },
-            { num: "50+", label: "Cities Covered" },
-            { num: "1000+", label: "Connections Made" },
+            { num: 500, label: "Operators Registered" },
+            { num: 200, label: "Harvesters Listed" },
+            { num: 50, label: "Cities Covered" },
+            { num: 1000, label: "Connections Made" },
           ].map((s) => (
             <motion.div
               key={s.label}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: false, amount: 0.5 }}
               transition={{ duration: 0.5 }}
             >
-              <p className="text-white text-4xl mb-1" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
-                {s.num}
-              </p>
+              <div className="text-white text-4xl mb-1 flex items-center justify-center gap-0" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
+                <CountUp from={0} to={s.num} duration={2} />+
+              </div>
               <p className="text-blue-100 text-sm uppercase tracking-widest">{s.label}</p>
             </motion.div>
           ))}
         </div>
       </section>
+      </div>
 
       {/* ---- HOW IT WORKS ---- */}
-      <section className="py-20 w-full mx-auto px-4 sm:px-6">
+      <section className="py-20 w-full mx-auto px-4 sm:px-6 min-h-[calc(100vh-64px)] flex flex-col justify-center">
         <div className="text-center mb-14">
           <h2
             className="text-4xl text-[#1A1A1A] mb-3"
