@@ -1,0 +1,35 @@
+{
+  "sidebar": {
+    "dashboard": "डैशबोर्ड",
+    "profile": "मेरी प्रोफाइल",
+    "requests": "अनुरोध",
+    "messages": "संदेश",
+    "blogs": "ब्लॉग",
+    "settings": "सेटिंग",
+    "admin": "प्रशासन पोर्टल"
+  },
+  "dashboard": {
+    "welcome": "स्वागत है",
+    "overview": "अवलोकन",
+    "activeRequests": "सक्रिय अनुरोध",
+    "completedRequests": "पूर्ण अनुरोध",
+    "totalEarnings": "कुल आय",
+    "recentActivity": "हाल की गतिविधि"
+  },
+  "operators": {
+    "title": "कटाई ऑपरेटर",
+    "filterByLocation": "स्थान के आधार पर फ़िल्टर करें",
+    "noResults": "कोई ऑपरेटर नहीं मिला",
+    "experience": "अनुभव",
+    "rating": "रेटिंग",
+    "hireNow": "अभी किराए पर लें",
+    "viewProfile": "प्रोफाइल देखें"
+  },
+  "harvesters": {
+    "title": "उपलब्ध कटाई मशीनें",
+    "filterByType": "प्रकार के आधार पर फ़िल्टर करें",
+    "noResults": "कोई कटाई मशीन नहीं मिली",
+    "capacity": "क्षमता",
+    "rentNow": "अभी किराए पर लें"
+  }
+}

@@ -67,7 +67,7 @@ export function Login() {
   return (
     <div className="min-h-screen flex">
       {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[#FEF3E2] to-[#F0FDF4] flex-col items-center justify-center p-12 overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA] flex-col items-center justify-center p-12 overflow-hidden">
         <ThreeBackground variant="auth" />
         <WheatWatermark className="right-10 top-10" />
         <div className="relative z-10 text-center max-w-md">
@@ -75,19 +75,19 @@ export function Login() {
             <TractorIllustration size={180} />
           </div>
           <h2
-            className="text-3xl text-[#1C1008] mb-3"
+            className="text-3xl text-[#1A1A1A] mb-3"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
           >
             Grow Your Harvest Business
           </h2>
-          <p className="text-[#78716C] mb-8">
+          <p className="text-[#57585A] mb-8">
             Trusted by 500+ operators and farmers across India.
           </p>
           <div className="space-y-4">
             {["Verified operator profiles", "Instant messaging", "Free to join"].map((t) => (
               <div key={t} className="flex items-center gap-3 text-left">
                 <CheckCircle size={18} className="text-green-600 shrink-0" />
-                <span className="text-[#78716C] text-sm">{t}</span>
+                <span className="text-[#57585A] text-sm">{t}</span>
               </div>
             ))}
           </div>
@@ -95,9 +95,9 @@ export function Login() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-[#FDFAF4]">
+      <div className="flex-1 flex items-center justify-center p-6 bg-[#ffffff]">
         <motion.div
-          className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(232,114,12,0.1)] border border-[#E7E0D5] p-8 w-full max-w-md"
+          className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(232,114,12,0.1)] border border-[#E2E8F0] p-8 w-full max-w-md"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -106,46 +106,46 @@ export function Login() {
             <img src={tractorSevaLogo} alt="Tractor Seva" className="h-9 w-auto" />
           </div>
           <h1
-            className="text-2xl text-[#1C1008] mb-1"
+            className="text-2xl text-[#1A1A1A] mb-1"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
           >
             Welcome Back 👋
           </h1>
-          <p className="text-[#78716C] text-sm mb-8">Login to your account</p>
+          <p className="text-[#57585A] text-sm mb-8">Login to your account</p>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm text-[#78716C] mb-1.5">Email Address</label>
+              <label className="block text-sm text-[#57585A] mb-1.5">Email Address</label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] focus:ring-1 focus:ring-[#E8720C] transition-colors"
+                  className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
                 />
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm text-[#78716C]">Password</label>
-                <button type="button" className="text-xs text-[#E8720C] hover:underline">Forgot Password?</button>
+                <label className="text-sm text-[#57585A]">Password</label>
+                <button type="button" className="text-xs text-[#172263] hover:underline">Forgot Password?</button>
               </div>
               <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
                 <input
                   type={showPass ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] focus:ring-1 focus:ring-[#E8720C] transition-colors"
+                  className="w-full pl-10 pr-10 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#78716C] hover:text-[#E8720C]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#57585A] hover:text-[#172263]"
                 >
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -155,7 +155,7 @@ export function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors shadow-[0_4px_14px_rgba(232,114,12,0.3)] disabled:opacity-60 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors shadow-[0_4px_14px_rgba(232,114,12,0.3)] disabled:opacity-60 flex items-center justify-center gap-2"
               style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
             >
               {loading ? (
@@ -168,14 +168,14 @@ export function Login() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#E7E0D5]" />
+              <div className="w-full border-t border-[#E2E8F0]" />
             </div>
-            <div className="relative flex justify-center text-xs text-[#78716C] bg-white px-3">
+            <div className="relative flex justify-center text-xs text-[#57585A] bg-white px-3">
               or continue with
             </div>
           </div>
 
-          <button className="w-full py-3 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] hover:bg-gray-50 transition-colors flex items-center justify-center gap-3">
+          <button className="w-full py-3 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] hover:bg-gray-50 transition-colors flex items-center justify-center gap-3">
             <svg width="18" height="18" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -185,9 +185,9 @@ export function Login() {
             Sign in with Google
           </button>
 
-          <p className="text-center text-sm text-[#78716C] mt-6">
+          <p className="text-center text-sm text-[#57585A] mt-6">
             New here?{" "}
-            <Link to="/register" className="text-[#E8720C] hover:underline">
+            <Link to="/register" className="text-[#172263] hover:underline">
               Create a free account →
             </Link>
           </p>
@@ -247,85 +247,85 @@ export function Register() {
   return (
     <div className="min-h-screen flex">
       {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[#FEF3E2] to-[#F0FDF4] flex-col items-center justify-center p-12 overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA] flex-col items-center justify-center p-12 overflow-hidden">
         <ThreeBackground variant="auth" />
         <WheatWatermark className="right-10 top-10" />
         <div className="relative z-10 text-center max-w-md">
           <TractorIllustration size={180} />
           <h2
-            className="text-3xl text-[#1C1008] mt-6 mb-3"
+            className="text-3xl text-[#1A1A1A] mt-6 mb-3"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
           >
             Join Tractor Seva 🌾
           </h2>
-          <p className="text-[#78716C]">
+          <p className="text-[#57585A]">
             Connect with 500+ operators and grow your harvest business across India.
           </p>
         </div>
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-[#FDFAF4]">
+      <div className="flex-1 flex items-center justify-center p-6 bg-[#ffffff]">
         <motion.div
-          className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(232,114,12,0.1)] border border-[#E7E0D5] p-8 w-full max-w-md"
+          className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(232,114,12,0.1)] border border-[#E2E8F0] p-8 w-full max-w-md"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <h1
-            className="text-2xl text-[#1C1008] mb-1"
+            className="text-2xl text-[#1A1A1A] mb-1"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
           >
             Create Free Account
           </h1>
-          <p className="text-[#78716C] text-sm mb-8">Start your harvest journey today</p>
+          <p className="text-[#57585A] text-sm mb-8">Start your harvest journey today</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name */}
             <div className="relative">
-              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Full Name"
-                className="w-full pl-10 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] focus:ring-1 focus:ring-[#E8720C] transition-colors"
+                className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
               />
             </div>
 
             {/* Email */}
             <div className="relative">
-              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email Address"
-                className="w-full pl-10 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] focus:ring-1 focus:ring-[#E8720C] transition-colors"
+                className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
               />
             </div>
 
             {/* Password */}
             <div className="relative">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="w-full pl-10 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] focus:ring-1 focus:ring-[#E8720C] transition-colors"
+                className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
               />
             </div>
 
             {/* Confirm Pass */}
             <div className="relative">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
               <input
                 type="password"
                 value={confirmPass}
                 onChange={(e) => setConfirmPass(e.target.value)}
                 placeholder="Confirm Password"
-                className="w-full pl-10 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] focus:ring-1 focus:ring-[#E8720C] transition-colors"
+                className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
               />
             </div>
 
@@ -334,7 +334,7 @@ export function Register() {
             <select
               value={state}
               onChange={(e) => setState(e.target.value)}
-              className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] focus:ring-1 focus:ring-[#E8720C]"
+              className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263]"
             >
               <option value="">Select State</option>
               {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -342,13 +342,13 @@ export function Register() {
 
             {/* Phone */}
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#78716C] bg-orange-50 px-2 py-0.5 rounded border border-orange-100">+91</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Phone Number"
-                className="w-full pl-16 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] focus:ring-1 focus:ring-[#E8720C] transition-colors"
+                className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
               />
             </div>
 
@@ -358,13 +358,13 @@ export function Register() {
                 type="checkbox"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 rounded border-[#E7E0D5] accent-[#E8720C]"
+                className="mt-0.5 rounded border-[#E2E8F0] accent-[#172263]"
               />
-              <span className="text-xs text-[#78716C]">
+              <span className="text-xs text-[#57585A]">
                 I agree to the{" "}
-                <span className="text-[#E8720C] hover:underline cursor-pointer">Terms of Service</span>{" "}
+                <span className="text-[#172263] hover:underline cursor-pointer">Terms of Service</span>{" "}
                 and{" "}
-                <span className="text-[#E8720C] hover:underline cursor-pointer">Privacy Policy</span>
+                <span className="text-[#172263] hover:underline cursor-pointer">Privacy Policy</span>
               </span>
             </label>
 
@@ -382,9 +382,9 @@ export function Register() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-[#78716C] mt-6">
+          <p className="text-center text-sm text-[#57585A] mt-6">
             Already have an account?{" "}
-            <Link to="/login" className="text-[#E8720C] hover:underline">
+            <Link to="/login" className="text-[#172263] hover:underline">
               Login →
             </Link>
           </p>

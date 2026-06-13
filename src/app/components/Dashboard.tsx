@@ -19,8 +19,10 @@ import {
   WheatWatermark,
   AuthChooserDialog,
 } from "./shared";
+import { useTranslation } from "react-i18next";
 
 export function Dashboard() {
+  const { t } = useTranslation(["dashboard"]);
   const [operators, setOperators] = useState<any[]>([]);
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
@@ -89,7 +91,7 @@ export function Dashboard() {
           const userHarvs = harvsData.filter((h: any) => h.ownerName === userProfile.name);
           userHarvs.forEach((h: any) => {
             newActivities.push({
-              icon: <Tractor size={14} className="text-orange-500" />,
+              icon: <Tractor size={14} className="text-blue-500" />,
               text: `Your machine "${h.machineName}" listing is live`,
               time: "Active",
               timestamp: h.id * 1000,
@@ -104,7 +106,7 @@ export function Dashboard() {
             const reqsData = await reqsRes.json();
             reqsData.forEach((r: any) => {
               newActivities.push({
-                icon: <FileText size={14} className="text-[#E8720C]" />,
+                icon: <FileText size={14} className="text-[#172263]" />,
                 text: `Your ${r.machineType} requirement in ${r.location} is live`,
                 time: "Open",
                 timestamp: r.id * 1000,
@@ -145,15 +147,15 @@ export function Dashboard() {
   }, [userName]);
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
 
       {isPreview && (
-        <div className="bg-orange-50 border-b border-orange-200 text-orange-800 px-4 py-3 text-center text-sm font-medium flex items-center justify-center gap-2">
+        <div className="bg-blue-50 border-b border-blue-200 text-orange-800 px-4 py-3 text-center text-sm font-medium flex items-center justify-center gap-2">
           <span>You are viewing the dashboard in Guest Preview Mode.</span>
           <button
             onClick={() => setChooserOpen(true)}
-            className="px-3 py-1 bg-[#E8720C] text-white hover:bg-[#C9610A] transition-colors rounded-lg text-xs font-semibold cursor-pointer"
+            className="px-3 py-1 bg-[#172263] text-white hover:bg-[#11194A] transition-colors rounded-lg text-xs font-semibold cursor-pointer"
           >
             Log In / Sign Up
           </button>
@@ -168,7 +170,7 @@ export function Dashboard() {
           {/* Action cards */}
           <div className="lg:col-span-2 grid sm:grid-cols-2 gap-6">
             <motion.div
-              className="relative overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6"
+              className="relative overflow-hidden bg-gradient-to-br from-blue-500 to-orange-600 text-white rounded-2xl p-6"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, delay: 0.1 }}
@@ -183,7 +185,7 @@ export function Dashboard() {
               >
                 Browse Machines
               </h3>
-              <p className="text-orange-100 text-sm mb-4">200+ harvesters listed across India</p>
+              <p className="text-blue-100 text-sm mb-4">200+ harvesters listed across India</p>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/20 rounded-full text-xs mb-4">
                 200+ Listed
               </span>
@@ -200,7 +202,7 @@ export function Dashboard() {
                       );
                     }
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-orange-600 rounded-xl text-sm hover:bg-orange-50 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-orange-600 rounded-xl text-sm hover:bg-blue-50 transition-colors"
                   style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
                 >
                   Explore <ArrowRight size={14} />
@@ -252,30 +254,30 @@ export function Dashboard() {
           </div>
 
           {/* Activity Feed */}
-          <div className="bg-white rounded-2xl border border-[#E7E0D5] p-5 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
             <h3
-              className="text-[#1C1008] text-base mb-4"
+              className="text-[#1A1A1A] text-base mb-4"
               style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
             >
-              Latest Activity
+              {t("dashboard.recentActivity")}
             </h3>
             <div className="space-y-4">
               {activities.length > 0 ? (
                 activities.map((item, i) => (
                   <div key={i} className="flex gap-3 items-start">
-                    <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mt-0.5">
                       {item.icon}
                     </div>
                     <div>
-                      <p className="text-sm text-[#1C1008] leading-snug">{item.text}</p>
-                      <p className="text-xs text-[#78716C] flex items-center gap-1 mt-0.5">
+                      <p className="text-sm text-[#1A1A1A] leading-snug">{item.text}</p>
+                      <p className="text-xs text-[#57585A] flex items-center gap-1 mt-0.5">
                         <Clock size={10} /> {item.time}
                       </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-sm text-[#78716C] py-2">
+                <div className="text-sm text-[#57585A] py-2">
                   No recent activities. Post a requirement or add a machine to see updates here!
                 </div>
               )}
@@ -287,10 +289,10 @@ export function Dashboard() {
         <div className="mb-10">
           <div className="flex items-center justify-between mb-5">
             <h2
-              className="text-2xl text-[#1C1008]"
+              className="text-2xl text-[#1A1A1A]"
               style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
             >
-              Recent Operators
+              {t("operators.title")}
             </h2>
             <Link
               to="/operators"
@@ -304,7 +306,7 @@ export function Dashboard() {
                   );
                 }
               }}
-              className="text-[#E8720C] text-sm hover:underline flex items-center gap-1"
+              className="text-[#172263] text-sm hover:underline flex items-center gap-1"
             >
               View All <ArrowRight size={14} />
             </Link>
@@ -323,7 +325,7 @@ export function Dashboard() {
                     </div>
                   ))
                 ) : (
-                  <div className="w-full bg-white rounded-2xl p-6 text-center border border-[#E7E0D5] text-sm text-[#78716C]">
+                  <div className="w-full bg-white rounded-2xl p-6 text-center border border-[#E2E8F0] text-sm text-[#57585A]">
                     No operators registered yet.
                   </div>
                 )
@@ -335,10 +337,10 @@ export function Dashboard() {
         <div className="mb-10">
           <div className="flex items-center justify-between mb-5">
             <h2
-              className="text-2xl text-[#1C1008]"
+              className="text-2xl text-[#1A1A1A]"
               style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
             >
-              Recent Harvesters
+              {t("harvesters.title")}
             </h2>
             <Link
               to="/harvesters"
@@ -352,7 +354,7 @@ export function Dashboard() {
                   );
                 }
               }}
-              className="text-[#E8720C] text-sm hover:underline flex items-center gap-1"
+              className="text-[#172263] text-sm hover:underline flex items-center gap-1"
             >
               View All <ArrowRight size={14} />
             </Link>
@@ -371,9 +373,9 @@ export function Dashboard() {
                     </div>
                   ))
                 ) : (
-                  <div className="w-full bg-white rounded-2xl p-6 text-center border border-[#E7E0D5] text-sm text-[#78716C]">
+                  <div className="w-full bg-white rounded-2xl p-6 text-center border border-[#E2E8F0] text-sm text-[#57585A]">
                     No machines listed yet.{" "}
-                    <Link to="/add-harvester" className="text-[#E8720C] hover:underline font-medium">
+                    <Link to="/add-harvester" className="text-[#172263] hover:underline font-medium">
                       List yours today!
                     </Link>
                   </div>

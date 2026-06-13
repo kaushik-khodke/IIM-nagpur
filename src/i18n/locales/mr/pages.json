@@ -1,0 +1,27 @@
+{
+  "landing": {
+    "title": "ट्रॅक्टर सेवा मध्ये स्वागत आहे",
+    "subtitle": "शेतकरी आणि उपकरण ऑपरेटरांशी जोडला जा",
+    "exploreOperators": "ऑपरेटर शोध",
+    "exploreHarvesters": "कटणी मशीन शोध",
+    "getStarted": "सुरू करा",
+    "features": "वैशिष्ट्ये",
+    "testimonials": "आमचे वापरकर्ते काय म्हणतात",
+    "joinNow": "आता सामील व्हा"
+  },
+  "profile": {
+    "editProfile": "प्रोफाइल संपादन करा",
+    "viewProfile": "प्रोफाइल पहा",
+    "myRequests": "माझ्या विनंत्या",
+    "myListings": "माझ्या यादी",
+    "reviews": "मत",
+    "completedJobs": "पूर्ण केलेल्या कामे"
+  },
+  "blogs": {
+    "title": "ब्लॉग आणि लेख",
+    "latestArticles": "सर्वात नवीन लेख",
+    "readMore": "अधिक वाचा",
+    "postedBy": "द्वारे पोस्ट केलेले",
+    "noBlogs": "कोणतेही ब्लॉग उपलब्ध नाहीत"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "landing": {
+    "title": "Welcome to Tractor Sewa",
+    "subtitle": "Connect with Farmers and Equipment Operators",
+    "exploreOperators": "Explore Operators",
+    "exploreHarvesters": "Explore Harvesters",
+    "getStarted": "Get Started",
+    "features": "Features",
+    "testimonials": "What Our Users Say",
+    "joinNow": "Join Now"
+  },
+  "profile": {
+    "editProfile": "Edit Profile",
+    "viewProfile": "View Profile",
+    "myRequests": "My Requests",
+    "myListings": "My Listings",
+    "reviews": "Reviews",
+    "completedJobs": "Completed Jobs"
+  },
+  "blogs": {
+    "title": "Blogs & Articles",
+    "latestArticles": "Latest Articles",
+    "readMore": "Read More",
+    "postedBy": "Posted by",
+    "noBlogs": "No blogs available"
+  }
+}

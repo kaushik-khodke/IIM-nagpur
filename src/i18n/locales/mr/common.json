@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "home": "होम",
+    "explore": "एक्सप्लोर करा",
+    "messages": "संदेश",
+    "profile": "प्रोफाइल",
+    "logout": "लॉगआउट",
+    "login": "लॉगिन",
+    "register": "नोंदणी"
+  },
+  "buttons": {
+    "save": "जतन करा",
+    "cancel": "रद्द करा",
+    "delete": "हटवा",
+    "edit": "संपादन करा",
+    "add": "जोडा",
+    "submit": "सादर करा",
+    "back": "मागे",
+    "next": "पुढे",
+    "previous": "मागील",
+    "search": "शोध",
+    "filter": "फिल्टर",
+    "clear": "साफ करा",
+    "apply": "लागू करा",
+    "close": "बंद करा"
+  },
+  "common": {
+    "yes": "हो",
+    "no": "नाही",
+    "ok": "ठीक आहे",
+    "loading": "लोड होत आहे...",
+    "error": "त्रुटी",
+    "success": "यशस्वी",
+    "warning": "चेतावणी",
+    "info": "माहिती"
+  },
+  "language": {
+    "english": "English",
+    "hindi": "हिन्दी",
+    "marathi": "मराठी",
+    "selectLanguage": "भाषा निवडा"
+  }
+}

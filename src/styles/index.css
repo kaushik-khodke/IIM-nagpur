@@ -1,3 +1,11 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+@keyframes pan-video {
+  0% { transform: scale(1.05) translate(0, 0); }
+  100% { transform: scale(1.15) translate(-2%, 2%); }
+}
+.animate-pan-video {
+  animation: pan-video 3s ease-in-out infinite alternate;
+}

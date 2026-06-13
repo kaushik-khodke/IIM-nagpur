@@ -1,0 +1,35 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "profile": "My Profile",
+    "requests": "Requests",
+    "messages": "Messages",
+    "blogs": "Blogs",
+    "settings": "Settings",
+    "admin": "Admin Portal"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "overview": "Overview",
+    "activeRequests": "Active Requests",
+    "completedRequests": "Completed Requests",
+    "totalEarnings": "Total Earnings",
+    "recentActivity": "Recent Activity"
+  },
+  "operators": {
+    "title": "Harvester Operators",
+    "filterByLocation": "Filter by Location",
+    "noResults": "No operators found",
+    "experience": "Experience",
+    "rating": "Rating",
+    "hireNow": "Hire Now",
+    "viewProfile": "View Profile"
+  },
+  "harvesters": {
+    "title": "Available Harvesters",
+    "filterByType": "Filter by Type",
+    "noResults": "No harvesters found",
+    "capacity": "Capacity",
+    "rentNow": "Rent Now"
+  }
+}

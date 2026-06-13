@@ -1,0 +1,35 @@
+{
+  "sidebar": {
+    "dashboard": "डॅशबोर्ड",
+    "profile": "माझी प्रोफाइल",
+    "requests": "विनंत्या",
+    "messages": "संदेश",
+    "blogs": "ब्लॉग",
+    "settings": "सेटिंग्ज",
+    "admin": "प्रशासन पोर्टल"
+  },
+  "dashboard": {
+    "welcome": "स्वागत आहे",
+    "overview": "अवलोकन",
+    "activeRequests": "सक्रिय विनंत्या",
+    "completedRequests": "पूर्ण केलेल्या विनंत्या",
+    "totalEarnings": "एकूण कमाई",
+    "recentActivity": "अलीकडील क्रियाकलाप"
+  },
+  "operators": {
+    "title": "कटणी ऑपरेटर",
+    "filterByLocation": "स्थानानुसार फिल्टर करा",
+    "noResults": "कोणते ऑपरेटर मिळाले नाही",
+    "experience": "अनुभव",
+    "rating": "रेटिंग",
+    "hireNow": "आता भाडे घ्या",
+    "viewProfile": "प्रोफाइल पहा"
+  },
+  "harvesters": {
+    "title": "उपलब्ध कटणी मशीन",
+    "filterByType": "प्रकारानुसार फिल्टर करा",
+    "noResults": "कोणती कटणी मशीन मिळाली नाही",
+    "capacity": "क्षमता",
+    "rentNow": "आता भाडे घ्या"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "required": "This field is required",
+  "email": "Please enter a valid email",
+  "password": "Password must be at least 6 characters",
+  "phone": "Please enter a valid phone number",
+  "name": "Please enter a valid name",
+  "match": "Fields do not match",
+  "terms": "You must agree to the terms and conditions"
+}

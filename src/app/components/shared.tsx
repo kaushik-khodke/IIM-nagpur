@@ -30,8 +30,10 @@ import {
   RefreshCw,
   AlertCircle,
   InboxIcon,
+  Globe,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -78,12 +80,12 @@ export function PageHeader({
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
       <div>
         <h1
-          className="text-3xl text-[#1C1008]"
+          className="text-3xl text-[#1A1A1A]"
           style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
         >
           {title}
         </h1>
-        {subtitle && <p className="text-[#78716C] mt-1">{subtitle}</p>}
+        {subtitle && <p className="text-[#57585A] mt-1">{subtitle}</p>}
       </div>
       {action && <div>{action}</div>}
     </div>
@@ -93,13 +95,13 @@ export function PageHeader({
 // ---- Skeleton Card ----
 export function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-[#E7E0D5] animate-pulse">
-      <div className="h-44 bg-orange-50" />
+    <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] animate-pulse">
+      <div className="h-44 bg-blue-50" />
       <div className="p-4 space-y-3">
         <div className="h-4 bg-gray-200 rounded w-3/4" />
         <div className="h-3 bg-gray-100 rounded w-1/2" />
         <div className="h-3 bg-gray-100 rounded w-2/3" />
-        <div className="h-8 bg-orange-100 rounded-xl mt-4" />
+        <div className="h-8 bg-blue-100 rounded-xl mt-4" />
       </div>
     </div>
   );
@@ -109,7 +111,7 @@ export function SkeletonCard() {
 export function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-10 h-10 border-4 border-orange-200 border-t-[#E8720C] rounded-full animate-spin" />
+      <div className="w-10 h-10 border-4 border-blue-200 border-t-[#172263] rounded-full animate-spin" />
     </div>
   );
 }
@@ -125,11 +127,11 @@ export function ErrorState({
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <AlertCircle className="text-red-400 mb-4" size={48} />
-      <p className="text-[#78716C] mb-4">{message || "Something went wrong"}</p>
+      <p className="text-[#57585A] mb-4">{message || "Something went wrong"}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="flex items-center gap-2 px-4 py-2 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors"
         >
           <RefreshCw size={16} /> Retry
         </button>
@@ -154,22 +156,22 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="text-orange-200 mb-4">
+      <div className="text-blue-200 mb-4">
         {icon || <InboxIcon size={48} />}
       </div>
       <h3
-        className="text-xl text-[#1C1008] mb-2"
+        className="text-xl text-[#1A1A1A] mb-2"
         style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
       >
         {title}
       </h3>
       {description && (
-        <p className="text-[#78716C] mb-6 max-w-sm">{description}</p>
+        <p className="text-[#57585A] mb-6 max-w-sm">{description}</p>
       )}
       {actionLabel && onAction && (
         <button
           onClick={onAction}
-          className="px-6 py-2.5 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors"
+          className="px-6 py-2.5 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors"
         >
           {actionLabel}
         </button>
@@ -196,20 +198,20 @@ export function TractorIllustration({
       xmlns="http://www.w3.org/2000/svg"
     >
       {/* Body */}
-      <rect x="70" y="50" width="90" height="50" rx="8" fill="#E8720C" />
+      <rect x="70" y="50" width="90" height="50" rx="8" fill="#172263" />
       {/* Cab */}
-      <rect x="110" y="25" width="50" height="35" rx="6" fill="#C9610A" />
+      <rect x="110" y="25" width="50" height="35" rx="6" fill="#11194A" />
       {/* Window */}
-      <rect x="118" y="32" width="34" height="20" rx="4" fill="#FEF3E2" opacity="0.8" />
+      <rect x="118" y="32" width="34" height="20" rx="4" fill="#F4F6FA" opacity="0.8" />
       {/* Hood */}
       <rect x="70" y="55" width="45" height="25" rx="5" fill="#D97706" />
       {/* Exhaust */}
       <rect x="105" y="20" width="6" height="20" rx="3" fill="#92400E" />
       {/* Exhaust smoke */}
-      <circle cx="108" cy="15" r="4" fill="#78716C" opacity="0.3" />
-      <circle cx="110" cy="8" r="3" fill="#78716C" opacity="0.2" />
+      <circle cx="108" cy="15" r="4" fill="#57585A" opacity="0.3" />
+      <circle cx="110" cy="8" r="3" fill="#57585A" opacity="0.2" />
       {/* Large rear wheel */}
-      <circle cx="100" cy="105" r="32" fill="#1C1008" />
+      <circle cx="100" cy="105" r="32" fill="#1A1A1A" />
       <circle cx="100" cy="105" r="24" fill="#2D1B0A" />
       <circle cx="100" cy="105" r="10" fill="#92400E" />
       {/* Wheel spokes */}
@@ -225,14 +227,14 @@ export function TractorIllustration({
         />
       ))}
       {/* Small front wheel */}
-      <circle cx="160" cy="108" r="18" fill="#1C1008" />
+      <circle cx="160" cy="108" r="18" fill="#1A1A1A" />
       <circle cx="160" cy="108" r="12" fill="#2D1B0A" />
       <circle cx="160" cy="108" r="5" fill="#92400E" />
       {/* Headlight */}
-      <circle cx="165" cy="65" r="5" fill="#FEF3E2" />
+      <circle cx="165" cy="65" r="5" fill="#F4F6FA" />
       <circle cx="165" cy="65" r="3" fill="#FBBF24" />
       {/* Ground line */}
-      <line x1="30" y1="126" x2="190" y2="126" stroke="#E7E0D5" strokeWidth="2" />
+      <line x1="30" y1="126" x2="190" y2="126" stroke="#E2E8F0" strokeWidth="2" />
     </svg>
   );
 }
@@ -247,11 +249,11 @@ export function WheatWatermark({ className = "" }: { className?: string }) {
       viewBox="0 0 200 200"
       fill="none"
     >
-      <line x1="100" y1="200" x2="100" y2="0" stroke="#E8720C" strokeWidth="3" />
+      <line x1="100" y1="200" x2="100" y2="0" stroke="#172263" strokeWidth="3" />
       {[30, 50, 70, 90, 110, 130, 150, 170].map((y, i) => (
         <g key={i}>
-          <ellipse cx={100 - 18} cy={y} rx="15" ry="7" fill="#E8720C" transform={`rotate(-30,${100 - 18},${y})`} />
-          <ellipse cx={100 + 18} cy={y} rx="15" ry="7" fill="#E8720C" transform={`rotate(30,${100 + 18},${y})`} />
+          <ellipse cx={100 - 18} cy={y} rx="15" ry="7" fill="#172263" transform={`rotate(-30,${100 - 18},${y})`} />
+          <ellipse cx={100 + 18} cy={y} rx="15" ry="7" fill="#172263" transform={`rotate(30,${100 + 18},${y})`} />
         </g>
       ))}
     </svg>
@@ -290,8 +292,8 @@ export function OperatorCard({
 
   return (
     <Link to={`/operators/${id}`} onClick={handleClick} className="block group">
-      <div className="bg-white rounded-2xl overflow-hidden border border-[#E7E0D5] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
-        <div className="h-20 bg-gradient-to-r from-green-50 to-orange-50 relative">
+      <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
+        <div className="h-20 bg-gradient-to-r from-green-50 to-blue-50 relative">
           {isOwner && (
             <span className="absolute top-3 left-3 text-xs px-2 py-1 bg-green-100 border border-green-200 text-green-700 rounded-full font-semibold shadow-sm z-10">
               My Listing
@@ -300,7 +302,7 @@ export function OperatorCard({
           <WheatWatermark className="right-0 top-0" />
         </div>
         <div className="px-4 pb-4 -mt-8">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center ring-2 ring-white ring-offset-1 mb-3 overflow-hidden">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-2 ring-white ring-offset-1 mb-3 overflow-hidden">
             {imagePath ? (
               <img src={imagePath} alt={name} className="w-full h-full object-cover" />
             ) : (
@@ -308,19 +310,19 @@ export function OperatorCard({
             )}
           </div>
           <h3
-            className="text-[#1C1008] text-base mb-0.5"
+            className="text-[#1A1A1A] text-base mb-0.5"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
           >
             {name}
           </h3>
-          <p className="text-[#78716C] text-sm flex items-center gap-1 mb-2">
+          <p className="text-[#57585A] text-sm flex items-center gap-1 mb-2">
             <MapPin size={12} /> {location}
           </p>
           <div className="flex items-center gap-1 mb-3 flex-wrap">
             {machineExpertise.slice(0, 2).map((m, i) => (
               <span
                 key={i}
-                className="text-xs px-2 py-0.5 bg-orange-50 text-orange-700 border border-orange-200 rounded-full"
+                className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full"
               >
                 {m}
               </span>
@@ -333,7 +335,7 @@ export function OperatorCard({
           </div>
           <div className="flex items-center justify-between">
             <AvailabilityBadge status={availability} />
-            <span className="text-xs text-[#78716C] flex items-center gap-1">
+            <span className="text-xs text-[#57585A] flex items-center gap-1">
               <Award size={11} className="text-orange-400" /> {experience} yrs
             </span>
           </div>
@@ -377,8 +379,8 @@ export function HarvesterCard({
 
   return (
     <Link to={`/harvesters/${id}`} onClick={handleClick} className="block group">
-      <div className="bg-white rounded-2xl overflow-hidden border border-[#E7E0D5] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
-        <div className="h-44 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center relative overflow-hidden">
+      <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
+        <div className="h-44 bg-gradient-to-br from-blue-50 to-amber-50 flex items-center justify-center relative overflow-hidden">
           {imagePath ? (
             <img src={imagePath} alt={machineName} className="w-full h-full object-cover" />
           ) : (
@@ -389,27 +391,27 @@ export function HarvesterCard({
               My Listing
             </span>
           )}
-          <span className="absolute top-3 right-3 text-xs px-2 py-1 bg-white border border-[#E7E0D5] rounded-full text-[#78716C] shadow-sm">
+          <span className="absolute top-3 right-3 text-xs px-2 py-1 bg-white border border-[#E2E8F0] rounded-full text-[#57585A] shadow-sm">
             {company}
           </span>
           <WheatWatermark className="left-0 top-0" />
         </div>
         <div className="p-4">
           <h3
-            className="text-[#1C1008] text-base mb-0.5"
+            className="text-[#1A1A1A] text-base mb-0.5"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
           >
             {machineName}
           </h3>
-          <p className="text-[#78716C] text-sm mb-2">{model}</p>
-          <p className="text-[#78716C] text-sm flex items-center gap-1 mb-3">
+          <p className="text-[#57585A] text-sm mb-2">{model}</p>
+          <p className="text-[#57585A] text-sm flex items-center gap-1 mb-3">
             <MapPin size={12} /> {location}
           </p>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center">
               <span className="text-white text-xs font-bold">{ownerName.charAt(0)}</span>
             </div>
-            <span className="text-xs text-[#78716C]">Owner: {ownerName}</span>
+            <span className="text-xs text-[#57585A]">Owner: {ownerName}</span>
           </div>
         </div>
       </div>
@@ -431,28 +433,29 @@ export function BlogCard({
   shortDescription: string;
   date: string;
 }) {
+  const { t } = useTranslation(["pages"]);
   return (
     <Link to={`/blogs/${id}`} className="block group">
-      <div className="bg-white rounded-2xl overflow-hidden border border-[#E7E0D5] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300">
-        <div className="h-48 bg-gradient-to-br from-green-50 to-orange-50 flex items-center justify-center">
-          <BookOpen size={48} className="text-orange-300" />
+      <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300">
+        <div className="h-48 bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+          <BookOpen size={48} className="text-blue-300" />
         </div>
         <div className="p-5">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 border border-green-200 rounded-full">
               {category}
             </span>
-            <span className="text-xs text-[#78716C]">{date}</span>
+            <span className="text-xs text-[#57585A]">{date}</span>
           </div>
           <h3
-            className="text-[#1C1008] text-base mb-2 line-clamp-2"
+            className="text-[#1A1A1A] text-base mb-2 line-clamp-2"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
           >
             {title}
           </h3>
-          <p className="text-[#78716C] text-sm line-clamp-2 mb-4">{shortDescription}</p>
-          <span className="text-[#E8720C] text-sm font-medium group-hover:underline">
-            Read More →
+          <p className="text-[#57585A] text-sm line-clamp-2 mb-4">{shortDescription}</p>
+          <span className="text-[#172263] text-sm font-medium group-hover:underline">
+            {t("blogs.readMore", { ns: "pages" })} →
           </span>
         </div>
       </div>
@@ -470,6 +473,7 @@ export function AuthChooserDialog({
   onClose: () => void;
   initialMode?: "login" | "register";
 }) {
+  const { t } = useTranslation(["common", "auth", "pages"]);
   const navigate = useNavigate();
 
   const handleProceed = () => {
@@ -486,26 +490,26 @@ export function AuthChooserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md bg-[#FDFAF4] border-[#E7E0D5] p-6 rounded-2xl">
+      <DialogContent className="max-w-md bg-[#ffffff] border-[#E2E8F0] p-6 rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-[#1C1008] text-center" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
-            Experience Tractor Seva 🌾
+          <DialogTitle className="text-2xl text-[#1A1A1A] text-center" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
+            {t("landing.title", { ns: "pages" })} 🌾
           </DialogTitle>
-          <DialogDescription className="text-[#78716C] text-center mt-2 leading-relaxed text-sm">
-            Login or Sign Up to get full access to operators, harvesters, listings, and messages. Or preview the dashboard first.
+          <DialogDescription className="text-[#57585A] text-center mt-2 leading-relaxed text-sm">
+            {t("landing.subtitle", { ns: "pages" })}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 mt-4">
           <button
             onClick={handleProceed}
-            className="w-full py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors text-sm font-semibold shadow-[0_4px_14px_rgba(232,114,12,0.2)]"
+            className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors text-sm font-semibold shadow-[0_4px_14px_rgba(232,114,12,0.2)]"
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
-            Proceed to {initialMode === "register" ? "Sign Up" : "Login"}
+            {initialMode === "register" ? t("nav.register", { ns: "common" }) : t("nav.login", { ns: "common" })}
           </button>
           <button
             onClick={handleMaybeLater}
-            className="w-full py-3 border-2 border-[#E7E0D5] bg-white text-[#78716C] hover:bg-orange-50 hover:text-[#E8720C] transition-colors rounded-xl text-sm font-semibold"
+            className="w-full py-3 border-2 border-[#E2E8F0] bg-white text-[#57585A] hover:bg-blue-50 hover:text-[#172263] transition-colors rounded-xl text-sm font-semibold"
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
             Maybe Later
@@ -526,6 +530,7 @@ export function AuthRequiredDialog({
   onClose: () => void;
   targetPath?: string;
 }) {
+  const { t } = useTranslation(["common", "auth"]);
   const navigate = useNavigate();
 
   const handleAction = (mode: "login" | "register") => {
@@ -538,12 +543,12 @@ export function AuthRequiredDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md bg-[#FDFAF4] border-[#E7E0D5] p-6 rounded-2xl">
+      <DialogContent className="max-w-md bg-[#ffffff] border-[#E2E8F0] p-6 rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl text-[#1C1008] text-center" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
+          <DialogTitle className="text-xl text-[#1A1A1A] text-center" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
             Authentication Required 🔒
           </DialogTitle>
-          <DialogDescription className="text-[#78716C] text-center mt-2 leading-relaxed text-sm">
+          <DialogDescription className="text-[#57585A] text-center mt-2 leading-relaxed text-sm">
             You need an active account to view operator profiles, browse harvesters, view requests, or send messages.
           </DialogDescription>
         </DialogHeader>
@@ -551,22 +556,22 @@ export function AuthRequiredDialog({
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => handleAction("login")}
-              className="py-3 border-2 border-[#E8720C] text-[#E8720C] hover:bg-orange-50 rounded-xl text-sm font-semibold transition-colors"
+              className="py-3 border-2 border-[#172263] text-[#172263] hover:bg-blue-50 rounded-xl text-sm font-semibold transition-colors"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              Login
+              {t("nav.login", { ns: "common" })}
             </button>
             <button
               onClick={() => handleAction("register")}
-              className="py-3 bg-[#E8720C] text-white hover:bg-[#C9610A] rounded-xl text-sm font-semibold transition-colors shadow-[0_4px_14px_rgba(232,114,12,0.2)]"
+              className="py-3 bg-[#172263] text-white hover:bg-[#11194A] rounded-xl text-sm font-semibold transition-colors shadow-[0_4px_14px_rgba(232,114,12,0.2)]"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              Sign Up
+              {t("nav.register", { ns: "common" })}
             </button>
           </div>
           <button
             onClick={onClose}
-            className="w-full py-2.5 border border-[#E7E0D5] bg-white text-[#78716C] hover:bg-gray-50 transition-colors rounded-xl text-xs font-medium"
+            className="w-full py-2.5 border border-[#E2E8F0] bg-white text-[#57585A] hover:bg-gray-50 transition-colors rounded-xl text-xs font-medium"
           >
             Back to Preview
           </button>
@@ -576,8 +581,43 @@ export function AuthRequiredDialog({
   );
 }
 
+// ---- Language Switcher ----
+export function LanguageSwitcher() {
+  const { i18n, t } = useTranslation("common");
+
+  const languages = [
+    { code: "en", label: "English" },
+    { code: "hi", label: "हिन्दी" },
+    { code: "mr", label: "मराठी" },
+  ];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-1.5 px-3 py-2 text-[#57585A] hover:text-[#172263] transition-colors rounded-xl hover:bg-blue-50 text-sm">
+          <Globe size={16} />
+          <span className="hidden sm:inline">{languages.find((l) => l.code === i18n.language)?.label || "English"}</span>
+          <ChevronDown size={13} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="bg-white border border-[#E2E8F0] rounded-xl min-w-[120px]">
+        {languages.map((lang) => (
+          <DropdownMenuItem
+            key={lang.code}
+            onClick={() => i18n.changeLanguage(lang.code)}
+            className={`cursor-pointer ${i18n.language === lang.code ? "bg-blue-50 text-[#172263] font-semibold" : ""}`}
+          >
+            {lang.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 // ---- Navbar ----
 export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) {
+  const { t } = useTranslation("common");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userName, setUserName] = useState("User");
   const [userRole, setUserRole] = useState("operator");
@@ -649,35 +689,35 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 
   const navItems = userRole === 'admin'
     ? [
-        { to: "/admin", label: "Admin Dashboard", icon: <Settings size={15} /> },
-        { to: "/blogs", label: "Blogs", icon: <BookOpen size={15} /> }
+        { to: "/admin", label: t("sidebar.admin", { ns: "dashboard" }), icon: <Settings size={15} /> },
+        { to: "/blogs", label: t("sidebar.blogs", { ns: "dashboard" }), icon: <BookOpen size={15} /> }
       ]
     : [
-        { to: "/dashboard", label: "Home", icon: <Home size={15} /> },
-        { to: "/harvesters", label: "Harvesters", icon: <Tractor size={15} /> },
-        { to: "/operators", label: "Operators", icon: <User size={15} /> },
-        { to: "/blogs", label: "Blogs", icon: <BookOpen size={15} /> },
+        { to: "/dashboard", label: t("nav.home", { ns: "common" }), icon: <Home size={15} /> },
+        { to: "/harvesters", label: t("harvesters.title", { ns: "dashboard" }), icon: <Tractor size={15} /> },
+        { to: "/operators", label: t("operators.title", { ns: "dashboard" }), icon: <User size={15} /> },
+        { to: "/blogs", label: t("sidebar.blogs", { ns: "dashboard" }), icon: <BookOpen size={15} /> },
       ];
 
   const mobileItems = userRole === 'admin'
     ? [
-        { to: "/admin", label: "Admin Dashboard" },
-        { to: "/blogs", label: "Blogs" }
+        { to: "/admin", label: t("sidebar.admin", { ns: "dashboard" }) },
+        { to: "/blogs", label: t("sidebar.blogs", { ns: "dashboard" }) }
       ]
     : [
-        { to: "/dashboard", label: "Dashboard" },
-        { to: "/harvesters", label: "Harvesters" },
-        { to: "/operators", label: "Operators" },
-        { to: "/messages", label: "Messages" },
-        { to: "/blogs", label: "Blogs" },
-        { to: "/add-harvester", label: "Add Harvester" },
-        { to: "/add-operator", label: "Add Operator" },
-        { to: "/profile", label: "My Profile" },
-        { to: "/requests", label: "My Requests" },
+        { to: "/dashboard", label: t("sidebar.dashboard", { ns: "dashboard" }) },
+        { to: "/harvesters", label: t("harvesters.title", { ns: "dashboard" }) },
+        { to: "/operators", label: t("operators.title", { ns: "dashboard" }) },
+        { to: "/messages", label: t("sidebar.messages", { ns: "dashboard" }) },
+        { to: "/blogs", label: t("sidebar.blogs", { ns: "dashboard" }) },
+        { to: "/add-harvester", label: t("buttons.add", { ns: "common" }) + " Harvester" },
+        { to: "/add-operator", label: t("buttons.add", { ns: "common" }) + " Operator" },
+        { to: "/profile", label: t("sidebar.profile", { ns: "dashboard" }) },
+        { to: "/requests", label: t("sidebar.requests", { ns: "dashboard" }) },
       ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#FDFAF4]/95 backdrop-blur-sm border-b border-[#E7E0D5]">
+    <nav className="sticky top-0 z-50 bg-[#ffffff]/95 backdrop-blur-sm border-b border-[#E2E8F0]">
       <div className="w-full mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
@@ -698,7 +738,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                     setAuthRequiredOpen(true);
                   }
                 }}
-                className="flex items-center gap-1.5 text-sm text-[#78716C] hover:text-[#E8720C] transition-colors"
+                className="flex items-center gap-1.5 text-sm text-[#57585A] hover:text-[#172263] transition-colors"
               >
                 {item.icon} {item.label}
               </Link>
@@ -713,11 +753,11 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
               {userRole !== 'admin' && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-[#E8720C] text-white rounded-xl text-sm hover:bg-[#C9610A] transition-colors">
+                    <button className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors">
                       <Plus size={15} /> Add Listing <ChevronDown size={13} />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-white border border-[#E7E0D5] rounded-xl">
+                  <DropdownMenuContent align="end" className="bg-white border border-[#E2E8F0] rounded-xl">
                     <DropdownMenuItem asChild>
                       <Link to="/add-harvester" className="flex items-center gap-2 cursor-pointer">
                         <Tractor size={15} /> Add Harvester
@@ -733,19 +773,19 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
               )}
 
               {userRole !== 'admin' && (
-                <Link to="/messages" className="relative p-2 rounded-xl hover:bg-orange-50 transition-colors">
-                  <Bell size={20} className="text-[#78716C]" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#E8720C] rounded-full" />
+                <Link to="/messages" className="relative p-2 rounded-xl hover:bg-blue-50 transition-colors">
+                  <Bell size={20} className="text-[#57585A]" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#172263] rounded-full" />
                 </Link>
               )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="w-9 h-9 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center text-white font-bold hover:opacity-90 transition-opacity">
+                  <button className="w-9 h-9 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white font-bold hover:opacity-90 transition-opacity">
                     {userName.charAt(0)}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-white border border-[#E7E0D5] rounded-xl">
+                <DropdownMenuContent align="end" className="w-48 bg-white border border-[#E2E8F0] rounded-xl">
                   {userRole === 'admin' ? (
                     <DropdownMenuItem asChild>
                       <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
@@ -785,28 +825,31 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              <LanguageSwitcher />
             </>
           ) : (
             <>
               <Link
                 to="/login"
                 onClick={(e) => handleNavbarAuthClick(e, "login")}
-                className="hidden sm:block px-4 py-2 border-2 border-[#E8720C] text-[#E8720C] rounded-xl text-sm hover:bg-orange-50 transition-colors"
+                className="hidden sm:block px-4 py-2 border-2 border-[#172263] text-[#172263] rounded-xl text-sm hover:bg-blue-50 transition-colors"
               >
-                Login
+                {t("nav.login", { ns: "common" })}
               </Link>
               <Link
                 to="/register"
                 onClick={(e) => handleNavbarAuthClick(e, "register")}
-                className="px-4 py-2 bg-[#E8720C] text-white rounded-xl text-sm hover:bg-[#C9610A] transition-colors"
+                className="px-4 py-2 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors"
               >
-                Sign Up →
+                {t("nav.register", { ns: "common" })}
               </Link>
+              <LanguageSwitcher />
             </>
           )}
 
           <button
-            className="md:hidden p-2 rounded-xl hover:bg-orange-50"
+            className="md:hidden p-2 rounded-xl hover:bg-blue-50"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -816,7 +859,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-[#FDFAF4] border-t border-[#E7E0D5] px-4 py-4 space-y-2">
+        <div className="md:hidden bg-[#ffffff] border-t border-[#E2E8F0] px-4 py-4 space-y-2">
           {(isAuthenticated || isPreview) ? (
             <>
               {mobileItems.map((item) => {
@@ -833,7 +876,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                       }
                       setMobileOpen(false);
                     }}
-                    className="block py-2 text-[#78716C] hover:text-[#E8720C] transition-colors"
+                    className="block py-2 text-[#57585A] hover:text-[#172263] transition-colors"
                   >
                     {item.label}
                   </Link>
@@ -847,8 +890,8 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
             </>
           ) : (
             <>
-              <Link to="/login" onClick={(e) => { handleNavbarAuthClick(e, "login"); setMobileOpen(false); }} className="block py-2 text-[#78716C]">Login</Link>
-              <Link to="/register" onClick={(e) => { handleNavbarAuthClick(e, "register"); setMobileOpen(false); }} className="block py-2 text-[#E8720C]">Sign Up</Link>
+              <Link to="/login" onClick={(e) => { handleNavbarAuthClick(e, "login"); setMobileOpen(false); }} className="block py-2 text-[#57585A]">Login</Link>
+              <Link to="/register" onClick={(e) => { handleNavbarAuthClick(e, "register"); setMobileOpen(false); }} className="block py-2 text-[#172263]">Sign Up</Link>
             </>
           )}
         </div>
@@ -891,14 +934,14 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     }
 
     return (
-      <div className="min-h-screen bg-[#FDFAF4] flex items-center justify-center">
+      <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
         <div className="text-center">
-          <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }} className="text-2xl text-[#1C1008] mb-4">
+          <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }} className="text-2xl text-[#1A1A1A] mb-4">
             Please login to continue
           </h2>
           <Link
             to="/login"
-            className="px-6 py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors"
+            className="px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors"
           >
             Go to Login
           </Link>

@@ -153,7 +153,7 @@ export function ExploreHarvesters() {
     : harvesters;
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader
@@ -169,15 +169,15 @@ export function ExploreHarvesters() {
           }
         />
 
-        <div className="bg-white rounded-2xl p-4 border border-[#E7E0D5] shadow-sm mb-6">
+        <div className="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-sm mb-6">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by machine name or owner..."
-                className="w-full pl-10 pr-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]"
+                className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
             </div>
             
@@ -187,7 +187,7 @@ export function ExploreHarvesters() {
                 setSelectedState(e.target.value);
                 setSelectedDistrict("");
               }}
-              className="px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] w-full md:w-48"
+              className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-48"
             >
               <option value="">All States</option>
               {INDIAN_STATES.map((s) => (
@@ -199,7 +199,7 @@ export function ExploreHarvesters() {
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
               disabled={!selectedState}
-              className="px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] w-full md:w-48 disabled:opacity-50"
+              className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-48 disabled:opacity-50"
             >
               <option value="">All Districts</option>
               {selectedState &&
@@ -213,7 +213,7 @@ export function ExploreHarvesters() {
             <select
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              className="px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] w-full md:w-44"
+              className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-44"
             >
               <option value="">All Companies</option>
               {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -226,7 +226,7 @@ export function ExploreHarvesters() {
                   setSelectedDistrict(""); 
                   setCompany(""); 
                 }} 
-                className="text-[#E8720C] text-sm px-3 hover:underline"
+                className="text-[#172263] text-sm px-3 hover:underline"
               >
                 Clear All
               </button>
@@ -236,13 +236,13 @@ export function ExploreHarvesters() {
 
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b border-[#E7E0D5] mb-6">
+        <div className="flex gap-2 border-b border-[#E2E8F0] mb-6">
           <button
             onClick={() => setTab("all")}
             className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${
               tab === "all"
-                ? "border-[#E8720C] text-[#E8720C]"
-                : "border-transparent text-[#78716C] hover:text-[#E8720C]"
+                ? "border-[#172263] text-[#172263]"
+                : "border-transparent text-[#57585A] hover:text-[#172263]"
             }`}
           >
             All Machines
@@ -251,8 +251,8 @@ export function ExploreHarvesters() {
             onClick={() => setTab("mine")}
             className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${
               tab === "mine"
-                ? "border-[#E8720C] text-[#E8720C]"
-                : "border-transparent text-[#78716C] hover:text-[#E8720C]"
+                ? "border-[#172263] text-[#172263]"
+                : "border-transparent text-[#57585A] hover:text-[#172263]"
             }`}
           >
             My Listings
@@ -365,14 +365,14 @@ export function HarvesterDetail() {
   const isOwner = currentUser && (harvester.userId === currentUser.id || harvester.ownerName === currentUser.name);
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
-        <Link to="/harvesters" className="inline-flex items-center gap-2 text-[#78716C] text-sm mb-6 hover:text-[#E8720C]">
+        <Link to="/harvesters" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263]">
           <ArrowLeft size={16} /> Back to Harvesters
         </Link>
 
-        <div className="bg-gradient-to-br from-orange-50 to-amber-100 rounded-2xl aspect-video flex items-center justify-center mb-6 relative overflow-hidden border border-[#E7E0D5]">
+        <div className="bg-gradient-to-br from-blue-50 to-amber-100 rounded-2xl aspect-video flex items-center justify-center mb-6 relative overflow-hidden border border-[#E2E8F0]">
           {harvester.imagePath ? (
             <img src={harvester.imagePath} alt={harvester.machineName} className="w-full h-full object-cover" />
           ) : (
@@ -384,36 +384,36 @@ export function HarvesterDetail() {
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <h1
-              className="text-3xl text-[#1C1008] mb-3"
+              className="text-3xl text-[#1A1A1A] mb-3"
               style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
             >
               {harvester.machineName}
             </h1>
             <div className="flex flex-wrap gap-2 mb-6">
-              <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm border border-orange-200">{harvester.company}</span>
+              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm border border-blue-200">{harvester.company}</span>
               <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">{harvester.model}</span>
             </div>
 
             <div className="grid grid-cols-3 gap-4 mb-6">
               {[
-                { icon: <MapPin size={18} className="text-[#E8720C]" />, label: "Location", value: harvester.location },
-                { icon: <Tractor size={18} className="text-[#E8720C]" />, label: "Company", value: harvester.company },
-                { icon: <Award size={18} className="text-[#E8720C]" />, label: "Model", value: harvester.model },
+                { icon: <MapPin size={18} className="text-[#172263]" />, label: "Location", value: harvester.location },
+                { icon: <Tractor size={18} className="text-[#172263]" />, label: "Company", value: harvester.company },
+                { icon: <Award size={18} className="text-[#172263]" />, label: "Model", value: harvester.model },
               ].map((item) => (
-                <div key={item.label} className="bg-white rounded-xl p-4 border border-[#E7E0D5]">
+                <div key={item.label} className="bg-white rounded-xl p-4 border border-[#E2E8F0]">
                   <div className="flex items-center gap-2 mb-1">
                     {item.icon}
-                    <span className="text-xs text-[#78716C]">{item.label}</span>
+                    <span className="text-xs text-[#57585A]">{item.label}</span>
                   </div>
-                  <p className="text-sm text-[#1C1008]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{item.value}</p>
+                  <p className="text-sm text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{item.value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="bg-white rounded-2xl border border-[#E7E0D5] p-6 mb-6">
-              <h3 className="text-[#1C1008] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>About This Machine</h3>
-              <div className="w-full h-px bg-[#E7E0D5] mb-4" />
-              <p className="text-[#78716C] text-sm leading-relaxed">
+            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 mb-6">
+              <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>About This Machine</h3>
+              <div className="w-full h-px bg-[#E2E8F0] mb-4" />
+              <p className="text-[#57585A] text-sm leading-relaxed">
                 {harvester.description || `This ${harvester.company} ${harvester.model} is well-maintained and suitable for harvesting wheat, rice, and other Rabi/Kharif crops. Available for seasonal hire with experienced operator on request.`}
               </p>
             </div>
@@ -421,17 +421,17 @@ export function HarvesterDetail() {
 
           {/* Owner Card */}
           <div>
-            <div className="bg-white rounded-2xl border border-[#E7E0D5] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)]">
-              <h3 className="text-[#1C1008] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)]">
+              <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
                 {isOwner ? "Machine Owner (You)" : "Machine Owner"}
               </h3>
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center ring-2 ring-orange-200">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-2 ring-blue-200">
                   <span className="text-white font-bold">{harvester.ownerName?.charAt(0) || 'U'}</span>
                 </div>
                 <div>
-                  <p className="text-[#1C1008]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{harvester.ownerName}</p>
-                  <p className="text-xs text-[#78716C] flex items-center gap-1"><Phone size={11} /> +91-{harvester.phone || 'XXXXXXXXXX'}</p>
+                  <p className="text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{harvester.ownerName}</p>
+                  <p className="text-xs text-[#57585A] flex items-center gap-1"><Phone size={11} /> +91-{harvester.phone || 'XXXXXXXXXX'}</p>
                 </div>
               </div>
               {isOwner ? (
@@ -458,7 +458,7 @@ export function HarvesterDetail() {
                   </a>
                   <button
                     onClick={() => toast.success("Message feature coming soon! Or contact directly via phone.")}
-                    className="w-full py-2.5 bg-[#E8720C] text-white rounded-xl text-sm hover:bg-[#C9610A] transition-colors"
+                    className="w-full py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors"
                   >
                     Message Owner
                   </button>
@@ -471,11 +471,11 @@ export function HarvesterDetail() {
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full border border-[#E7E0D5]">
-            <h3 className="text-lg text-[#1C1008] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Delete Machine Listing?</h3>
-            <p className="text-[#78716C] text-sm mb-4">Are you sure you want to delete this listing? This action cannot be undone.</p>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full border border-[#E2E8F0]">
+            <h3 className="text-lg text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Delete Machine Listing?</h3>
+            <p className="text-[#57585A] text-sm mb-4">Are you sure you want to delete this listing? This action cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 border border-[#E7E0D5] rounded-xl text-sm">Cancel</button>
+              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-sm">Cancel</button>
               <button onClick={handleDelete} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 transition-colors">Delete</button>
             </div>
           </div>
@@ -592,20 +592,20 @@ export function ExploreOperators() {
   const filtered = operators;
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader title="Find Operators 👨‍🌾" subtitle={`${filtered.length} operators available`} />
 
-        <div className="bg-white rounded-2xl p-4 border border-[#E7E0D5] shadow-sm mb-8">
+        <div className="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-sm mb-8">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by operator name..."
-                className="w-full pl-10 pr-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]"
+                className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
             </div>
             
@@ -615,7 +615,7 @@ export function ExploreOperators() {
                 setSelectedState(e.target.value);
                 setSelectedDistrict("");
               }}
-              className="px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] w-full md:w-48"
+              className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-48"
             >
               <option value="">All States</option>
               {INDIAN_STATES.map((s) => (
@@ -627,7 +627,7 @@ export function ExploreOperators() {
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
               disabled={!selectedState}
-              className="px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] w-full md:w-48 disabled:opacity-50"
+              className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-48 disabled:opacity-50"
             >
               <option value="">All Districts</option>
               {selectedState &&
@@ -641,7 +641,7 @@ export function ExploreOperators() {
             <select
               value={availability}
               onChange={(e) => setAvailability(e.target.value)}
-              className="px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] w-full md:w-44"
+              className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-44"
             >
               <option value="">All Status</option>
               <option value="Available">Available</option>
@@ -656,7 +656,7 @@ export function ExploreOperators() {
                   setSelectedDistrict(""); 
                   setAvailability(""); 
                 }} 
-                className="text-[#E8720C] text-sm px-3 hover:underline"
+                className="text-[#172263] text-sm px-3 hover:underline"
               >
                 Clear All
               </button>
@@ -727,15 +727,15 @@ export function OperatorProfile() {
   if (!operator) return <EmptyState title="Operator profile not found" />;
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="relative">
-        <div className="h-48 bg-gradient-to-r from-[#E8720C] via-[#D97706] to-[#15803D] rounded-b-3xl overflow-hidden">
+        <div className="h-48 bg-gradient-to-r from-[#172263] via-[#D97706] to-[#15803D] rounded-b-3xl overflow-hidden">
           <WheatWatermark className="right-10 top-0 opacity-[0.06]" />
         </div>
         <div className="w-full mx-auto px-4 sm:px-6 -mt-16">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden">
               {operator.image_path ? (
                 <img src={operator.image_path} alt={operator.name} className="w-full h-full object-cover" />
               ) : (
@@ -744,12 +744,12 @@ export function OperatorProfile() {
             </div>
             <div className="pb-2">
               <h1
-                className="text-2xl text-[#1C1008]"
+                className="text-2xl text-[#1A1A1A]"
                 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
               >
                 {operator.name}
               </h1>
-              <p className="text-[#78716C] flex items-center gap-1 text-sm">
+              <p className="text-[#57585A] flex items-center gap-1 text-sm">
                 <MapPin size={13} /> {operator.location}
               </p>
             </div>
@@ -767,27 +767,27 @@ export function OperatorProfile() {
                   { value: `${operator.machineExpertise?.length || 0}`, label: "Machine Types" },
                   { value: operator.availability, label: "Status" },
                 ].map((s) => (
-                  <div key={s.label} className="bg-white rounded-2xl p-4 text-center border border-[#E7E0D5]">
-                    <p className="text-[#E8720C] text-lg" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{s.value}</p>
-                    <p className="text-xs text-[#78716C]">{s.label}</p>
+                  <div key={s.label} className="bg-white rounded-2xl p-4 text-center border border-[#E2E8F0]">
+                    <p className="text-[#172263] text-lg" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{s.value}</p>
+                    <p className="text-xs text-[#57585A]">{s.label}</p>
                   </div>
                 ))}
               </div>
 
               {/* About */}
-              <div className="bg-white rounded-2xl border border-[#E7E0D5] p-6">
-                <h3 className="text-[#1C1008] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>About</h3>
-                <p className="text-[#78716C] text-sm leading-relaxed">
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
+                <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>About</h3>
+                <p className="text-[#57585A] text-sm leading-relaxed">
                   {operator.description || `Experienced harvester operator with ${operator.experience}+ years in agricultural machinery operation. Skilled in operating combine harvesters, rice harvesters, and wheat harvesters across multiple states in India.`}
                 </p>
               </div>
 
               {/* Machine Expertise */}
-              <div className="bg-white rounded-2xl border border-[#E7E0D5] p-6">
-                <h3 className="text-[#1C1008] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Machine Expertise</h3>
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
+                <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Machine Expertise</h3>
                 <div className="flex flex-wrap gap-2">
                   {operator.machineExpertise?.map((m: string) => (
-                    <span key={m} className="px-3 py-1 bg-orange-50 text-orange-700 border border-orange-200 rounded-full text-sm">
+                    <span key={m} className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-sm">
                       {m}
                     </span>
                   ))}
@@ -796,8 +796,8 @@ export function OperatorProfile() {
 
               {/* Listed Machines */}
               {harvesters.length > 0 && (
-                <div className="bg-white rounded-2xl border border-[#E7E0D5] p-6">
-                  <h3 className="text-[#1C1008] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Listed Harvesters</h3>
+                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
+                  <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Listed Harvesters</h3>
                   <div className="grid sm:grid-cols-2 gap-4">
                     {harvesters.map((h) => (
                       <HarvesterCard key={h.id} {...h} />
@@ -809,9 +809,9 @@ export function OperatorProfile() {
 
             {/* Contact card */}
             <div>
-              <div className="bg-white rounded-2xl border border-[#E7E0D5] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)]">
-                <h3 className="text-[#1C1008] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Contact Operator</h3>
-                <p className="text-sm text-[#78716C] mb-4 flex items-center gap-2">
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)]">
+                <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Contact Operator</h3>
+                <p className="text-sm text-[#57585A] mb-4 flex items-center gap-2">
                   <Phone size={14} /> +91-{operator.phone || 'XXXXXXXXXX'}
                 </p>
                 <div className="space-y-2">
@@ -825,7 +825,7 @@ export function OperatorProfile() {
                   </a>
                   <button
                     onClick={() => toast.success("Chat feature coming soon! Feel free to WhatsApp or call.")}
-                    className="w-full py-2.5 bg-[#E8720C] text-white rounded-xl text-sm hover:bg-[#C9610A] transition-colors"
+                    className="w-full py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors"
                   >
                     Send Message
                   </button>
@@ -837,10 +837,10 @@ export function OperatorProfile() {
       </div>
 
       {/* Sticky mobile contact bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#E7E0D5] sm:hidden z-40">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#E2E8F0] sm:hidden z-40">
         <a
           href={`tel:+91${operator.phone}`}
-          className="w-full py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors flex items-center justify-center font-semibold"
+          className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center font-semibold"
           style={{ fontFamily: "'Sora', sans-serif" }}
         >
           Call Operator
@@ -979,7 +979,7 @@ export function AddOperator() {
   const steps = ["Basic Info", "Skills & Equipment", "Contact"];
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <PageHeader title="Register as Operator 👨‍🌾" subtitle="Complete your profile to get discovered by farmers" />
@@ -988,22 +988,22 @@ export function AddOperator() {
         <div className="flex items-center gap-2 mb-8">
           {steps.map((s, i) => (
             <div key={i} className="flex items-center gap-2 flex-1">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${step > i + 1 ? "bg-green-600 text-white" : step === i + 1 ? "bg-[#E8720C] text-white" : "bg-[#E7E0D5] text-[#78716C]"}`}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${step > i + 1 ? "bg-green-600 text-white" : step === i + 1 ? "bg-[#172263] text-white" : "bg-[#E2E8F0] text-[#57585A]"}`}
                 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                 {step > i + 1 ? "✓" : i + 1}
               </div>
-              <span className={`text-xs hidden sm:block ${step === i + 1 ? "text-[#E8720C]" : "text-[#78716C]"}`}>{s}</span>
-              {i < steps.length - 1 && <div className={`flex-1 h-0.5 ${step > i + 1 ? "bg-green-400" : "bg-[#E7E0D5]"}`} />}
+              <span className={`text-xs hidden sm:block ${step === i + 1 ? "text-[#172263]" : "text-[#57585A]"}`}>{s}</span>
+              {i < steps.length - 1 && <div className={`flex-1 h-0.5 ${step > i + 1 ? "bg-green-400" : "bg-[#E2E8F0]"}`} />}
             </div>
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E7E0D5] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8">
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8">
           {step === 1 && (
             <div className="space-y-5">
               <div 
                 onClick={() => document.getElementById("operator-photo")?.click()}
-                className="border-2 border-dashed border-[#E8720C] rounded-2xl bg-orange-50 py-10 text-center cursor-pointer hover:bg-orange-100 transition-colors relative overflow-hidden h-48 flex flex-col items-center justify-center"
+                className="border-2 border-dashed border-[#172263] rounded-2xl bg-blue-50 py-10 text-center cursor-pointer hover:bg-blue-100 transition-colors relative overflow-hidden h-48 flex flex-col items-center justify-center"
               >
                 <input 
                   type="file" 
@@ -1023,73 +1023,73 @@ export function AddOperator() {
                 ) : (
                   <>
                     <Upload size={32} className="text-orange-400 mx-auto mb-2" />
-                    <p className="text-sm text-[#78716C]">Drop your photo here or click to upload</p>
+                    <p className="text-sm text-[#57585A]">Drop your photo here or click to upload</p>
                   </>
                 )}
               </div>
               
               <div>
-                <label className="text-sm text-[#78716C] block mb-1.5">Full Name</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">Full Name</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]"><User size={16} /></span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]"><User size={16} /></span>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Your full name"
-                    className="w-full pl-10 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]"
+                    className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm text-[#78716C] block mb-1.5">Experience (years)</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">Experience (years)</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]"><Award size={16} /></span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]"><Award size={16} /></span>
                   <input
                     type="number"
                     value={experience}
                     onChange={(e) => setExperience(e.target.value)}
                     placeholder="e.g. 5"
-                    className="w-full pl-10 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]"
+                    className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                   />
                 </div>
               </div>
 
-              <div className="border-t border-[#E7E0D5] pt-4 my-2">
+              <div className="border-t border-[#E2E8F0] pt-4 my-2">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-medium text-[#1C1008]">Location Details</span>
+                  <span className="text-sm font-medium text-[#1A1A1A]">Location Details</span>
                   <button
                     type="button"
                     onClick={handleDetectLocation}
-                    className="text-xs text-[#E8720C] hover:underline flex items-center gap-1 font-semibold"
+                    className="text-xs text-[#172263] hover:underline flex items-center gap-1 font-semibold"
                   >
-                    <MapPin size={12} className="text-[#E8720C]" /> Auto-detect Location
+                    <MapPin size={12} className="text-[#172263]" /> Auto-detect Location
                   </button>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-[#78716C] block mb-1">State *</label>
+                    <label className="text-xs text-[#57585A] block mb-1">State *</label>
                     <select
                       value={state}
                       onChange={(e) => {
                         setState(e.target.value);
                         setLocation("");
                       }}
-                      className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C]"
+                      className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                     >
                       <option value="">Select State</option>
                       {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-[#78716C] block mb-1">District / City *</label>
+                    <label className="text-xs text-[#57585A] block mb-1">District / City *</label>
                     <select
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       disabled={!state}
-                      className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
                     >
                       <option value="">Select District</option>
                       {state &&
@@ -1123,7 +1123,7 @@ export function AddOperator() {
                   }
                   setStep(2);
                 }}
-                className="w-full py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center gap-2"
                 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
               >
                 Next <ArrowRight size={16} />
@@ -1135,7 +1135,7 @@ export function AddOperator() {
           {step === 2 && (
             <div className="space-y-5">
               <div>
-                <label className="text-sm text-[#78716C] block mb-3">Machine Expertise</label>
+                <label className="text-sm text-[#57585A] block mb-3">Machine Expertise</label>
                 <div className="flex flex-wrap gap-2">
                   {MACHINE_TYPES.map((m) => (
                     <button
@@ -1144,8 +1144,8 @@ export function AddOperator() {
                       onClick={() => toggleMachine(m)}
                       className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
                         selectedMachines.includes(m)
-                          ? "bg-orange-100 border-orange-300 text-orange-700"
-                          : "bg-white border-[#E7E0D5] text-[#78716C] hover:border-orange-200"
+                          ? "bg-blue-100 border-blue-300 text-blue-700"
+                          : "bg-white border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
                       }`}
                     >
                       {selectedMachines.includes(m) ? "✓ " : ""}{m}
@@ -1155,7 +1155,7 @@ export function AddOperator() {
               </div>
 
               <div>
-                <label className="text-sm text-[#78716C] block mb-3">Availability</label>
+                <label className="text-sm text-[#57585A] block mb-3">Availability</label>
                 <div className="flex gap-2">
                   {["Available","Busy","Not Available"].map((a) => (
                     <button
@@ -1167,7 +1167,7 @@ export function AddOperator() {
                           ? a === "Available" ? "bg-green-50 border-green-500 text-green-700"
                             : a === "Busy" ? "bg-yellow-50 border-yellow-500 text-yellow-700"
                             : "bg-red-50 border-red-400 text-red-600"
-                          : "border-[#E7E0D5] text-[#78716C] hover:border-orange-200"
+                          : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
                       }`}
                     >
                       {a === "Available" ? "✓" : a === "Busy" ? "⏳" : "✗"} {a}
@@ -1177,20 +1177,20 @@ export function AddOperator() {
               </div>
 
               <div>
-                <label className="text-sm text-[#78716C] block mb-1.5">Description</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">Description</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                   maxLength={500}
                   placeholder="Tell farmers about your experience and expertise..."
-                  className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] resize-none"
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none"
                 />
-                <p className="text-xs text-[#78716C] text-right">{description.length}/500</p>
+                <p className="text-xs text-[#57585A] text-right">{description.length}/500</p>
               </div>
 
               <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 border-2 border-[#E7E0D5] text-[#78716C] rounded-xl hover:border-[#E8720C] hover:text-[#E8720C] transition-colors">← Back</button>
+                <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 border-2 border-[#E2E8F0] text-[#57585A] rounded-xl hover:border-[#172263] hover:text-[#172263] transition-colors">← Back</button>
                 <button
                   type="button"
                   onClick={() => {
@@ -1204,7 +1204,7 @@ export function AddOperator() {
                     }
                     setStep(3);
                   }}
-                  className="flex-1 py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors"
+                  className="flex-1 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors"
                   style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
                 >
                   Next →
@@ -1220,26 +1220,26 @@ export function AddOperator() {
                 { label: "WhatsApp Number", value: whatsapp, onChange: setWhatsapp, placeholder: "9876543210" },
               ].map((f) => (
                 <div key={f.label}>
-                  <label className="text-sm text-[#78716C] block mb-1.5">{f.label}</label>
+                  <label className="text-sm text-[#57585A] block mb-1.5">{f.label}</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#78716C] bg-orange-50 px-2 py-0.5 rounded border border-orange-100">+91</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
                     <input
                       type="tel"
                       value={f.value}
                       onChange={(e) => f.onChange(e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full pl-16 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]"
+                      className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                     />
                   </div>
                 </div>
               ))}
 
               <div className="flex gap-3">
-                <button onClick={() => setStep(2)} className="flex-1 py-3 border-2 border-[#E7E0D5] text-[#78716C] rounded-xl hover:border-[#E8720C] hover:text-[#E8720C] transition-colors">← Back</button>
+                <button onClick={() => setStep(2)} className="flex-1 py-3 border-2 border-[#E2E8F0] text-[#57585A] rounded-xl hover:border-[#172263] hover:text-[#172263] transition-colors">← Back</button>
                 <button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="flex-1 py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                   style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
                 >
                   {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "Submit Profile →"}
@@ -1384,15 +1384,15 @@ export function AddHarvester() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <PageHeader title="List Your Harvester 🚜" subtitle="Add your machine to reach thousands of farmers" />
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E7E0D5] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
           <div 
             onClick={() => document.getElementById("harvester-photo")?.click()}
-            className="border-2 border-dashed border-[#E8720C] rounded-2xl bg-orange-50 py-10 text-center cursor-pointer hover:bg-orange-100 transition-colors relative overflow-hidden h-44 flex flex-col items-center justify-center"
+            className="border-2 border-dashed border-[#172263] rounded-2xl bg-blue-50 py-10 text-center cursor-pointer hover:bg-blue-100 transition-colors relative overflow-hidden h-44 flex flex-col items-center justify-center"
           >
             <input 
               type="file" 
@@ -1412,81 +1412,81 @@ export function AddHarvester() {
             ) : (
               <>
                 <Upload size={32} className="text-orange-400 mx-auto mb-2" />
-                <p className="text-sm text-[#78716C]">Upload machine photo</p>
+                <p className="text-sm text-[#57585A]">Upload machine photo</p>
               </>
             )}
           </div>
 
           <div>
-            <label className="text-sm text-[#78716C] block mb-1.5">Machine Name</label>
+            <label className="text-sm text-[#57585A] block mb-1.5">Machine Name</label>
             <div className="relative">
-              <Tractor size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. John Deere S660" className="w-full pl-10 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]" />
+              <Tractor size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. John Deere S660" className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-[#78716C] block mb-1.5">Company</label>
-              <select value={company} onChange={(e) => setCompany(e.target.value)} className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C]">
+              <label className="text-sm text-[#57585A] block mb-1.5">Company</label>
+              <select value={company} onChange={(e) => setCompany(e.target.value)} className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]">
                 <option value="">Select Company</option>
                 {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm text-[#78716C] block mb-1.5">Model</label>
-              <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. S660" className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]" />
+              <label className="text-sm text-[#57585A] block mb-1.5">Model</label>
+              <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. S660" className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-[#78716C] block mb-1.5">Year of Manufacture</label>
-              <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g. 2020" className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]" />
+              <label className="text-sm text-[#57585A] block mb-1.5">Year of Manufacture</label>
+              <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g. 2020" className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
             </div>
             <div>
-              <label className="text-sm text-[#78716C] block mb-1.5">Phone Number</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">Phone Number</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#78716C] bg-orange-50 px-2 py-0.5 rounded border border-orange-100">+91</span>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" className="w-full pl-16 pr-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
               </div>
             </div>
           </div>
 
-          <div className="border-t border-[#E7E0D5] pt-4 my-2">
+          <div className="border-t border-[#E2E8F0] pt-4 my-2">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-medium text-[#1C1008]">Location Details</span>
+              <span className="text-sm font-medium text-[#1A1A1A]">Location Details</span>
               <button
                 type="button"
                 onClick={handleDetectLocation}
-                className="text-xs text-[#E8720C] hover:underline flex items-center gap-1 font-semibold"
+                className="text-xs text-[#172263] hover:underline flex items-center gap-1 font-semibold"
               >
-                <MapPin size={12} className="text-[#E8720C]" /> Auto-detect Location
+                <MapPin size={12} className="text-[#172263]" /> Auto-detect Location
               </button>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-[#78716C] block mb-1">State *</label>
+                <label className="text-xs text-[#57585A] block mb-1">State *</label>
                 <select 
                   value={state} 
                   onChange={(e) => {
                     setState(e.target.value);
                     setLocation("");
                   }} 
-                  className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C]"
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                 >
                   <option value="">Select State</option>
                   {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-[#78716C] block mb-1">District / City *</label>
+                <label className="text-xs text-[#57585A] block mb-1">District / City *</label>
                 <select 
                   value={location} 
                   onChange={(e) => setLocation(e.target.value)} 
                   disabled={!state}
-                  className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] disabled:opacity-50"
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
                 >
                   <option value="">Select District</option>
                   {state &&
@@ -1501,8 +1501,8 @@ export function AddHarvester() {
           </div>
 
           <div>
-            <label className="text-sm text-[#78716C] block mb-1.5">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Describe the machine condition and availability..." className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] resize-none" />
+            <label className="text-sm text-[#57585A] block mb-1.5">Description</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Describe the machine condition and availability..." className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" />
           </div>
 
           <button type="submit" disabled={loading} className="w-full py-3 bg-[#15803D] text-white rounded-xl hover:bg-green-700 transition-colors shadow-md disabled:opacity-60 flex items-center justify-center gap-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
@@ -1698,7 +1698,7 @@ export function Requests() {
   const filtered = requests;
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader
@@ -1718,7 +1718,7 @@ export function Requests() {
                 });
                 setShowDialog(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-[#E8720C] text-white rounded-xl text-sm hover:bg-[#C9610A] transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors"
             >
               <Plus size={16} /> Post Requirement
             </button>
@@ -1733,7 +1733,7 @@ export function Requests() {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${
-                  tab === t ? "border-[#E8720C] bg-orange-50 text-[#E8720C]" : "border-[#E7E0D5] text-[#78716C] hover:border-orange-200"
+                  tab === t ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
                 }`}
               >
                 {t === "operator" ? "👨‍🌾 Need Operator" : "🚜 Need Harvester"}
@@ -1748,7 +1748,7 @@ export function Requests() {
                 setSelectedState(e.target.value);
                 setSelectedDistrict("");
               }}
-              className="px-3 py-2 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] bg-white w-40"
+              className="px-3 py-2 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] bg-white w-40"
             >
               <option value="">All States</option>
               {INDIAN_STATES.map((s) => (
@@ -1760,7 +1760,7 @@ export function Requests() {
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
               disabled={!selectedState}
-              className="px-3 py-2 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] bg-white w-40 disabled:opacity-50"
+              className="px-3 py-2 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] bg-white w-40 disabled:opacity-50"
             >
               <option value="">All Districts</option>
               {selectedState &&
@@ -1776,7 +1776,7 @@ export function Requests() {
                   setSelectedState(""); 
                   setSelectedDistrict(""); 
                 }} 
-                className="text-[#E8720C] text-xs px-2 hover:underline"
+                className="text-[#172263] text-xs px-2 hover:underline"
               >
                 Clear Location
               </button>
@@ -1793,10 +1793,10 @@ export function Requests() {
             filtered.map((req) => {
               const isOwner = currentUser && req.userId === currentUser.id;
               return (
-                <div key={req.id} className={`bg-white rounded-2xl border border-[#E7E0D5] p-5 flex gap-4 items-start shadow-[0_2px_16px_rgba(232,114,12,0.06)] border-l-4 ${req.type === "operator" ? "border-l-[#E8720C]" : "border-l-[#15803D]"}`}>
+                <div key={req.id} className={`bg-white rounded-2xl border border-[#E2E8F0] p-5 flex gap-4 items-start shadow-[0_2px_16px_rgba(232,114,12,0.06)] border-l-4 ${req.type === "operator" ? "border-l-[#172263]" : "border-l-[#15803D]"}`}>
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${req.type === "operator" ? "bg-orange-50 text-orange-700 border-orange-200" : "bg-green-50 text-green-700 border-green-200"}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${req.type === "operator" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"}`}>
                         {req.type === "operator" ? "👨‍🌾 Need Operator" : "🚜 Need Harvester"}
                       </span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${req.status === "Open" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
@@ -1808,7 +1808,7 @@ export function Requests() {
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-4 text-sm text-[#78716C]">
+                    <div className="flex flex-wrap gap-4 text-sm text-[#57585A]">
                       <span className="flex items-center gap-1">
                         <MapPin size={13} /> {req.location}{req.state ? `, ${req.state}` : ""}
                       </span>
@@ -1818,7 +1818,7 @@ export function Requests() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Link to={`/requests/${req.id}`} className="text-xs px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors font-medium">
+                    <Link to={`/requests/${req.id}`} className="text-xs px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium">
                       View
                     </Link>
                     {isOwner && (
@@ -1838,23 +1838,23 @@ export function Requests() {
       {showDialog && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <motion.div
-            className="bg-white rounded-2xl p-6 w-full max-w-lg border border-[#E7E0D5] max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-2xl p-6 w-full max-w-lg border border-[#E2E8F0] max-h-[90vh] overflow-y-auto"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl text-[#1C1008]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>Post a Requirement</h3>
+              <h3 className="text-xl text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>Post a Requirement</h3>
               <button 
                 type="button" 
                 onClick={handleDialogDetectLocation}
-                className="text-xs px-3 py-1.5 bg-orange-50 border border-orange-200 text-[#E8720C] rounded-lg hover:bg-orange-100 transition-colors flex items-center gap-1"
+                className="text-xs px-3 py-1.5 bg-blue-50 border border-blue-200 text-[#172263] rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
               >
                 <MapPin size={12} /> Auto-detect Location
               </button>
             </div>
             <div className="flex gap-2 mb-4">
               {(["operator", "harvester"] as const).map((t) => (
-                <button key={t} onClick={() => setReqType(t)} className={`flex-1 py-2 rounded-xl text-sm border-2 transition-all ${reqType === t ? "border-[#E8720C] bg-orange-50 text-[#E8720C]" : "border-[#E7E0D5] text-[#78716C]"}`}>
+                <button key={t} onClick={() => setReqType(t)} className={`flex-1 py-2 rounded-xl text-sm border-2 transition-all ${reqType === t ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A]"}`}>
                   {t === "operator" ? "👨‍🌾 Need Operator" : "🚜 Need Harvester"}
                 </button>
               ))}
@@ -1862,11 +1862,11 @@ export function Requests() {
             <div className="space-y-3">
               {/* State Dropdown */}
               <div>
-                <label className="text-xs text-[#78716C] block mb-1">State *</label>
+                <label className="text-xs text-[#57585A] block mb-1">State *</label>
                 <select
                   value={newReq.state}
                   onChange={(e) => setNewReq(prev => ({ ...prev, state: e.target.value, location: "" }))}
-                  className="w-full px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] bg-[#FDFAF4]"
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] bg-[#ffffff]"
                 >
                   <option value="">Select State</option>
                   {INDIAN_STATES.map((s) => (
@@ -1877,12 +1877,12 @@ export function Requests() {
 
               {/* District Dropdown */}
               <div>
-                <label className="text-xs text-[#78716C] block mb-1">District / Location *</label>
+                <label className="text-xs text-[#57585A] block mb-1">District / Location *</label>
                 <select
                   value={newReq.location}
                   onChange={(e) => setNewReq(prev => ({ ...prev, location: e.target.value }))}
                   disabled={!newReq.state}
-                  className="w-full px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] bg-[#FDFAF4] disabled:opacity-50"
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] bg-[#ffffff] disabled:opacity-50"
                 >
                   <option value="">Select District</option>
                   {newReq.state &&
@@ -1896,11 +1896,11 @@ export function Requests() {
 
               {/* Other inputs */}
               <div>
-                <label className="text-xs text-[#78716C] block mb-1">Machine Type *</label>
+                <label className="text-xs text-[#57585A] block mb-1">Machine Type *</label>
                 <select
                   value={newReq.machineType}
                   onChange={(e) => setNewReq(prev => ({ ...prev, machineType: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] bg-[#FDFAF4]"
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] bg-[#ffffff]"
                 >
                   <option value="">Select Machine Type</option>
                   {MACHINE_TYPES.map((t) => (
@@ -1911,40 +1911,40 @@ export function Requests() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-[#78716C] block mb-1">Duration (days)</label>
+                  <label className="text-xs text-[#57585A] block mb-1">Duration (days)</label>
                   <input
                     type="number"
                     placeholder="Duration"
                     value={newReq.duration}
                     onChange={(e) => setNewReq(prev => ({ ...prev, duration: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]"
+                    className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-[#78716C] block mb-1">Start Date *</label>
+                  <label className="text-xs text-[#57585A] block mb-1">Start Date *</label>
                   <input
                     type="date"
                     value={newReq.startDate}
                     onChange={(e) => setNewReq(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]"
+                    className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs text-[#78716C] block mb-1">Description</label>
+                <label className="text-xs text-[#57585A] block mb-1">Description</label>
                 <textarea
                   rows={2}
                   placeholder="Describe your requirement in detail..."
                   value={newReq.description}
                   onChange={(e) => setNewReq((prev) => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] resize-none"
+                  className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none"
                 />
               </div>
             </div>
             <div className="flex gap-3 mt-4">
-              <button onClick={() => setShowDialog(false)} className="flex-1 py-2.5 border border-[#E7E0D5] rounded-xl text-[#78716C] text-sm hover:bg-gray-50">Cancel</button>
-              <button onClick={postReq} className="flex-1 py-2.5 bg-[#E8720C] text-white rounded-xl text-sm hover:bg-[#C9610A] transition-colors" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Post Requirement →</button>
+              <button onClick={() => setShowDialog(false)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-[#57585A] text-sm hover:bg-gray-50">Cancel</button>
+              <button onClick={postReq} className="flex-1 py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Post Requirement →</button>
             </div>
           </motion.div>
         </div>
@@ -1954,11 +1954,11 @@ export function Requests() {
       {/* Confirm Delete */}
       {confirmDelete !== null && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full border border-[#E7E0D5]">
-            <h3 className="text-lg text-[#1C1008] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Delete Requirement?</h3>
-            <p className="text-[#78716C] text-sm mb-4">This action cannot be undone.</p>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full border border-[#E2E8F0]">
+            <h3 className="text-lg text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Delete Requirement?</h3>
+            <p className="text-[#57585A] text-sm mb-4">This action cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border border-[#E7E0D5] rounded-xl text-sm">Cancel</button>
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-sm">Cancel</button>
               <button onClick={() => deleteReq(confirmDelete)} className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm hover:bg-red-600 transition-colors">Delete</button>
             </div>
           </div>
@@ -2047,15 +2047,15 @@ export function RequestDetail() {
   const isOwner = currentUser && req.userId === currentUser.id;
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <Link to="/requests" className="inline-flex items-center gap-2 text-[#78716C] text-sm mb-6 hover:text-[#E8720C]">
+        <Link to="/requests" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263]">
           <ArrowLeft size={16} /> Back to Requests
         </Link>
-        <div className="bg-white rounded-2xl border border-[#E7E0D5] p-8 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] p-8 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
           <div className="flex flex-wrap items-center gap-3 mb-6">
-            <span className={`text-sm px-3 py-1 rounded-full border ${req.type === "operator" ? "bg-orange-50 text-orange-700 border-orange-200" : "bg-green-50 text-green-700 border-green-200"}`}>
+            <span className={`text-sm px-3 py-1 rounded-full border ${req.type === "operator" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"}`}>
               {req.type === "operator" ? "👨‍🌾 Need Operator" : "🚜 Need Harvester"}
             </span>
             <span className={`text-sm px-3 py-1 rounded-full ${req.status === "Open" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{req.status}</span>
@@ -2071,30 +2071,30 @@ export function RequestDetail() {
               { label: "Duration", value: `${req.duration || '0'} days` },
               { label: "Start Date", value: new Date(req.startDate).toLocaleDateString() },
             ].map((item) => (
-              <div key={item.label} className="bg-[#FDFAF4] rounded-xl p-3 border border-[#E7E0D5]">
-                <p className="text-xs text-[#78716C] mb-1">{item.label}</p>
-                <p className="text-sm text-[#1C1008]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{item.value}</p>
+              <div key={item.label} className="bg-[#ffffff] rounded-xl p-3 border border-[#E2E8F0]">
+                <p className="text-xs text-[#57585A] mb-1">{item.label}</p>
+                <p className="text-sm text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{item.value}</p>
               </div>
             ))}
           </div>
 
 
           <div className="mb-6">
-            <h3 className="text-[#1C1008] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Description</h3>
-            <p className="text-[#78716C] text-sm leading-relaxed">{req.description || "No description provided."}</p>
+            <h3 className="text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Description</h3>
+            <p className="text-[#57585A] text-sm leading-relaxed">{req.description || "No description provided."}</p>
           </div>
 
-          <div className="h-px bg-[#E7E0D5] mb-6" />
+          <div className="h-px bg-[#E2E8F0] mb-6" />
 
-          <div className="bg-[#FDFAF4] rounded-xl p-4 border border-[#E7E0D5] mb-4">
-            <p className="text-sm text-[#78716C] mb-1">{isOwner ? "Posted by You" : "Posted by"}</p>
+          <div className="bg-[#ffffff] rounded-xl p-4 border border-[#E2E8F0] mb-4">
+            <p className="text-sm text-[#57585A] mb-1">{isOwner ? "Posted by You" : "Posted by"}</p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center">
                 <span className="text-white font-bold">{req.requesterName?.charAt(0) || 'U'}</span>
               </div>
               <div>
-                <p className="text-[#1C1008] text-sm" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{req.requesterName}</p>
-                <p className="text-xs text-[#78716C]">+91-{req.requesterPhone || 'XXXXXXXXXX'}</p>
+                <p className="text-[#1A1A1A] text-sm" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{req.requesterName}</p>
+                <p className="text-xs text-[#57585A]">+91-{req.requesterPhone || 'XXXXXXXXXX'}</p>
               </div>
             </div>
           </div>
@@ -2116,7 +2116,7 @@ export function RequestDetail() {
               href={`https://wa.me/91${req.requesterPhone}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors flex items-center justify-center font-semibold text-center"
+              className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center font-semibold text-center"
             >
               WhatsApp User →
             </a>
@@ -2126,11 +2126,11 @@ export function RequestDetail() {
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full border border-[#E7E0D5]">
-            <h3 className="text-lg text-[#1C1008] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Delete Requirement?</h3>
-            <p className="text-[#78716C] text-sm mb-4">Are you sure you want to delete this requirement? This action cannot be undone.</p>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full border border-[#E2E8F0]">
+            <h3 className="text-lg text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Delete Requirement?</h3>
+            <p className="text-[#57585A] text-sm mb-4">Are you sure you want to delete this requirement? This action cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 border border-[#E7E0D5] rounded-xl text-sm">Cancel</button>
+              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-sm">Cancel</button>
               <button onClick={handleDelete} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 transition-colors">Delete</button>
             </div>
           </div>
@@ -2180,18 +2180,18 @@ export function Blogs() {
   const filtered = blogs;
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="public" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader title="Harvesting Knowledge 📚" subtitle="Tips, guides, and stories from the field" />
 
         <div className="relative mb-4">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search articles..."
-            className="w-full pl-10 pr-4 py-3 border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] bg-white"
+            className="w-full pl-10 pr-4 py-3 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] bg-white"
           />
         </div>
 
@@ -2201,7 +2201,7 @@ export function Blogs() {
               key={c}
               onClick={() => setCategory(c)}
               className={`shrink-0 px-4 py-2 rounded-full text-sm border transition-all ${
-                category === c ? "bg-[#E8720C] text-white border-[#E8720C]" : "bg-white border-[#E7E0D5] text-[#78716C] hover:border-orange-300"
+                category === c ? "bg-[#172263] text-white border-[#172263]" : "bg-white border-[#E2E8F0] text-[#57585A] hover:border-blue-300"
               }`}
             >
               {c}
@@ -2261,53 +2261,53 @@ export function BlogDetail() {
   if (!blog) return <EmptyState title="Blog not found" />;
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="public" />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <nav className="text-sm text-[#78716C] mb-6 flex items-center gap-2">
-          <Link to="/blogs" className="hover:text-[#E8720C]">Blogs</Link>
+        <nav className="text-sm text-[#57585A] mb-6 flex items-center gap-2">
+          <Link to="/blogs" className="hover:text-[#172263]">Blogs</Link>
           <ChevronRight size={14} />
-          <span className="text-[#E8720C]">{blog.category}</span>
+          <span className="text-[#172263]">{blog.category}</span>
           <ChevronRight size={14} />
           <span className="truncate">{blog.title}</span>
         </nav>
 
-        <div className="h-64 bg-gradient-to-br from-green-50 to-orange-50 rounded-2xl flex items-center justify-center mb-8 border border-[#E7E0D5]">
-          <BookOpen size={64} className="text-orange-300" />
+        <div className="h-64 bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl flex items-center justify-center mb-8 border border-[#E2E8F0]">
+          <BookOpen size={64} className="text-blue-300" />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <span className="px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">{blog.category}</span>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center">
               <span className="text-white text-xs font-bold">A</span>
             </div>
-            <span className="text-sm text-[#78716C]">Agri Team</span>
+            <span className="text-sm text-[#57585A]">Agri Team</span>
           </div>
-          <span className="text-sm text-[#78716C]">{blog.date}</span>
+          <span className="text-sm text-[#57585A]">{blog.date}</span>
         </div>
 
         <h1
-          className="text-4xl text-[#1C1008] mb-6 leading-tight"
+          className="text-4xl text-[#1A1A1A] mb-6 leading-tight"
           style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
         >
           {blog.title}
         </h1>
 
-        <div className="prose prose-sm max-w-none text-[#78716C] leading-relaxed space-y-4">
+        <div className="prose prose-sm max-w-none text-[#57585A] leading-relaxed space-y-4">
           <p className="font-semibold text-lg">{blog.short_description || blog.shortDescription}</p>
-          <div className="w-full h-px bg-[#E7E0D5] my-4" />
+          <div className="w-full h-px bg-[#E2E8F0] my-4" />
           <p>{blog.content || "Full article text is loading..."}</p>
         </div>
 
-        <div className="mt-8 bg-white rounded-2xl border border-[#E7E0D5] p-5">
-          <p className="text-xs text-[#78716C] mb-3">About the Author</p>
+        <div className="mt-8 bg-white rounded-2xl border border-[#E2E8F0] p-5">
+          <p className="text-xs text-[#57585A] mb-3">About the Author</p>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
               <span className="text-white font-bold">A</span>
             </div>
             <div>
-              <p className="text-[#1C1008] text-sm" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Tractor Seva Agri Team</p>
+              <p className="text-[#1A1A1A] text-sm" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Tractor Seva Agri Team</p>
               <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Agriculture Expert</span>
             </div>
           </div>
@@ -2315,7 +2315,7 @@ export function BlogDetail() {
 
         {relatedBlogs.length > 0 && (
           <div className="mt-10">
-            <h3 className="text-xl text-[#1C1008] mb-5" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Related Articles</h3>
+            <h3 className="text-xl text-[#1A1A1A] mb-5" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Related Articles</h3>
             <div className="grid sm:grid-cols-3 gap-4">
               {relatedBlogs.map((b) => (
                 <BlogCard key={b.id} {...b} />
@@ -2395,30 +2395,30 @@ export function Profile() {
   if (!user) return <EmptyState title="Profile not found" />;
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="relative">
-        <div className="h-52 bg-gradient-to-r from-[#E8720C] to-[#15803D] rounded-b-3xl overflow-hidden">
+        <div className="h-52 bg-gradient-to-r from-[#172263] to-[#15803D] rounded-b-3xl overflow-hidden">
           <WheatWatermark className="right-10 top-0 opacity-[0.06]" />
         </div>
         <div className="w-full mx-auto px-4 sm:px-6 -mt-16">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden">
               <span className="text-white text-3xl font-bold">{user.name?.charAt(0)}</span>
             </div>
             <div className="pb-2 flex-1">
-              <h1 className="text-2xl text-[#1C1008]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{user.name}</h1>
-              <p className="text-[#78716C] text-sm flex items-center gap-1"><MapPin size={13} /> {user.state || "India"}</p>
+              <h1 className="text-2xl text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{user.name}</h1>
+              <p className="text-[#57585A] text-sm flex items-center gap-1"><MapPin size={13} /> {user.state || "India"}</p>
             </div>
             <Link to="/profile/edit" className="pb-2">
-              <button className="flex items-center gap-2 px-4 py-2 border-2 border-[#E8720C] text-[#E8720C] rounded-xl text-sm hover:bg-orange-50 transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2 border-2 border-[#172263] text-[#172263] rounded-xl text-sm hover:bg-blue-50 transition-colors">
                 <Pencil size={14} /> Edit Profile
               </button>
             </Link>
           </div>
 
           <div className="flex flex-wrap gap-3 mb-6">
-            <span className="px-3 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-full text-sm uppercase font-semibold text-xs tracking-wider">Role: {user.role}</span>
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-sm uppercase font-semibold text-xs tracking-wider">Role: {user.role}</span>
             <AvailabilityBadge status="Available" />
           </div>
 
@@ -2429,25 +2429,25 @@ export function Profile() {
               { value: `${user.stats?.operators || 0}`, label: "Operator Profiles" },
               { value: `${user.stats?.requests || 0}`, label: "Requests Posted" },
             ].map((s) => (
-              <div key={s.label} className="bg-white rounded-2xl p-4 text-center border border-[#E7E0D5] shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
-                <p className="text-[#E8720C] text-2xl" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{s.value}</p>
-                <p className="text-xs text-[#78716C]">{s.label}</p>
+              <div key={s.label} className="bg-white rounded-2xl p-4 text-center border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
+                <p className="text-[#172263] text-2xl" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{s.value}</p>
+                <p className="text-xs text-[#57585A]">{s.label}</p>
               </div>
             ))}
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-2xl border border-[#E7E0D5] p-6">
-                <h3 className="text-[#1C1008] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Contact Details</h3>
-                <p className="text-sm text-[#78716C]"><strong>Phone:</strong> +91-{user.phone}</p>
-                <p className="text-sm text-[#78716C] mt-1"><strong>Email:</strong> {user.email}</p>
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
+                <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Contact Details</h3>
+                <p className="text-sm text-[#57585A]"><strong>Phone:</strong> +91-{user.phone}</p>
+                <p className="text-sm text-[#57585A] mt-1"><strong>Email:</strong> {user.email}</p>
               </div>
 
               {operatorProfile && (
-                <div className="bg-white rounded-2xl border border-[#E7E0D5] p-6">
-                  <h3 className="text-[#1C1008] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Operator Profile</h3>
-                  <div className="space-y-2 text-sm text-[#78716C]">
+                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
+                  <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Operator Profile</h3>
+                  <div className="space-y-2 text-sm text-[#57585A]">
                     <p><strong>Experience:</strong> {operatorProfile.experience} years</p>
                     <p className="flex items-center gap-2"><strong>Availability:</strong> <AvailabilityBadge status={operatorProfile.availability} /></p>
                     <p><strong>WhatsApp:</strong> +91-{operatorProfile.whatsapp || user.phone}</p>
@@ -2458,8 +2458,8 @@ export function Profile() {
               )}
 
               {harvesters.length > 0 && (
-                <div className="bg-white rounded-2xl border border-[#E7E0D5] p-6">
-                  <h3 className="text-[#1C1008] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>My Harvesters</h3>
+                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
+                  <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>My Harvesters</h3>
                   <div className="grid sm:grid-cols-2 gap-4">
                     {harvesters.map((h) => (
                       <HarvesterCard key={h.id} {...h} />
@@ -2470,13 +2470,13 @@ export function Profile() {
             </div>
 
             <div>
-              <div className="bg-white rounded-2xl border border-[#E7E0D5] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
-                <h3 className="text-[#1C1008] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Settings</h3>
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
+                <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Settings</h3>
                 <div className="space-y-2">
-                  <Link to="/profile/edit" className="flex items-center justify-between py-3 px-4 rounded-xl hover:bg-orange-50 transition-colors text-sm text-[#78716C] hover:text-[#E8720C]">
+                  <Link to="/profile/edit" className="flex items-center justify-between py-3 px-4 rounded-xl hover:bg-blue-50 transition-colors text-sm text-[#57585A] hover:text-[#172263]">
                     <span>Edit Profile</span><ChevronRight size={16} />
                   </Link>
-                  <div className="h-px bg-[#E7E0D5]" />
+                  <div className="h-px bg-[#E2E8F0]" />
                   <button
                     onClick={logout}
                     className="w-full flex items-center justify-between py-3 px-4 rounded-xl hover:bg-red-50 transition-colors text-sm text-red-500"
@@ -2600,33 +2600,33 @@ export function Messages() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-6">
         <PageHeader title="Messages 💬" />
-        <div className="bg-white rounded-2xl border border-[#E7E0D5] overflow-hidden shadow-[0_2px_16px_rgba(232,114,12,0.06)] flex" style={{ height: "calc(100vh - 200px)", minHeight: "500px" }}>
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden shadow-[0_2px_16px_rgba(232,114,12,0.06)] flex" style={{ height: "calc(100vh - 200px)", minHeight: "500px" }}>
           {/* Sidebar */}
-          <div className={`w-full md:w-72 border-r border-[#E7E0D5] flex-shrink-0 overflow-y-auto ${active ? "hidden md:block" : ""}`}>
+          <div className={`w-full md:w-72 border-r border-[#E2E8F0] flex-shrink-0 overflow-y-auto ${active ? "hidden md:block" : ""}`}>
             {loading ? (
-              <div className="p-4 text-center text-sm text-[#78716C]">Loading conversations...</div>
+              <div className="p-4 text-center text-sm text-[#57585A]">Loading conversations...</div>
             ) : chatPartners.length === 0 ? (
-              <div className="p-4 text-center text-sm text-[#78716C]">No conversations yet.</div>
+              <div className="p-4 text-center text-sm text-[#57585A]">No conversations yet.</div>
             ) : (
               chatPartners.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setActive(m)}
-                  className={`w-full p-4 flex items-center gap-3 hover:bg-orange-50 transition-colors border-b border-[#E7E0D5] text-left ${active?.id === m.id ? "bg-orange-50" : ""}`}
+                  className={`w-full p-4 flex items-center gap-3 hover:bg-blue-50 transition-colors border-b border-[#E2E8F0] text-left ${active?.id === m.id ? "bg-blue-50" : ""}`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center shrink-0">
                     <span className="text-white font-bold text-sm">{m.name?.charAt(0)}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-[#1C1008]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{m.name}</p>
-                      <span className="text-xs text-[#78716C]">{m.lastMessageTime ? new Date(m.lastMessageTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
+                      <p className="text-sm text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{m.name}</p>
+                      <span className="text-xs text-[#57585A]">{m.lastMessageTime ? new Date(m.lastMessageTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
                     </div>
-                    <p className="text-xs text-[#78716C] truncate">{m.lastMessage || "No messages yet"}</p>
+                    <p className="text-xs text-[#57585A] truncate">{m.lastMessage || "No messages yet"}</p>
                   </div>
                 </button>
               ))
@@ -2636,44 +2636,44 @@ export function Messages() {
           {/* Chat area */}
           {active ? (
             <div className="flex-1 flex flex-col">
-              <div className="p-4 border-b border-[#E7E0D5] flex items-center gap-3">
-                <button className="md:hidden text-[#78716C] hover:text-[#E8720C]" onClick={() => setActive(null)}>
+              <div className="p-4 border-b border-[#E2E8F0] flex items-center gap-3">
+                <button className="md:hidden text-[#57585A] hover:text-[#172263]" onClick={() => setActive(null)}>
                   <ArrowLeft size={18} />
                 </button>
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#E8720C] to-[#D97706] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center">
                   <span className="text-white font-bold text-sm">{active.name?.charAt(0)}</span>
                 </div>
-                <p className="text-sm text-[#1C1008]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{active.name}</p>
+                <p className="text-sm text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{active.name}</p>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {chat.map((msg, i) => {
                   const isMe = msg.sender_id === currentUser?.id;
                   return (
                     <div key={i} className={`flex ${isMe ? "justify-end" : ""}`}>
-                      <div className={`max-w-xs px-4 py-2.5 rounded-2xl text-sm ${isMe ? "bg-[#E8720C] text-white" : "bg-[#FDFAF4] border border-[#E7E0D5] text-[#1C1008]"}`}>
+                      <div className={`max-w-xs px-4 py-2.5 rounded-2xl text-sm ${isMe ? "bg-[#172263] text-white" : "bg-[#ffffff] border border-[#E2E8F0] text-[#1A1A1A]"}`}>
                         {msg.content}
                       </div>
                     </div>
                   );
                 })}
               </div>
-              <div className="p-4 border-t border-[#E7E0D5] flex gap-3">
+              <div className="p-4 border-t border-[#E2E8F0] flex gap-3">
                 <input
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMsg()}
                   placeholder="Type a message..."
-                  className="flex-1 px-4 py-2.5 border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]"
+                  className="flex-1 px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                 />
-                <button onClick={sendMsg} className="px-4 py-2.5 bg-[#E8720C] text-white rounded-xl text-sm hover:bg-[#C9610A] transition-colors">
+                <button onClick={sendMsg} className="px-4 py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors">
                   Send
                 </button>
               </div>
             </div>
           ) : (
-            <div className="flex-1 hidden md:flex items-center justify-center text-[#78716C]">
+            <div className="flex-1 hidden md:flex items-center justify-center text-[#57585A]">
               <div className="text-center">
-                <MessageSquare size={40} className="mx-auto mb-3 text-orange-200" />
+                <MessageSquare size={40} className="mx-auto mb-3 text-blue-200" />
                 <p>Select a conversation to start chatting</p>
               </div>
             </div>
@@ -2784,31 +2784,31 @@ export function EditProfile() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-[#FDFAF4]">
+    <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-        <Link to="/profile" className="inline-flex items-center gap-2 text-[#78716C] text-sm mb-6 hover:text-[#E8720C]">
+        <Link to="/profile" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263]">
           <ArrowLeft size={16} /> Back to Profile
         </Link>
         <PageHeader title="Edit Profile ✎" />
-        <form onSubmit={handleSave} className="bg-white rounded-2xl border border-[#E7E0D5] p-8 space-y-5 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
+        <form onSubmit={handleSave} className="bg-white rounded-2xl border border-[#E2E8F0] p-8 space-y-5 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
           <div>
-            <label className="text-sm text-[#78716C] block mb-1.5">Full Name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]" />
+            <label className="text-sm text-[#57585A] block mb-1.5">Full Name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
           </div>
           <div>
-            <label className="text-sm text-[#78716C] block mb-1.5">Phone</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} required className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]" />
+            <label className="text-sm text-[#57585A] block mb-1.5">Phone</label>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} required className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
           </div>
           <div>
-            <label className="text-sm text-[#78716C] block mb-1.5">State</label>
+            <label className="text-sm text-[#57585A] block mb-1.5">State</label>
             <select
               value={state}
               onChange={(e) => {
                 setState(e.target.value);
                 setLocation("");
               }}
-              className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C]"
+              className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
             >
               <option value="">Select State</option>
               {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -2817,12 +2817,12 @@ export function EditProfile() {
 
           {operatorProfile && (
             <div>
-              <label className="text-sm text-[#78716C] block mb-1.5">District / City *</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">District / City *</label>
               <select
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 disabled={!state}
-                className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C] disabled:opacity-50"
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
               >
                 <option value="">Select District</option>
                 {state &&
@@ -2837,25 +2837,25 @@ export function EditProfile() {
 
           {operatorProfile && (
             <>
-              <div className="h-px bg-[#E7E0D5] my-6" />
-              <h3 className="text-[#1C1008] text-base font-semibold" style={{ fontFamily: "'Sora', sans-serif" }}>Operator Profile Details</h3>
+              <div className="h-px bg-[#E2E8F0] my-6" />
+              <h3 className="text-[#1A1A1A] text-base font-semibold" style={{ fontFamily: "'Sora', sans-serif" }}>Operator Profile Details</h3>
               
               <div>
-                <label className="text-sm text-[#78716C] block mb-1.5">WhatsApp Number</label>
-                <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} required className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]" />
+                <label className="text-sm text-[#57585A] block mb-1.5">WhatsApp Number</label>
+                <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} required className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
               </div>
 
               <div>
-                <label className="text-sm text-[#78716C] block mb-1.5">Experience (Years)</label>
-                <input type="number" value={experience} onChange={(e) => setExperience(e.target.value)} required className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C]" />
+                <label className="text-sm text-[#57585A] block mb-1.5">Experience (Years)</label>
+                <input type="number" value={experience} onChange={(e) => setExperience(e.target.value)} required className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
               </div>
 
               <div>
-                <label className="text-sm text-[#78716C] block mb-1.5">Availability Status</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">Availability Status</label>
                 <select
                   value={availability}
                   onChange={(e) => setAvailability(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm text-[#78716C] focus:outline-none focus:border-[#E8720C]"
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                 >
                   <option value="Available">Available</option>
                   <option value="Busy">Busy</option>
@@ -2864,13 +2864,13 @@ export function EditProfile() {
               </div>
 
               <div>
-                <label className="text-sm text-[#78716C] block mb-2">Machine Expertise</label>
+                <label className="text-sm text-[#57585A] block mb-2">Machine Expertise</label>
                 <div className="grid grid-cols-2 gap-2">
                   {MACHINE_TYPES.map((m) => {
                     const isChecked = selectedMachines.includes(m);
                     return (
                       <label key={m} className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-colors text-xs ${
-                        isChecked ? "border-[#E8720C] bg-orange-50 text-[#E8720C]" : "border-[#E7E0D5] bg-white text-[#78716C] hover:border-orange-200"
+                        isChecked ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] bg-white text-[#57585A] hover:border-blue-200"
                       }`}>
                         <input
                           type="checkbox"
@@ -2890,13 +2890,13 @@ export function EditProfile() {
               </div>
 
               <div>
-                <label className="text-sm text-[#78716C] block mb-1.5">Operator Description</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full px-4 py-3 bg-[#FDFAF4] border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#E8720C] resize-none" />
+                <label className="text-sm text-[#57585A] block mb-1.5">Operator Description</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" />
               </div>
             </>
           )}
 
-          <button type="submit" disabled={saving} className="w-full py-3 bg-[#E8720C] text-white rounded-xl hover:bg-[#C9610A] transition-colors disabled:opacity-60 flex items-center justify-center gap-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+          <button type="submit" disabled={saving} className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors disabled:opacity-60 flex items-center justify-center gap-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
             {saving ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "Save Changes"}
           </button>
         </form>
@@ -3201,13 +3201,13 @@ export function AdminPortal() {
       <div className="bg-[#1E293B] border-b border-slate-700 py-6 px-4">
         <div className="w-full mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-orange-500" style={{ fontFamily: "'Sora', sans-serif" }}>
+            <h1 className="text-2xl font-bold text-blue-500" style={{ fontFamily: "'Sora', sans-serif" }}>
               Admin Control Center ⚙️
             </h1>
             <p className="text-slate-400 text-sm mt-1">Manage system operators, harvesters, and listings parameters.</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold bg-orange-500/10 border border-orange-500/30 text-orange-400 px-3 py-1 rounded-full">
+            <span className="text-xs font-semibold bg-blue-500/10 border border-blue-500/30 text-orange-400 px-3 py-1 rounded-full">
               System Admin Role
             </span>
           </div>
@@ -3230,7 +3230,7 @@ export function AdminPortal() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
                 activeTab === tab.id
-                  ? "border-orange-500 text-orange-400 bg-slate-800/40"
+                  ? "border-blue-500 text-orange-400 bg-slate-800/40"
                   : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/10"
               }`}
             >
@@ -3273,7 +3273,7 @@ export function AdminPortal() {
                     value={userSearchTerm}
                     onChange={(e) => setUserSearchTerm(e.target.value)}
                     placeholder="Search users..."
-                    className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -3379,12 +3379,12 @@ export function AdminPortal() {
                   onChange={(e) => setNlQuery(e.target.value)}
                   placeholder="e.g. Find users in Maharashtra named Vikram"
                   required
-                  className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+                  className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
                 />
                 <button
                   type="submit"
                   disabled={searching}
-                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2"
+                  className="bg-orange-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2"
                 >
                   {searching ? "Searching..." : "Parse & Search"}
                 </button>
@@ -3515,7 +3515,7 @@ export function AdminPortal() {
                     accept=".csv"
                     onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
                     required
-                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-300 focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-500/10 file:text-orange-400 hover:file:bg-orange-500/20"
+                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-300 focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-orange-400 hover:file:bg-blue-500/20"
                   />
                 </div>
 
@@ -3528,14 +3528,14 @@ export function AdminPortal() {
                     required
                     minLength={6}
                     placeholder="Welcome123"
-                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-orange-500"
+                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={uploadingCsv}
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full bg-orange-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {uploadingCsv ? "Processing CSV..." : "Process Bulk Upload"}
                 </button>
