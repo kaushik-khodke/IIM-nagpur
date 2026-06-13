@@ -2355,15 +2355,18 @@ export function Profile() {
         const userData = await userRes.json();
         setUser(userData);
 
-        if (userData.role === "operator" || userData.role === "both") {
-          const opRes = await fetch(`/api/operators?userId=${userData.id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (opRes.ok) {
-            const opData = await opRes.json();
-            if (opData.length > 0) {
-              setOperatorProfile(opData[0]);
-            }
+        if (userData.role === "admin") {
+          return; // Admin should not see profile page
+        }
+
+        // Always try to fetch operator profile if one exists
+        const opRes = await fetch(`/api/operators?userId=${userData.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (opRes.ok) {
+          const opData = await opRes.json();
+          if (opData.length > 0) {
+            setOperatorProfile(opData[0]);
           }
         }
 
@@ -2587,7 +2590,6 @@ export function Messages() {
             return [{
               id: active.id,
               name: active.name,
-              role: active.role,
               lastMessage: message,
               lastMessageTime: new Date().toISOString()
             }, ...prevPartners];
@@ -2715,22 +2717,25 @@ export function EditProfile() {
           setState(data.state || "");
           setPhone(data.phone || "");
 
-          if (data.role === "operator" || data.role === "both") {
-            const opRes = await fetch(`/api/operators?userId=${data.id}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (opRes.ok) {
-              const opData = await opRes.json();
-              if (opData.length > 0) {
-                const op = opData[0];
-                setOperatorProfile(op);
-                setLocation(op.location || "");
-                setWhatsapp(op.whatsapp || data.phone || "");
-                setExperience(String(op.experience || "0"));
-                setAvailability(op.availability || "Available");
-                setSelectedMachines(op.machineExpertise || []);
-                setDescription(op.description || "");
-              }
+          if (data.role === "admin") {
+            return; // Admin should not see edit profile page
+          }
+
+          // Always try to fetch operator profile if one exists
+          const opRes = await fetch(`/api/operators?userId=${data.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (opRes.ok) {
+            const opData = await opRes.json();
+            if (opData.length > 0) {
+              const op = opData[0];
+              setOperatorProfile(op);
+              setLocation(op.location || "");
+              setWhatsapp(op.whatsapp || data.phone || "");
+              setExperience(String(op.experience || "0"));
+              setAvailability(op.availability || "Available");
+              setSelectedMachines(op.machineExpertise || []);
+              setDescription(op.description || "");
             }
           }
         }
@@ -3286,7 +3291,6 @@ export function AdminPortal() {
                       <th className="px-6 py-3.5">Email</th>
                       <th className="px-6 py-3.5">Phone</th>
                       <th className="px-6 py-3.5">State</th>
-                      <th className="px-6 py-3.5">Role</th>
                       <th className="px-6 py-3.5">Listings Count</th>
                       <th className="px-6 py-3.5 text-center">Status</th>
                       <th className="px-6 py-3.5 text-right">Actions</th>
@@ -3300,11 +3304,6 @@ export function AdminPortal() {
                           <td className="px-6 py-4">{user.email}</td>
                           <td className="px-6 py-4">{user.phone || "-"}</td>
                           <td className="px-6 py-4">{user.state || "-"}</td>
-                          <td className="px-6 py-4">
-                            <span className="text-xs font-semibold capitalize bg-slate-700 px-2.5 py-0.5 rounded-full">
-                              {user.role}
-                            </span>
-                          </td>
                           <td className="px-6 py-4">
                             <span className="text-slate-400">
                               Harvesters: {user.harvesterCount} | Requests: {user.requestCount}
@@ -3423,7 +3422,6 @@ export function AdminPortal() {
                         <th className="px-6 py-3.5">Email</th>
                         <th className="px-6 py-3.5">Phone</th>
                         <th className="px-6 py-3.5">State</th>
-                        <th className="px-6 py-3.5">Role</th>
                         <th className="px-6 py-3.5 text-center">Status</th>
                         <th className="px-6 py-3.5 text-right">Actions</th>
                       </tr>
@@ -3436,11 +3434,6 @@ export function AdminPortal() {
                             <td className="px-6 py-4">{user.email}</td>
                             <td className="px-6 py-4">{user.phone || "-"}</td>
                             <td className="px-6 py-4">{user.state || "-"}</td>
-                            <td className="px-6 py-4">
-                              <span className="text-xs font-semibold capitalize bg-slate-700 px-2.5 py-0.5 rounded-full">
-                                {user.role}
-                              </span>
-                            </td>
                             <td className="px-6 py-4 text-center">
                               {user.is_blocked ? (
                                 <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-400">
@@ -3591,8 +3584,8 @@ export function AdminPortal() {
               
               <div className="bg-slate-800/40 p-4 rounded-xl text-xs text-slate-400 border border-slate-700/40 mt-4">
                 <strong>CSV Template Structure:</strong><br />
-                Columns must be named exactly: <code className="text-orange-400 font-mono">name,email,phone,state,role</code>.<br />
-                Valid roles are: <code className="text-slate-300 font-mono">operator</code>, <code className="text-slate-300 font-mono">harvester</code>, or <code className="text-slate-300 font-mono">both</code>.
+                Columns must be named exactly: <code className="text-orange-400 font-mono">name,email,phone,state</code>.<br />
+                All imported users can later list themselves as operators or add harvesters from the portal.
               </div>
             </div>
           </div>

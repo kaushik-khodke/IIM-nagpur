@@ -620,7 +620,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const { t } = useTranslation("common");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userName, setUserName] = useState("User");
-  const [userRole, setUserRole] = useState("operator");
+  const [userRole, setUserRole] = useState("user");
 
   // Dialog state
   const [chooserOpen, setChooserOpen] = useState(false);
@@ -655,7 +655,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         .then(data => {
           if (data && data.name) {
             setUserName(data.name);
-            setUserRole(data.role || "operator");
+            setUserRole(data.role || "user");
           } else {
             logout();
           }

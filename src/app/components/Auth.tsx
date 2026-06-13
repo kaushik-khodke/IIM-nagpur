@@ -203,7 +203,6 @@ export function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
-  const [role, setRole] = useState<"owner" | "operator" | "both">("operator");
   const [state, setState] = useState("");
   const [phone, setPhone] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -223,7 +222,7 @@ export function Register() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role, state, phone })
+        body: JSON.stringify({ name, email, password, state, phone })
       });
       const data = await res.json();
       if (!res.ok) {
