@@ -212,6 +212,7 @@ async function initializeDatabase() {
         short_description TEXT NOT NULL,
         content TEXT NOT NULL,
         date VARCHAR(50) DEFAULT NULL,
+        image_url VARCHAR(255) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -253,6 +254,13 @@ async function initializeDatabase() {
       )
     `);
 
+    try {
+      await activePool.query('ALTER TABLE blogs ADD COLUMN image_url VARCHAR(255) DEFAULT NULL AFTER date');
+      console.log('Successfully added image_url column to blogs table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
+    }
+
     // Alter table schemas if columns exist as INT from initial creation
     try {
       await activePool.query('ALTER TABLE blog_likes MODIFY COLUMN user_id VARCHAR(36) NOT NULL');
@@ -281,15 +289,15 @@ async function seedData(activePool) {
   const [blogs] = await activePool.query('SELECT COUNT(*) as count FROM blogs');
   if (blogs[0].count === 0) {
     const mockBlogs = [
-      { title: "5 Tips to Maintain Your Combine Harvester Before Rabi Season", category: "Machine Maintenance", short_description: "Proper maintenance before the harvest season ensures your machine performs at its best and avoids costly breakdowns during peak time.", content: "Proper maintenance is key to a smooth harvest. Make sure to: 1. Clean the combine thoroughly inside and out. 2. Inspect belts and chains for wear. 3. Lubricate all grease fittings. 4. Change engine oil and filters. 5. Inspect and sharpen the cutter bar components.", date: "Mar 15, 2025" },
-      { title: "How Farmers in Punjab are Using Tech to Find Operators Faster", category: "Success Stories", short_description: "A look at how digital platforms like Tractor Seva are helping farmers in Punjab reduce harvest delays by connecting with verified machine operators.", content: "In recent years, harvesting has become heavily dependent on timing. Digital tools are making it easier for farmers and harvester owners to find skilled workers during the peak Rabi and Kharif seasons. By connecting through peer-to-peer networks, search times have decreased by over 60%, saving both time and money.", date: "Feb 28, 2025" },
-      { title: "Kharif Harvesting Guide: Crop-by-Crop Breakdown for 2025", category: "Harvesting Tips", short_description: "Complete guide to Kharif crop harvesting — including paddy, soybean, maize, and sugarcane — with the right machines and timing for each.", content: "Harvesting Kharif crops requires careful attention. Paddy requires harvesting when the grain moisture is around 20-22%. Soybeans should be harvested when pods are dry to prevent shattering. Sugarcane harvesting requires careful alignment to maintain sugar content, and using specialized harvesters is highly recommended.", date: "Jan 10, 2025" }
+      { title: "5 Tips to Maintain Your Combine Harvester Before Rabi Season", category: "Machine Maintenance", short_description: "Proper maintenance before the harvest season ensures your machine performs at its best and avoids costly breakdowns during peak time.", content: "Proper maintenance is key to a smooth harvest. Make sure to: 1. Clean the combine thoroughly inside and out. 2. Inspect belts and chains for wear. 3. Lubricate all grease fittings. 4. Change engine oil and filters. 5. Inspect and sharpen the cutter bar components.", date: "Mar 15, 2025", image_url: "/blog-punjab-farmers.png" },
+      { title: "How Farmers in Punjab are Using Tech to Find Operators Faster", category: "Success Stories", short_description: "A look at how digital platforms like Tractor Seva are helping farmers in Punjab reduce harvest delays by connecting with verified machine operators.", content: "In recent years, harvesting has become heavily dependent on timing. Digital tools are making it easier for farmers and harvester owners to find skilled workers during the peak Rabi and Kharif seasons. By connecting through peer-to-peer networks, search times have decreased by over 60%, saving both time and money.", date: "Feb 28, 2025", image_url: "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800" },
+      { title: "Kharif Harvesting Guide: Crop-by-Crop Breakdown for 2025", category: "Harvesting Tips", short_description: "Complete guide to Kharif crop harvesting — including paddy, soybean, maize, and sugarcane — with the right machines and timing for each.", content: "Harvesting Kharif crops requires careful attention. Paddy requires harvesting when the grain moisture is around 20-22%. Soybeans should be harvested when pods are dry to prevent shattering. Sugarcane harvesting requires careful alignment to maintain sugar content, and using specialized harvesters is highly recommended.", date: "Jan 10, 2025", image_url: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800" }
     ];
 
     for (const b of mockBlogs) {
       await activePool.query(
-        'INSERT INTO blogs (title, category, short_description, content, date) VALUES (?, ?, ?, ?, ?)',
-        [b.title, b.category, b.short_description, b.content, b.date]
+        'INSERT INTO blogs (title, category, short_description, content, date, image_url) VALUES (?, ?, ?, ?, ?, ?)',
+        [b.title, b.category, b.short_description, b.content, b.date, b.image_url]
       );
     }
     console.log('Seeded default blogs.');
