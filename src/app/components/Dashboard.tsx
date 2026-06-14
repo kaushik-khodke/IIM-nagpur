@@ -166,7 +166,7 @@ export function Dashboard() {
   }, [userName]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F8FAFC] overflow-x-hidden">
       <Navbar variant="auth" />
 
       {isPreview && (
