@@ -239,6 +239,20 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create Enquiries Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS enquiries (
+        id VARCHAR(36) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        location VARCHAR(255) NOT NULL,
+        requirement TEXT NOT NULL,
+        date_needed DATE DEFAULT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Alter table schemas if columns exist as INT from initial creation
     try {
       await activePool.query('ALTER TABLE blog_likes MODIFY COLUMN user_id VARCHAR(36) NOT NULL');
