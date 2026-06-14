@@ -291,52 +291,70 @@ export function OperatorCard({
   };
 
   return (
-    <Link to={`/operators/${id}`} onClick={handleClick} className="block group">
-      <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
-        <div className="h-20 bg-gradient-to-r from-green-50 to-blue-50 relative">
+    <Link to={`/operators/${id}`} onClick={handleClick} className="block group h-full">
+      <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-[0_2px_12px_rgba(23,34,99,0.04)] hover:shadow-[0_8px_24px_rgba(23,34,99,0.08)] transition-all duration-300 hover:scale-[1.01] h-full flex flex-col justify-between">
+        {/* Top Cover Block */}
+        <div className="h-16 bg-gradient-to-r from-[#172263]/5 to-[#E82326]/5 relative shrink-0">
           {isOwner && (
-            <span className="absolute top-3 left-3 text-xs px-2 py-1 bg-green-100 border border-green-200 text-green-700 rounded-full font-semibold shadow-sm z-10">
+            <span className="absolute top-2.5 left-2.5 text-[10px] px-2 py-0.5 bg-green-50 border border-green-200 text-green-700 rounded-full font-bold shadow-sm z-10">
               My Listing
             </span>
           )}
-          <WheatWatermark className="right-0 top-0" />
+          <WheatWatermark className="right-0 top-0 opacity-40 scale-75" />
         </div>
-        <div className="px-4 pb-4 -mt-8">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-2 ring-white ring-offset-1 mb-3 overflow-hidden">
-            {imagePath ? (
-              <img src={imagePath} alt={name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-white text-xl font-bold">{name.charAt(0)}</span>
-            )}
+
+        {/* Content Section */}
+        <div className="px-4 pb-4 flex-1 flex flex-col justify-between -mt-6">
+          <div>
+            {/* Avatar - Rounded 2xl square, matching profile avatar */}
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-tr from-[#172263] via-[#E82326] to-amber-500 p-[2px] ring-2 ring-white mb-2 overflow-hidden shadow-md shrink-0">
+              <div className="w-full h-full rounded-lg bg-white p-[1px]">
+                <div className="w-full h-full rounded-md bg-[#F4F6FA] flex items-center justify-center overflow-hidden">
+                  {imagePath ? (
+                    <img src={imagePath} alt={name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[#172263] text-lg font-bold">{name.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Name */}
+            <h3
+              className="text-[#1A1A1A] text-sm font-bold line-clamp-1 mb-0.5"
+              style={{ fontFamily: "'Sora', sans-serif" }}
+            >
+              {name}
+            </h3>
+
+            {/* Location */}
+            <p className="text-[#57585A] text-xs flex items-center gap-1 mb-2 font-medium line-clamp-1">
+              <MapPin size={11} className="text-[#E82326]" /> {location}
+            </p>
+
+            {/* Machine Expertise badges (fixed height container with slice) */}
+            <div className="flex items-center gap-1 mb-3 flex-wrap min-h-[22px] overflow-hidden">
+              {machineExpertise.slice(0, 2).map((m, i) => (
+                <span
+                  key={i}
+                  className="text-[10px] px-2 py-0.5 bg-[#F4F6FA] text-[#172263] border border-[#172263]/10 rounded-full font-medium truncate max-w-[100px]"
+                >
+                  {m}
+                </span>
+              ))}
+              {machineExpertise.length > 2 && (
+                <span className="text-[9px] px-1.5 py-0.5 bg-zinc-150 text-zinc-500 rounded-full font-bold">
+                  +{machineExpertise.length - 2}
+                </span>
+              )}
+            </div>
           </div>
-          <h3
-            className="text-[#1A1A1A] text-base mb-0.5"
-            style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
-          >
-            {name}
-          </h3>
-          <p className="text-[#57585A] text-sm flex items-center gap-1 mb-2">
-            <MapPin size={12} /> {location}
-          </p>
-          <div className="flex items-center gap-1 mb-3 flex-wrap">
-            {machineExpertise.slice(0, 2).map((m, i) => (
-              <span
-                key={i}
-                className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full"
-              >
-                {m}
-              </span>
-            ))}
-            {machineExpertise.length > 2 && (
-              <span className="text-xs px-2 py-0.5 bg-gray-50 text-gray-500 rounded-full">
-                +{machineExpertise.length - 2}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center justify-between">
+
+          {/* Footer stats / badge */}
+          <div className="flex items-center justify-between pt-2 border-t border-zinc-100 mt-2 shrink-0">
             <AvailabilityBadge status={availability} />
-            <span className="text-xs text-[#57585A] flex items-center gap-1">
-              <Award size={11} className="text-orange-400" /> {experience} yrs
+            <span className="text-[10px] text-[#57585A] font-semibold flex items-center gap-1 uppercase tracking-wider">
+              <Award size={12} className="text-amber-500" /> {experience} Yrs Exp
             </span>
           </div>
         </div>
@@ -652,6 +670,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const [pendingPath, setPendingPath] = useState("");
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const logout = () => {
     localStorage.removeItem("tractorsewa_token");
@@ -662,6 +681,8 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const token = localStorage.getItem("tractorsewa_token");
   const isAuthenticated = !!token;
   const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+
+  const actualVariant = isAuthenticated ? "auth" : variant;
 
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -703,7 +724,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   }, []);
 
   const handleNavbarAuthClick = (e: React.MouseEvent, mode: "login" | "register") => {
-    if (variant === "public" && !isPreview) {
+    if (actualVariant === "public" && !isPreview) {
       e.preventDefault();
       setChooserMode(mode);
       setChooserOpen(true);
@@ -748,7 +769,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         </Link>
 
         {/* Desktop nav */}
-        {variant === "public" ? (
+        {actualVariant === "public" ? (
           <div className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
             {[
               { label: "Home", anchor: "top" },
@@ -760,11 +781,21 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                 key={item.anchor}
                 href={`#${item.anchor}`}
                 onClick={(e) => {
-                  e.preventDefault();
-                  if (item.anchor === "top") {
-                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  if (location.pathname === "/") {
+                    e.preventDefault();
+                    if (item.anchor === "top") {
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    } else {
+                      document.getElementById(item.anchor)?.scrollIntoView({ behavior: "smooth" });
+                    }
                   } else {
-                    document.getElementById(item.anchor)?.scrollIntoView({ behavior: "smooth" });
+                    if (item.anchor === "top") {
+                      e.preventDefault();
+                      navigate("/");
+                    } else {
+                      e.preventDefault();
+                      navigate(`/#${item.anchor}`);
+                    }
                   }
                 }}
                 className="text-sm text-[#57585A] hover:text-[#172263] transition-colors cursor-pointer"
@@ -848,7 +879,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/harvesters" className="flex items-center gap-2 cursor-pointer">
+                        <Link to="/harvesters?tab=mine" className="flex items-center gap-2 cursor-pointer">
                           <Tractor size={15} /> My Harvesters
                         </Link>
                       </DropdownMenuItem>

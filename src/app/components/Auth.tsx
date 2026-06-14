@@ -12,6 +12,7 @@ import {
   Tractor,
   CheckCircle,
   ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
 import { TractorIllustration, WheatWatermark } from "./shared";
 import { ThreeBackground } from "./ThreeBackground";
@@ -65,7 +66,22 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex relative">
+      <button
+        type="button"
+        onClick={() => {
+          if (window.history.length > 1) {
+            navigate(-1);
+          } else {
+            navigate("/");
+          }
+        }}
+        className="fixed top-6 left-6 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-white border border-[#E2E8F0] shadow-md hover:shadow-lg text-[#57585A] hover:text-[#172263] transition-all duration-200 group focus:outline-none"
+        title="Go Back"
+      >
+        <ArrowLeft size={20} className="transition-transform group-hover:-translate-x-0.5" />
+      </button>
+
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA] flex-col items-center justify-center p-12 overflow-hidden">
         <ThreeBackground variant="auth" />
@@ -244,7 +260,22 @@ export function Register() {
 
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex relative">
+      <button
+        type="button"
+        onClick={() => {
+          if (window.history.length > 1) {
+            navigate(-1);
+          } else {
+            navigate("/");
+          }
+        }}
+        className="fixed top-6 left-6 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-white border border-[#E2E8F0] shadow-md hover:shadow-lg text-[#57585A] hover:text-[#172263] transition-all duration-200 group focus:outline-none"
+        title="Go Back"
+      >
+        <ArrowLeft size={20} className="transition-transform group-hover:-translate-x-0.5" />
+      </button>
+
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA] flex-col items-center justify-center p-12 overflow-hidden">
         <ThreeBackground variant="auth" />

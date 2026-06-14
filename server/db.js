@@ -67,6 +67,8 @@ async function initializeDatabase() {
         role VARCHAR(50) DEFAULT 'user',
         state VARCHAR(100) DEFAULT NULL,
         phone VARCHAR(20) DEFAULT NULL,
+        bio TEXT DEFAULT NULL,
+        image_path VARCHAR(255) DEFAULT NULL,
         is_blocked TINYINT(1) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -144,6 +146,20 @@ async function initializeDatabase() {
       // Column might already exist, safe to ignore
     }
 
+    try {
+      await activePool.query('ALTER TABLE users ADD COLUMN bio TEXT DEFAULT NULL AFTER phone');
+      console.log('Successfully added bio column to users table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
+    }
+
+    try {
+      await activePool.query('ALTER TABLE users ADD COLUMN image_path VARCHAR(255) DEFAULT NULL AFTER bio');
+      console.log('Successfully added image_path column to users table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
+    }
+
     // Seed hardcoded administrator account if not exists
     try {
       const [admins] = await activePool.query("SELECT id FROM users WHERE email = 'admin@123'");
@@ -185,6 +201,38 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Create Blog Likes Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS blog_likes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        blog_id INT NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_blog_like (user_id, blog_id)
+      )
+    `);
+
+    // Create Blog Comments Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS blog_comments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        blog_id INT NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        user_name VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Alter table schemas if columns exist as INT from initial creation
+    try {
+      await activePool.query('ALTER TABLE blog_likes MODIFY COLUMN user_id VARCHAR(36) NOT NULL');
+      await activePool.query('ALTER TABLE blog_comments MODIFY COLUMN user_id VARCHAR(36) NOT NULL');
+      console.log('Database blog tables columns migrated successfully to VARCHAR(36).');
+    } catch (err) {
+      console.log('Database migration note:', err.message);
+    }
 
     console.log('Database tables verified/created successfully.');
 

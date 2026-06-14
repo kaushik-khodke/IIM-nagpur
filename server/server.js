@@ -75,6 +75,17 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+const getOptionalUser = (req) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return null;
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return null;
+  }
+};
+
 // --- API ROUTES ---
 
 // 1. Image Upload Endpoint
@@ -146,7 +157,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
-    const [users] = await db.query('SELECT id, name, email, role, state, phone, is_blocked, created_at FROM users WHERE id = ?', [req.user.id]);
+    const [users] = await db.query('SELECT id, name, email, role, state, phone, bio, image_path, is_blocked, created_at FROM users WHERE id = ?', [req.user.id]);
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -160,8 +171,10 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     const [operators] = await db.query('SELECT COUNT(*) as count FROM operators WHERE user_id = ?', [req.user.id]);
     const [requests] = await db.query('SELECT COUNT(*) as count FROM requests WHERE user_id = ?', [req.user.id]);
 
+    const userObj = { ...users[0], imagePath: users[0].image_path };
+
     res.json({
-      ...users[0],
+      ...userObj,
       stats: {
         harvesters: harvesters[0].count,
         operators: operators[0].count,
@@ -176,15 +189,15 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 
 // 3. User Profile Update
 app.put('/api/profile', authenticateToken, async (req, res) => {
-  const { name, state, phone } = req.body;
+  const { name, state, phone, bio, imagePath } = req.body;
   if (!name || !phone) {
     return res.status(400).json({ error: 'Name and phone are required' });
   }
 
   try {
     await db.query(
-      'UPDATE users SET name = ?, state = ?, phone = ? WHERE id = ?',
-      [name, state || null, phone, req.user.id]
+      'UPDATE users SET name = ?, state = ?, phone = ?, bio = ?, image_path = ? WHERE id = ?',
+      [name, state || null, phone, bio || null, imagePath || null, req.user.id]
     );
 
     res.json({ message: 'Profile updated successfully' });
@@ -625,19 +638,29 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
 // 8. Blog Routes
 app.get('/api/blogs', async (req, res) => {
   const { category, search } = req.query;
-  let queryStr = 'SELECT * FROM blogs WHERE 1=1';
-  const queryParams = [];
+  const user = getOptionalUser(req);
+  const currentUserId = user ? user.id : null;
+
+  let queryStr = `
+    SELECT b.*,
+      (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id) AS likes_count,
+      (SELECT COUNT(*) FROM blog_comments WHERE blog_id = b.id) AS comments_count,
+      IF(? IS NULL, 0, (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id AND user_id = ?)) AS has_liked
+    FROM blogs b
+    WHERE 1=1
+  `;
+  const queryParams = [currentUserId, currentUserId];
 
   if (category) {
-    queryStr += ' AND category = ?';
+    queryStr += ' AND b.category = ?';
     queryParams.push(category);
   }
   if (search) {
-    queryStr += ' AND (title LIKE ? OR short_description LIKE ?)';
+    queryStr += ' AND (b.title LIKE ? OR b.short_description LIKE ?)';
     queryParams.push(`%${search}%`, `%${search}%`);
   }
 
-  queryStr += ' ORDER BY id DESC';
+  queryStr += ' ORDER BY b.id DESC';
 
   try {
     const [rows] = await db.query(queryStr, queryParams);
@@ -649,12 +672,90 @@ app.get('/api/blogs', async (req, res) => {
 });
 
 app.get('/api/blogs/:id', async (req, res) => {
+  const user = getOptionalUser(req);
+  const currentUserId = user ? user.id : null;
+  const blogId = req.params.id;
+
   try {
-    const [rows] = await db.query('SELECT * FROM blogs WHERE id = ?', [req.params.id]);
+    const [rows] = await db.query(`
+      SELECT b.*,
+        (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id) AS likes_count,
+        (SELECT COUNT(*) FROM blog_comments WHERE blog_id = b.id) AS comments_count,
+        IF(? IS NULL, 0, (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id AND user_id = ?)) AS has_liked
+      FROM blogs b
+      WHERE b.id = ?
+    `, [currentUserId, currentUserId, blogId]);
+
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Blog not found' });
     }
-    res.json(rows[0]);
+
+    // Fetch the comments list for this blog
+    const [comments] = await db.query(`
+      SELECT id, user_id, user_name, content, created_at
+      FROM blog_comments
+      WHERE blog_id = ?
+      ORDER BY id DESC
+    `, [blogId]);
+
+    const blogData = rows[0];
+    blogData.comments = comments;
+
+    res.json(blogData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/blogs/:id/like', authenticateToken, async (req, res) => {
+  const blogId = req.params.id;
+  const userId = req.user.id;
+  const { liked } = req.body;
+
+  try {
+    if (liked) {
+      await db.query('INSERT IGNORE INTO blog_likes (blog_id, user_id) VALUES (?, ?)', [blogId, userId]);
+    } else {
+      await db.query('DELETE FROM blog_likes WHERE blog_id = ? AND user_id = ?', [blogId, userId]);
+    }
+
+    // Get updated likes count
+    const [countRow] = await db.query('SELECT COUNT(*) as count FROM blog_likes WHERE blog_id = ?', [blogId]);
+    res.json({ success: true, likes_count: countRow[0].count });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/blogs/:id/comments', authenticateToken, async (req, res) => {
+  const blogId = req.params.id;
+  const userId = req.user.id;
+  const { content } = req.body;
+
+  if (!content || !content.trim()) {
+    return res.status(400).json({ error: 'Comment content is required' });
+  }
+
+  try {
+    // Fetch commenter's name from users table
+    const [users] = await db.query('SELECT name FROM users WHERE id = ?', [userId]);
+    const userName = users[0] ? users[0].name : req.user.name || 'Anonymous';
+
+    const [result] = await db.query(
+      'INSERT INTO blog_comments (blog_id, user_id, user_name, content) VALUES (?, ?, ?, ?)',
+      [blogId, userId, userName, content]
+    );
+
+    res.status(201).json({
+      id: result.insertId,
+      blog_id: parseInt(blogId, 10),
+      user_id: userId,
+      user_name: userName,
+      content,
+      created_at: new Date().toISOString()
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });

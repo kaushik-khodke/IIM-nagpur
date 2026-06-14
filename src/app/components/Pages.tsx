@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router";
+import { useState, useEffect, useRef } from "react";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router";
 import { motion } from "motion/react";
 import {
   Search,
@@ -20,6 +20,19 @@ import {
   Clock,
   XCircle,
   ChevronRight,
+  LayoutGrid,
+  Settings,
+  LogOut,
+  Heart,
+  MessageCircle,
+  FileText,
+  Camera,
+  UserCheck,
+  ChevronDown,
+  Mail,
+  Share2,
+  X,
+  Loader2,
 } from "lucide-react";
 import {
   Navbar,
@@ -33,6 +46,7 @@ import {
   AvailabilityBadge,
   TractorIllustration,
   WheatWatermark,
+  AuthChooserDialog,
 } from "./shared";
 import { toast } from "sonner";
 import districtsData from "./districts.json";
@@ -42,6 +56,69 @@ const INDIAN_STATES = districtsData.states.map(s => s.state);
 
 const MACHINE_TYPES = ["Combine Harvester","Rice Harvester","Wheat Harvester","Maize Harvester","Sugarcane Harvester","Paddy Harvester"];
 const COMPANIES = ["John Deere","Claas","Mahindra","New Holland","AGCO","Preet","Sonalika","Other"];
+
+export const HARVESTER_MODELS: Record<string, string[]> = {
+  "John Deere": [
+    "S760", "S770", "S780", "S790",
+    "S660", "S670", "S680", "S690",
+    "X9 1000", "X9 1100",
+    "T670",
+    "W330", "W440"
+  ],
+  "Claas": [
+    "Lexion 8800", "Lexion 8700", "Lexion 8600",
+    "Lexion 7700", "Lexion 7600", "Lexion 7500",
+    "Tucano 580", "Tucano 560", "Tucano 450",
+    "Crop Tiger 30", "Crop Tiger 40"
+  ],
+  "Mahindra": [
+    "Arjun 605 DI",
+    "Novo 605 DI",
+    "Swaraj Pro Combine 7060",
+    "Swaraj Pro Combine 7090"
+  ],
+  "New Holland": [
+    "CR10.90", "CR9.90",
+    "TC5.30", "TC5.90",
+    "CX8.80", "CX8.90"
+  ],
+  "AGCO": [
+    "Massey Ferguson 9505",
+    "Massey Ferguson MF 7300",
+    "Fendt Ideal 9",
+    "Fendt Ideal 8",
+    "Fendt Ideal 7"
+  ],
+  "Preet": [
+    "Preet 982",
+    "Preet 949",
+    "Preet 749",
+    "Preet 849"
+  ],
+  "Sonalika": [
+    "Harvester 9500",
+    "Harvester 7500",
+    "Sonalika 5125"
+  ],
+  "Kartar": [
+    "Kartar 4000",
+    "Kartar 3600",
+    "Kartar 3500"
+  ],
+  "Dashmesh": [
+    "Dashmesh 9100",
+    "Dashmesh 912",
+    "Dashmesh 7100"
+  ],
+  "Kubota": [
+    "DC-68G", "DC-70G", "DC-93", "DC-105X"
+  ],
+  "Other": [
+    "Other / Custom Model"
+  ]
+};
+
+export const HARVESTER_COMPANIES = Object.keys(HARVESTER_MODELS);
 
 // ===========================
 // EXPLORE HARVESTERS
@@ -53,7 +130,18 @@ export function ExploreHarvesters() {
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [company, setCompany] = useState("");
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"all" | "mine">("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "mine" ? "mine" : "all";
+  const setTab = (newTab: "all" | "mine") => {
+    setSearchParams((prev) => {
+      if (newTab === "mine") {
+        prev.set("tab", "mine");
+      } else {
+        prev.delete("tab");
+      }
+      return prev;
+    });
+  };
   const [currentUser, setCurrentUser] = useState<any>(null);
   const navigate = useNavigate();
 
@@ -729,7 +817,13 @@ export function OperatorProfile() {
   return (
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
-      <div className="relative">
+      <div className="w-full mx-auto px-4 sm:px-6 pt-4">
+        <Link to="/operators" className="inline-flex items-center gap-2 text-[#57585A] text-sm hover:text-[#172263] transition-colors group">
+          <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+          Back to Operators
+        </Link>
+      </div>
+      <div className="relative mt-2">
         <div className="h-48 bg-gradient-to-r from-[#172263] via-[#D97706] to-[#15803D] rounded-b-3xl overflow-hidden">
           <WheatWatermark className="right-10 top-0 opacity-[0.06]" />
         </div>
@@ -982,6 +1076,10 @@ export function AddOperator() {
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        <Link to="/dashboard" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263] transition-colors group">
+          <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+          Back to Dashboard
+        </Link>
         <PageHeader title="Register as Operator 👨‍🌾" subtitle="Complete your profile to get discovered by farmers" />
 
         {/* Stepper */}
@@ -1257,9 +1355,10 @@ export function AddOperator() {
 // ADD HARVESTER FORM
 // ===========================
 export function AddHarvester() {
-  const [name, setName] = useState("");
   const [company, setCompany] = useState("");
+  const [customCompany, setCustomCompany] = useState("");
   const [model, setModel] = useState("");
+  const [customModel, setCustomModel] = useState("");
   const [year, setYear] = useState("");
   const [location, setLocation] = useState("");
   const [state, setState] = useState("");
@@ -1299,18 +1398,21 @@ export function AddHarvester() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      toast.error("Please enter the machine name");
+    
+    const finalCompany = company === "Other" ? customCompany.trim() : company;
+    const finalModel = model === "Other / Custom Model" ? customModel.trim() : model;
+
+    if (!finalCompany) {
+      toast.error("Please specify a manufacturer company");
       return;
     }
-    if (!company) {
-      toast.error("Please select a manufacturer company");
+    if (!finalModel) {
+      toast.error("Please specify a harvester model");
       return;
     }
-    if (!model.trim()) {
-      toast.error("Please enter the model name/number");
-      return;
-    }
+    
+    const machineName = `${finalCompany} ${finalModel}`;
+
     if (year && (isNaN(Number(year)) || parseInt(year) < 1900 || parseInt(year) > new Date().getFullYear() + 1)) {
       toast.error("Please enter a valid model year");
       return;
@@ -1356,9 +1458,9 @@ export function AddHarvester() {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          machineName: name,
-          company,
-          model,
+          machineName,
+          company: finalCompany,
+          model: finalModel,
           year,
           location,
           state,
@@ -1387,6 +1489,10 @@ export function AddHarvester() {
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        <Link to="/dashboard" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263] transition-colors group">
+          <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+          Back to Dashboard
+        </Link>
         <PageHeader title="List Your Harvester 🚜" subtitle="Add your machine to reach thousands of farmers" />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
@@ -1417,27 +1523,68 @@ export function AddHarvester() {
             )}
           </div>
 
-          <div>
-            <label className="text-sm text-[#57585A] block mb-1.5">Machine Name</label>
-            <div className="relative">
-              <Tractor size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. John Deere S660" className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-[#57585A] block mb-1.5">Manufacturer Company</label>
+              <select 
+                value={company} 
+                onChange={(e) => {
+                  setCompany(e.target.value);
+                  setModel("");
+                  setCustomCompany("");
+                  setCustomModel("");
+                }} 
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
+              >
+                <option value="">Select Company</option>
+                {HARVESTER_COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model</label>
+              <select 
+                value={model} 
+                onChange={(e) => {
+                  setModel(e.target.value);
+                  setCustomModel("");
+                }}
+                disabled={!company}
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
+              >
+                <option value="">Select Model</option>
+                {company && HARVESTER_MODELS[company]?.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {company === "Other" && (
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Company</label>
-              <select value={company} onChange={(e) => setCompany(e.target.value)} className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]">
-                <option value="">Select Company</option>
-                {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <label className="text-sm text-[#57585A] block mb-1.5">Custom Company Name *</label>
+              <input 
+                value={customCompany} 
+                onChange={(e) => setCustomCompany(e.target.value)} 
+                placeholder="Enter manufacturer name (e.g. John Deere)" 
+                required 
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" 
+              />
             </div>
+          )}
+
+          {(company === "Other" || model === "Other / Custom Model") && company !== "" && (
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Model</label>
-              <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. S660" className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+              <label className="text-sm text-[#57585A] block mb-1.5">Custom Model Name *</label>
+              <input 
+                value={customModel} 
+                onChange={(e) => setCustomModel(e.target.value)} 
+                placeholder="Enter harvester model name (e.g. S660)" 
+                required 
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" 
+              />
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -2151,17 +2298,59 @@ export function Blogs() {
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
 
+  // States for Reels/Shorts Infinite Scroll Feed
+  const [visibleCount, setVisibleCount] = useState(2);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [likedBlogs, setLikedBlogs] = useState<Record<string | number, boolean>>({});
+  const [likesCounts, setLikesCounts] = useState<Record<string | number, number>>({});
+  const [commentsCounts, setCommentsCounts] = useState<Record<string | number, number>>({});
+  const [activeBlog, setActiveBlog] = useState<any | null>(null);
+  const [newCommentText, setNewCommentText] = useState("");
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  const feedRef = useRef<HTMLDivElement>(null);
+  const loaderRef = useRef<HTMLDivElement>(null);
+  const pendingLikesRef = useRef<Record<string | number, boolean>>({});
+  const likeTimeoutRef = useRef<any>(null);
+  const currentBlogIdRef = useRef<string | number | null>(null);
+
   useEffect(() => {
     const fetchBlogs = async () => {
       setLoading(true);
       try {
+        const token = localStorage.getItem("tractorsewa_token");
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+        
         const catParam = category === "All" ? "" : `category=${encodeURIComponent(category)}`;
         const searchParam = search ? `search=${encodeURIComponent(search)}` : "";
         const params = [catParam, searchParam].filter(Boolean).join("&");
-        const res = await fetch(`/api/blogs?${params}`);
+        const res = await fetch(`/api/blogs?${params}`, { headers });
         if (res.ok) {
           const data = await res.json();
-          setBlogs(data);
+          // Fisher-Yates Shuffle for random order
+          const shuffled = [...data];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          setBlogs(shuffled);
+
+          // Initialize states from dynamic database values
+          const initialLiked: Record<string | number, boolean> = {};
+          const counts: Record<string | number, number> = {};
+          const comms: Record<string | number, number> = {};
+          shuffled.forEach((b: any) => {
+            initialLiked[b.id] = !!b.has_liked;
+            counts[b.id] = b.likes_count || 0;
+            comms[b.id] = b.comments_count || 0;
+          });
+          setLikedBlogs(initialLiked);
+          setLikesCounts(counts);
+          setCommentsCounts(comms);
         }
       } catch (err) {
         console.error(err);
@@ -2177,50 +2366,662 @@ export function Blogs() {
     return () => clearTimeout(delay);
   }, [search, category]);
 
-  const filtered = blogs;
+  // Reset feed visible count and scroll to top when category/search or blogs change
+  useEffect(() => {
+    setVisibleCount(Math.min(blogs.length, 2));
+    if (feedRef.current) {
+      feedRef.current.scrollTop = 0;
+    }
+  }, [category, search, blogs.length]);
+
+  // IntersectionObserver for Infinite Scroll
+  useEffect(() => {
+    if (!loaderRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore && visibleCount < blogs.length) {
+          setLoadingMore(true);
+          setTimeout(() => {
+            setVisibleCount((prev) => Math.min(blogs.length, prev + 2));
+            setLoadingMore(false);
+          }, 1000); // 1s mock delay for premium loading experience
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [loaderRef.current, loadingMore, visibleCount, blogs.length]);
+
+  // Sync likes function
+  const syncPendingLikes = async () => {
+    const pending = pendingLikesRef.current;
+    pendingLikesRef.current = {}; // Clear immediately
+
+    const token = localStorage.getItem("tractorsewa_token");
+    if (!token) return;
+
+    for (const [id, liked] of Object.entries(pending)) {
+      try {
+        await fetch(`/api/blogs/${id}/like`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ liked }),
+        });
+      } catch (err) {
+        console.error(`Failed to sync like for blog ${id}`, err);
+      }
+    }
+  };
+
+  // Sync pending changes on unmount
+  useEffect(() => {
+    return () => {
+      if (likeTimeoutRef.current) clearTimeout(likeTimeoutRef.current);
+      if (Object.keys(pendingLikesRef.current).length > 0) {
+        syncPendingLikes();
+      }
+    };
+  }, []);
+
+  const handleLike = (id: string | number) => {
+    const token = localStorage.getItem("tractorsewa_token");
+    if (!token) {
+      setAuthDialogOpen(true);
+      return;
+    }
+
+    const wasLiked = !!likedBlogs[id];
+    const newLiked = !wasLiked;
+
+    // Update locally
+    setLikedBlogs((prev) => ({ ...prev, [id]: newLiked }));
+    setLikesCounts((prev) => ({
+      ...prev,
+      [id]: Math.max(0, (prev[id] || 0) + (newLiked ? 1 : -1)),
+    }));
+
+    // Register pending change
+    pendingLikesRef.current[id] = newLiked;
+
+    // Debounce database request (1.5 seconds)
+    if (likeTimeoutRef.current) clearTimeout(likeTimeoutRef.current);
+    likeTimeoutRef.current = setTimeout(() => {
+      syncPendingLikes();
+    }, 1500);
+
+    toast.success(newLiked ? "Post liked! ❤️" : "Removed from liked posts");
+  };
+
+  const handleShare = (id: string | number) => {
+    const url = `${window.location.origin}/blogs/${id}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Blog link copied to clipboard! 🔗");
+  };
+
+  const handleScrollToTop = () => {
+    if (feedRef.current) {
+      feedRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    const containerHeight = e.currentTarget.clientHeight;
+    if (containerHeight === 0) return;
+
+    const index = Math.round(scrollTop / containerHeight);
+    if (index >= 0 && index < blogs.length) {
+      const activeBlogItem = blogs[index];
+      if (activeBlogItem && activeBlogItem.id !== currentBlogIdRef.current) {
+        // Blog changed! Immediately flush pending likes of previous blog
+        if (Object.keys(pendingLikesRef.current).length > 0) {
+          syncPendingLikes();
+        }
+        currentBlogIdRef.current = activeBlogItem.id;
+      }
+    }
+  };
+
+  const fetchBlogDetail = async (id: string | number) => {
+    const token = localStorage.getItem("tractorsewa_token");
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    try {
+      const res = await fetch(`/api/blogs/${id}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setActiveBlog(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleOpenArticle = (blog: any) => {
+    setActiveBlog(blog);
+    fetchBlogDetail(blog.id);
+  };
+
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentText || !newCommentText.trim() || !activeBlog) return;
+
+    const token = localStorage.getItem("tractorsewa_token");
+    if (!token) {
+      setAuthDialogOpen(true);
+      return;
+    }
+
+    setSubmittingComment(true);
+    try {
+      const res = await fetch(`/api/blogs/${activeBlog.id}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: newCommentText }),
+      });
+
+      if (res.ok) {
+        const newComment = await res.json();
+        // Update activeBlog.comments locally
+        setActiveBlog((prev: any) => ({
+          ...prev,
+          comments: [newComment, ...(prev?.comments || [])],
+        }));
+        // Update commentsCount locally
+        setCommentsCounts((prev) => ({
+          ...prev,
+          [activeBlog.id]: (prev[activeBlog.id] || 0) + 1,
+        }));
+        setNewCommentText("");
+        toast.success("Comment added successfully!");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to post comment");
+      }
+    } catch {
+      toast.error("Failed to post comment. Please try again.");
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const fallbackImages = [
+    "/blog-punjab-farmers.png",
+    "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1592982537447-6f233c7f12e2?auto=format&fit=crop&q=80&w=800",
+    "https://images.unsplash.com/photo-1495107334309-fcf20504a5ab?auto=format&fit=crop&q=80&w=800",
+  ];
 
   return (
-    <div className="min-h-screen bg-[#ffffff]">
+    <div className="min-h-screen flex flex-col bg-[#ffffff]">
       <Navbar variant="public" />
-      <div className="w-full mx-auto px-4 sm:px-6 py-8">
-        <PageHeader title="Harvesting Knowledge 📚" subtitle="Tips, guides, and stories from the field" />
 
-        <div className="relative mb-4">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search articles..."
-            className="w-full pl-10 pr-4 py-3 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] bg-white"
-          />
+      {/* Main Container */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-[calc(100vh-64px)] w-full">
+        {/* Left Sidebar - Filters & Search (Desktop Only) */}
+        <aside className="hidden md:flex flex-col w-80 shrink-0 border-r border-[#E2E8F0] bg-white p-6 justify-between">
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-extrabold text-[#1A1A1A] font-sora">
+                Harvest Knowledge 📚
+              </h2>
+              <p className="text-xs text-[#57585A] mt-1">
+                Guides, stories, and maintenance tips for modern farming.
+              </p>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search articles..."
+                className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] bg-white transition-colors"
+              />
+            </div>
+
+            {/* Categories */}
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold tracking-wider text-[#57585A]">
+                Categories
+              </label>
+              <div className="flex flex-col gap-1">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCategory(c)}
+                    className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
+                      category === c
+                        ? "bg-[#172263] text-white border-[#172263]"
+                        : "bg-white border-[#E2E8F0] text-[#57585A] hover:bg-slate-50 hover:border-slate-300"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 text-center">
+            <Tractor size={32} className="mx-auto text-blue-300 mb-2" />
+            <p className="text-[10px] text-[#57585A]">
+              Need help with a harvester machine? Connect with operators in your area.
+            </p>
+          </div>
+        </aside>
+
+        {/* Mobile Filter & Search Header (Mobile Only) */}
+        <div className="md:hidden bg-white border-b border-[#E2E8F0] p-4 flex flex-col gap-3 shrink-0">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search articles..."
+              className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] bg-white"
+            />
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                onClick={() => setCategory(c)}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                  category === c
+                    ? "bg-[#172263] text-white border-[#172263]"
+                    : "bg-white border-[#E2E8F0] text-[#57585A]"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-3 mb-8 scrollbar-hide">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={`shrink-0 px-4 py-2 rounded-full text-sm border transition-all ${
-                category === c ? "bg-[#172263] text-white border-[#172263]" : "bg-white border-[#E2E8F0] text-[#57585A] hover:border-blue-300"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+        {/* Infinite Scroll Snapping Container */}
+        <main
+          ref={feedRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth w-full flex flex-col items-center bg-[#F8FAFC]"
+        >
+          {loading ? (
+            <div className="h-full w-full flex items-center justify-center">
+              <Loader2 size={36} className="text-[#172263] animate-spin" />
+            </div>
+          ) : blogs.length === 0 ? (
+            <div className="h-full w-full flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm max-w-sm w-full p-8 text-center">
+                <EmptyState title="No articles found" description="Try a different search term or category." />
+              </div>
+            </div>
+          ) : (
+            <>
+              {blogs.slice(0, visibleCount).map((blog) => {
+                const imgIndex =
+                  typeof blog.id === "number"
+                    ? blog.id % fallbackImages.length
+                    : String(blog.id).length % fallbackImages.length;
+                const finalImageUrl = blog.imageUrl || fallbackImages[imgIndex];
 
-        {loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array(3).fill(0).map((_, i) => <SkeletonCard key={i} />)}
-          </div>
-        ) : filtered.length === 0 ? (
-          <EmptyState title="No articles found" description="Try a different search term or category." />
-        ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((b) => <BlogCard key={b.id} {...b} />)}
-          </div>
-        )}
+                return (
+                  <div
+                    key={blog.id}
+                    className="h-[calc(100vh-178px)] md:h-[calc(100vh-64px)] w-full flex items-center justify-center shrink-0 snap-start relative p-4 md:p-6"
+                  >
+                    {/* Shorts-style Card - Horizontal on Desktop, Vertical on Mobile */}
+                    <div className="bg-white rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] border border-[#E2E8F0] overflow-hidden w-full max-w-lg md:max-w-4xl h-[92%] md:h-[84%] flex flex-col md:flex-row relative group transition-all duration-300">
+                      {/* Visual Banner Header */}
+                      <div className="h-[35%] md:h-full md:w-[45%] bg-gray-100 relative overflow-hidden shrink-0">
+                        <img
+                          src={finalImageUrl}
+                          alt={blog.title}
+                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent md:hidden" />
+
+                        {/* Category Badge & Date (Only on mobile overlay) */}
+                        <div className="absolute top-3 left-3 md:hidden">
+                          <span className="px-2.5 py-0.5 bg-[#172263] text-white text-[9px] font-bold uppercase rounded-full shadow-md">
+                            {blog.category}
+                          </span>
+                        </div>
+                        <div className="absolute bottom-3 left-3 right-12 md:hidden">
+                          <h3 className="text-white text-xs sm:text-sm font-bold leading-snug drop-shadow-sm line-clamp-1">
+                            {blog.title}
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Content Area */}
+                      <div className="flex-1 p-5 md:p-8 flex flex-col justify-between overflow-hidden h-[65%] md:h-full">
+                        {/* Title Row (Desktop Only) */}
+                        <div className="hidden md:block mb-4 shrink-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="px-2.5 py-0.5 bg-[#172263] text-white text-[10px] font-bold uppercase rounded-full tracking-wider">
+                              {blog.category}
+                            </span>
+                            <span className="text-[10px] text-[#57585A] font-medium flex items-center gap-1">
+                              <Clock size={10} /> {blog.date}
+                            </span>
+                          </div>
+                          <h3
+                            className="text-[#1A1A1A] text-xl md:text-2xl font-bold leading-tight"
+                            style={{ fontFamily: "'Sora', sans-serif" }}
+                          >
+                            {blog.title}
+                          </h3>
+                        </div>
+
+                        {/* Mobile Title Sub-row (Mobile Only) */}
+                        <div className="md:hidden mb-2 shrink-0 flex items-center justify-between">
+                          <span className="text-[9px] text-[#57585A] font-medium flex items-center gap-0.5">
+                            <Clock size={10} /> {blog.date}
+                          </span>
+                        </div>
+
+                        {/* Text description with right-padding to avoid action overlay */}
+                        <div className="flex-1 overflow-y-auto pr-14 scrollbar-thin space-y-4">
+                          <p className="text-[#57585A] text-xs md:text-sm leading-relaxed font-normal">
+                            {blog.short_description || blog.shortDescription}
+                          </p>
+
+                          {/* Decorative Agriculture highlight */}
+                          <div className="bg-amber-50/40 border-l-4 border-amber-500 p-3 md:p-4 rounded-r-xl">
+                            <p className="text-[10px] md:text-[11px] italic text-[#D97706] font-medium leading-relaxed">
+                              "Agriculture is our wisest pursuit, because in the end it will contribute most to real wealth, good morals, and happiness."
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Slide Footer */}
+                        <div className="mt-4 pt-4 border-t border-[#E2E8F0] flex items-center justify-between shrink-0">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                              {blog.authorName ? blog.authorName.charAt(0) : "A"}
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-[#1A1A1A]">
+                                {blog.authorName || "Agri Team"}
+                              </p>
+                              <p className="text-[9px] text-[#57585A]">Expert Contributor</p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleOpenArticle(blog)}
+                            className="px-4 py-2 bg-[#172263] text-white text-xs font-bold rounded-xl hover:bg-[#11194A] transition-all flex items-center gap-1.5 shadow-md active:scale-95"
+                          >
+                            <BookOpen size={13} /> Read Article
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Reels-style Floating Action Bar (Bottom-Right on Mobile, Center-Right on Desktop) */}
+                      <div className="absolute right-4 bottom-20 md:bottom-auto md:top-1/2 md:-translate-y-1/2 flex flex-col gap-4 items-center z-10">
+                        {/* Like Heart Button */}
+                        <div className="flex flex-col items-center">
+                          <motion.button
+                            whileTap={{ scale: 1.3 }}
+                            onClick={() => handleLike(blog.id)}
+                            className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-md border border-[#E2E8F0] backdrop-blur-md transition-all ${
+                              likedBlogs[blog.id]
+                                ? "bg-red-50 text-red-500 border-red-200"
+                                : "bg-white/95 text-[#57585A] hover:text-[#172263]"
+                            }`}
+                          >
+                            <Heart size={16} className={likedBlogs[blog.id] ? "fill-current" : ""} />
+                          </motion.button>
+                          <span className="text-[9px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded-full mt-1.5 backdrop-blur-xs shadow-xs border border-white/10 select-none">
+                            {likesCounts[blog.id] || 0}
+                          </span>
+                        </div>
+
+                        {/* Comment Button */}
+                        <div className="flex flex-col items-center">
+                          <motion.button
+                            whileTap={{ scale: 1.15 }}
+                            onClick={() => handleOpenArticle(blog)}
+                            className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/95 text-[#57585A] hover:text-[#172263] flex items-center justify-center shadow-md border border-[#E2E8F0] backdrop-blur-md transition-all"
+                          >
+                            <MessageCircle size={15} />
+                          </motion.button>
+                          <span className="text-[9px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded-full mt-1.5 backdrop-blur-xs shadow-xs border border-white/10 select-none">
+                            {commentsCounts[blog.id] || 0}
+                          </span>
+                        </div>
+
+                        {/* Share Copy Button */}
+                        <div className="flex flex-col items-center">
+                          <motion.button
+                            whileTap={{ scale: 1.15 }}
+                            onClick={() => handleShare(blog.id)}
+                            className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/95 text-[#57585A] hover:text-[#172263] flex items-center justify-center shadow-md border border-[#E2E8F0] backdrop-blur-md transition-all"
+                          >
+                            <Share2 size={15} />
+                          </motion.button>
+                          <span className="text-[9px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded-full mt-1.5 backdrop-blur-xs shadow-xs border border-white/10 select-none">
+                            Share
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Loader Slide (Visible when scrolling to retrieve more blogs) */}
+              {visibleCount < blogs.length && (
+                <div
+                  ref={loaderRef}
+                  className="h-[calc(100vh-178px)] md:h-[calc(100vh-64px)] w-full flex items-center justify-center shrink-0 snap-start p-4 md:p-6"
+                >
+                  <div className="bg-white rounded-3xl border border-[#E2E8F0] w-full max-w-lg md:max-w-4xl h-[92%] md:h-[84%] flex flex-col justify-center items-center p-8 relative shadow-sm text-center">
+                    <Loader2 size={36} className="text-[#172263] animate-spin mb-4" />
+                    <p className="text-sm font-semibold text-[#1A1A1A]">Fetching fresh updates...</p>
+                    <p className="text-xs text-[#57585A] mt-1">
+                      Bringing you the best harvesting guides
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* End of Feed Card */}
+              {blogs.length > 0 && visibleCount >= blogs.length && (
+                <div className="h-[calc(100vh-178px)] md:h-[calc(100vh-64px)] w-full flex items-center justify-center shrink-0 snap-start p-4 md:p-6">
+                  <div className="bg-white rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] border border-[#E2E8F0] overflow-hidden w-full max-w-lg md:max-w-4xl h-[92%] md:h-[84%] flex flex-col justify-center items-center p-8 relative text-center">
+                    {/* Animated Check Circle */}
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                      className="w-16 h-16 md:w-20 md:h-20 bg-green-50 border-2 border-green-500 rounded-full flex items-center justify-center text-green-500 shadow-md mb-6 animate-pulse"
+                    >
+                      <CheckCircle2 size={36} className="stroke-[2.5] md:size-[44px]" />
+                    </motion.div>
+
+                    <h3
+                      className="text-[#1A1A1A] text-lg md:text-xl font-bold mb-2"
+                      style={{ fontFamily: "'Sora', sans-serif" }}
+                    >
+                      You're All Caught Up! 🌾
+                    </h3>
+                    <p className="text-[#57585A] text-xs md:text-sm max-w-xs mb-8">
+                      This was all for today. Check back tomorrow for more agri guides and harvester
+                      updates.
+                    </p>
+
+                    {/* Back to top button */}
+                    <button
+                      onClick={handleScrollToTop}
+                      className="px-6 py-3 bg-[#172263] text-white text-xs md:text-sm font-bold rounded-xl hover:bg-[#11194A] transition-all flex items-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
+                    >
+                      <ArrowLeft size={16} className="rotate-90" /> Back to Top
+                    </button>
+
+                    {/* Subtle wheat watermark */}
+                    <WheatWatermark className="opacity-[0.03] bottom-6 right-6 scale-90" />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </main>
       </div>
+
+      {/* Slide-Over Drawer for Full Blog content */}
+      <div
+        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+          activeBlog ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/40 backdrop-blur-xs transition-opacity duration-300"
+          onClick={() => setActiveBlog(null)}
+        />
+
+        {/* Drawer Container */}
+        <div
+          className={`absolute inset-y-0 right-0 w-full max-w-2xl bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out ${
+            activeBlog ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          {activeBlog && (
+            <>
+              {/* Drawer Header */}
+              <div className="px-6 py-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#F8FAFC]">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-200">
+                    {activeBlog.category}
+                  </span>
+                  <span className="text-xs text-[#57585A]">{activeBlog.date}</span>
+                </div>
+                <button
+                  onClick={() => setActiveBlog(null)}
+                  className="w-8 h-8 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#57585A] hover:text-[#172263] hover:shadow-sm transition-all"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Drawer Body (Scrollable) */}
+              <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+                <div className="h-60 bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl flex items-center justify-center border border-[#E2E8F0] relative overflow-hidden">
+                  <img
+                    src={
+                      activeBlog.imageUrl ||
+                      fallbackImages[
+                        typeof activeBlog.id === "number"
+                          ? activeBlog.id % fallbackImages.length
+                          : String(activeBlog.id).length % fallbackImages.length
+                      ]
+                    }
+                    alt={activeBlog.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <h1
+                  className="text-2xl sm:text-3xl font-extrabold text-[#1A1A1A] leading-tight"
+                  style={{ fontFamily: "'Sora', sans-serif" }}
+                >
+                  {activeBlog.title}
+                </h1>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white font-bold">
+                    {activeBlog.authorName ? activeBlog.authorName.charAt(0) : "T"}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#1A1A1A]">
+                      {activeBlog.authorName || "Tractor Seva Agri Team"}
+                    </p>
+                    <p className="text-xs text-[#57585A]">Agricultural Expert & Writer</p>
+                  </div>
+                </div>
+
+                <div className="w-full h-px bg-[#E2E8F0]" />
+
+                {/* Prose content */}
+                <div className="prose prose-sm max-w-none text-[#57585A] leading-relaxed space-y-4 font-normal text-sm sm:text-base">
+                  <p className="font-semibold text-[#1A1A1A] text-base">
+                    {activeBlog.short_description || activeBlog.shortDescription}
+                  </p>
+                  <p>{activeBlog.content || "Full article text is loading..."}</p>
+                </div>
+
+                {/* Engagement: Comments Section */}
+                <div className="mt-8 pt-8 border-t border-[#E2E8F0] space-y-4">
+                  <h3 className="text-base font-semibold text-[#1A1A1A] flex items-center gap-2">
+                    <MessageCircle size={18} /> Discussion ({activeBlog.comments ? activeBlog.comments.length : commentsCounts[activeBlog.id] || 0})
+                  </h3>
+
+                  {/* Comment Form */}
+                  <form onSubmit={handlePostComment} className="flex gap-2">
+                    <input
+                      value={newCommentText}
+                      onChange={(e) => setNewCommentText(e.target.value)}
+                      placeholder="Share your thoughts or ask a question..."
+                      className="flex-1 px-4 py-2 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] bg-[#F8FAFC]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={submittingComment}
+                      className="px-4 py-2 bg-[#172263] text-white text-xs font-bold rounded-xl hover:bg-[#11194A] transition-colors disabled:opacity-60 shrink-0"
+                    >
+                      {submittingComment ? "Posting..." : "Comment"}
+                    </button>
+                  </form>
+
+                  <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+                    {activeBlog.comments && activeBlog.comments.length > 0 ? (
+                      activeBlog.comments.map((comment: any) => (
+                        <div key={comment.id} className="bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0] text-xs space-y-1">
+                          <div className="flex justify-between font-semibold text-[#1A1A1A]">
+                            <span>{comment.user_name}</span>
+                            <span className="text-[#57585A] font-normal">
+                              {new Date(comment.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-[#57585A] mt-1 leading-relaxed">
+                            {comment.content}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-[#57585A] italic text-center py-4">
+                        No discussions yet. Be the first to share your thoughts!
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Auth Modal for Logged out users attempting to like/comment */}
+      <AuthChooserDialog
+        isOpen={authDialogOpen}
+        onClose={() => setAuthDialogOpen(false)}
+        initialMode="login"
+      />
     </div>
   );
 }
@@ -2336,11 +3137,12 @@ export function Profile() {
   const [user, setUser] = useState<any>(null);
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [operatorProfile, setOperatorProfile] = useState<any>(null);
-  const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"listings" | "operator">("listings");
 
   const logout = () => {
     localStorage.removeItem("tractorsewa_token");
+    localStorage.removeItem("tractorsewa_preview_mode");
     navigate("/");
   };
 
@@ -2355,19 +3157,14 @@ export function Profile() {
         const userData = await userRes.json();
         setUser(userData);
 
-        if (userData.role === "admin") {
-          return; // Admin should not see profile page
-        }
+        if (userData.role === "admin") return;
 
-        // Always try to fetch operator profile if one exists
         const opRes = await fetch(`/api/operators?userId=${userData.id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (opRes.ok) {
           const opData = await opRes.json();
-          if (opData.length > 0) {
-            setOperatorProfile(opData[0]);
-          }
+          if (opData.length > 0) setOperatorProfile(opData[0]);
         }
 
         const harvsRes = await fetch(`/api/harvesters`, {
@@ -2376,14 +3173,6 @@ export function Profile() {
         if (harvsRes.ok) {
           const harvsData = await harvsRes.json();
           setHarvesters(harvsData.filter((h: any) => h.ownerName === userData.name));
-        }
-
-        const reqsRes = await fetch(`/api/requests?userId=me`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (reqsRes.ok) {
-          const reqsData = await reqsRes.json();
-          setRequests(reqsData);
         }
       } catch (err) {
         console.error(err);
@@ -2398,99 +3187,335 @@ export function Profile() {
   if (!user) return <EmptyState title="Profile not found" />;
 
   return (
-    <div className="min-h-screen bg-[#ffffff]">
+    <div className="min-h-screen bg-[#ffffff] text-[#1A1A1A]">
       <Navbar variant="auth" />
-      <div className="relative">
-        <div className="h-52 bg-gradient-to-r from-[#172263] to-[#15803D] rounded-b-3xl overflow-hidden">
-          <WheatWatermark className="right-10 top-0 opacity-[0.06]" />
-        </div>
-        <div className="w-full mx-auto px-4 sm:px-6 -mt-16">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden">
-              <span className="text-white text-3xl font-bold">{user.name?.charAt(0)}</span>
+      <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+        {/* Header Info Section */}
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-16 pb-8 border-b border-zinc-200">
+          {/* Left: Avatar with modern rounded-2xl border and shadow */}
+          <div className="relative shrink-0 select-none">
+            <div className="w-24 h-24 sm:w-36 sm:h-36 rounded-2xl bg-gradient-to-tr from-[#172263] via-[#E82326] to-amber-500 p-[3px] shadow-md">
+              <div className="w-full h-full rounded-2xl bg-[#ffffff] p-[3px]">
+                <div className="w-full h-full rounded-xl bg-[#F4F6FA] flex items-center justify-center overflow-hidden border border-zinc-200 shadow-inner group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
+                  {user.imagePath || operatorProfile?.image_path ? (
+                    <img src={user.imagePath || operatorProfile.image_path} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[#172263] text-3xl sm:text-5xl font-extrabold" style={{ fontFamily: "'Sora', sans-serif" }}>
+                      {user.name?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="pb-2 flex-1">
-              <h1 className="text-2xl text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{user.name}</h1>
-              <p className="text-[#57585A] text-sm flex items-center gap-1"><MapPin size={13} /> {user.state || "India"}</p>
-            </div>
-            <Link to="/profile/edit" className="pb-2">
-              <button className="flex items-center gap-2 px-4 py-2 border-2 border-[#172263] text-[#172263] rounded-xl text-sm hover:bg-blue-50 transition-colors">
-                <Pencil size={14} /> Edit Profile
+          </div>
+
+          {/* Right: User Information */}
+          <div className="flex-1 flex flex-col items-center md:items-start w-full">
+            {/* Username row */}
+            <div className="flex items-center gap-4 mb-4">
+              <h2 className="text-xl font-bold text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                {user.name}
+              </h2>
+              <button 
+                onClick={() => navigate("/profile/edit")}
+                className="p-1.5 text-zinc-400 hover:text-[#172263] hover:bg-zinc-100 rounded-full transition-colors"
+                title="Edit Profile Settings"
+              >
+                <Settings size={18} />
               </button>
-            </Link>
-          </div>
-
-          <div className="flex flex-wrap gap-3 mb-6">
-            <span className="px-3 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-sm uppercase font-semibold text-xs tracking-wider">Role: {user.role}</span>
-            <AvailabilityBadge status="Available" />
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            {[
-              { value: `${user.stats?.harvesters || 0}`, label: "Harvesters Listed" },
-              { value: `${user.stats?.operators || 0}`, label: "Operator Profiles" },
-              { value: `${user.stats?.requests || 0}`, label: "Requests Posted" },
-            ].map((s) => (
-              <div key={s.label} className="bg-white rounded-2xl p-4 text-center border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
-                <p className="text-[#172263] text-2xl" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{s.value}</p>
-                <p className="text-xs text-[#57585A]">{s.label}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Contact Details</h3>
-                <p className="text-sm text-[#57585A]"><strong>Phone:</strong> +91-{user.phone}</p>
-                <p className="text-sm text-[#57585A] mt-1"><strong>Email:</strong> {user.email}</p>
-              </div>
-
-              {operatorProfile && (
-                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                  <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Operator Profile</h3>
-                  <div className="space-y-2 text-sm text-[#57585A]">
-                    <p><strong>Experience:</strong> {operatorProfile.experience} years</p>
-                    <p className="flex items-center gap-2"><strong>Availability:</strong> <AvailabilityBadge status={operatorProfile.availability} /></p>
-                    <p><strong>WhatsApp:</strong> +91-{operatorProfile.whatsapp || user.phone}</p>
-                    <p><strong>Machine Expertise:</strong> {operatorProfile.machineExpertise && operatorProfile.machineExpertise.length > 0 ? operatorProfile.machineExpertise.join(", ") : "None specified"}</p>
-                    {operatorProfile.description && <p><strong>Description:</strong> {operatorProfile.description}</p>}
-                  </div>
-                </div>
-              )}
-
-              {harvesters.length > 0 && (
-                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                  <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>My Harvesters</h3>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {harvesters.map((h) => (
-                      <HarvesterCard key={h.id} {...h} />
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
-            <div>
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
-                <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Settings</h3>
-                <div className="space-y-2">
-                  <Link to="/profile/edit" className="flex items-center justify-between py-3 px-4 rounded-xl hover:bg-blue-50 transition-colors text-sm text-[#57585A] hover:text-[#172263]">
-                    <span>Edit Profile</span><ChevronRight size={16} />
-                  </Link>
-                  <div className="h-px bg-[#E2E8F0]" />
-                  <button
-                    onClick={logout}
-                    className="w-full flex items-center justify-between py-3 px-4 rounded-xl hover:bg-red-50 transition-colors text-sm text-red-500"
-                  >
-                    <span>Logout</span><ArrowRight size={16} />
-                  </button>
+            {/* Stats Metric Badges */}
+            <div className="flex flex-wrap items-center gap-3 mb-5">
+              <button 
+                onClick={() => setActiveTab("listings")} 
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold select-none transition-all duration-200 ${
+                  activeTab === "listings"
+                    ? "bg-[#172263] border-[#172263] text-white shadow-sm"
+                    : "bg-[#F4F6FA] border-zinc-200 text-[#57585A] hover:bg-zinc-200/50"
+                }`}
+              >
+                <Tractor size={13} className={activeTab === "listings" ? "text-white" : "text-[#E82326]"} />
+                <span><strong className={activeTab === "listings" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.harvesters || 0}</strong> Harvesters</span>
+              </button>
+              <button 
+                onClick={() => setActiveTab("operator")} 
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold select-none transition-all duration-200 ${
+                  activeTab === "operator"
+                    ? "bg-[#172263] border-[#172263] text-white shadow-sm"
+                    : "bg-[#F4F6FA] border-zinc-200 text-[#57585A] hover:bg-zinc-200/50"
+                }`}
+              >
+                <UserCheck size={13} className={activeTab === "operator" ? "text-white" : "text-[#172263]"} />
+                <span><strong className={activeTab === "operator" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.operators || 0}</strong> Operator Profile</span>
+              </button>
+            </div>
+
+            {/* Bio / Details */}
+            <div className="space-y-1.5 w-full text-center md:text-left">
+              <p className="text-xs text-[#57585A] font-semibold uppercase tracking-wider">Tractor Seva Community Member</p>
+              
+              <div className="flex flex-col gap-1 mt-2 text-xs text-[#57585A]">
+                <p className="flex items-center justify-center md:justify-start gap-1.5">
+                  <MapPin size={13} className="text-[#E82326]" /> {user.state || "Maharashtra, India"}
+                </p>
+                <p className="flex items-center justify-center md:justify-start gap-1.5">
+                  <Phone size={13} className="text-zinc-400" /> +91-{user.phone}
+                </p>
+                <p className="flex items-center justify-center md:justify-start gap-1.5">
+                  <Mail size={13} className="text-zinc-400" /> {user.email}
+                </p>
+              </div>
+
+              {/* Bio description */}
+              <p className="text-xs text-[#57585A] max-w-md mt-3 leading-relaxed italic">
+                "{user.bio || operatorProfile?.description || "Agriculture enthusiast. Verified operator/harvester member of the Tractor Seva network."}"
+              </p>
+
+              {/* Mutual followed details */}
+              <div className="flex items-center justify-center md:justify-start gap-2.5 mt-4 pt-3 border-t border-zinc-200">
+                <div className="flex -space-x-1.5">
+                  <div className="w-5.5 h-5.5 rounded-full bg-[#172263] border-2 border-white flex items-center justify-center text-[7px] font-bold text-white">TS</div>
+                  <div className="w-5.5 h-5.5 rounded-full bg-[#E82326] border-2 border-white flex items-center justify-center text-[7px] font-bold text-white">IN</div>
+                  <div className="w-5.5 h-5.5 rounded-full bg-zinc-300 border-2 border-white flex items-center justify-center text-[7px] font-bold text-zinc-700">AG</div>
                 </div>
+                <p className="text-[11px] text-zinc-500">
+                  Active in <span className="font-semibold text-zinc-750">{user.state || "Maharashtra"}</span> and surrounding agricultural hubs
+                </p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Action Buttons Row */}
+        <div className="flex flex-wrap gap-3 mt-6 w-full max-w-md justify-center md:justify-start">
+          <Link to="/profile/edit" className="flex-1 min-w-[120px]">
+            <button className="w-full bg-[#F4F6FA] hover:bg-zinc-200/80 text-[#1A1A1A] text-xs font-semibold py-2 px-4 rounded-lg transition-colors border border-zinc-200/80">
+              Edit Profile
+            </button>
+          </Link>
+          
+          <div className="flex-1 min-w-[140px] relative group">
+            <button className="w-full bg-[#172263] hover:bg-opacity-90 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-1">
+              Add Listing <ChevronDown size={12} />
+            </button>
+            <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#ffffff] border border-zinc-200 rounded-lg shadow-2xl py-1 z-30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              <Link to="/add-harvester" className="block px-4 py-2 text-xs text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
+                🚜 Add Harvester
+              </Link>
+              <div className="h-px bg-zinc-200 my-1" />
+              <Link to="/add-operator" className="block px-4 py-2 text-xs text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
+                👨‍🌾 Register Operator
+              </Link>
+            </div>
+          </div>
+
+          <button
+            onClick={logout}
+            className="bg-[#E82326] hover:bg-opacity-90 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+            title="Logout"
+          >
+            <LogOut size={14} /> <span>Logout</span>
+          </button>
+        </div>
+
+        {/* Quick Actions (Dashboard Action Tiles) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 mt-8 border-b border-zinc-200">
+          {[
+            { label: "My Operator", desc: "View operator details", icon: <UserCheck size={18} className="text-[#172263]" />, action: () => setActiveTab("operator") },
+            { label: "My Harvesters", desc: "View listed equipment", icon: <Tractor size={18} className="text-[#E82326]" />, action: () => setActiveTab("listings") },
+            { label: "Add Operator", desc: "List a new operator", icon: <Plus size={18} className="text-[#172263]" />, link: "/add-operator" },
+            { label: "Messages", desc: "Chat with users", icon: <MessageSquare size={18} className="text-[#1A1A1A]" />, link: "/messages" },
+          ].map((hl, i) => {
+            const cardInner = (
+              <div className="flex items-center gap-3 p-3 bg-[#F4F6FA] hover:bg-[#EAEFF8] rounded-xl border border-zinc-200/60 hover:border-[#172263]/30 transition-all duration-200 h-full group text-left">
+                <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-200">
+                  {hl.icon}
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-bold text-[#1A1A1A] truncate">{hl.label}</h4>
+                  <p className="text-[10px] text-zinc-400 truncate">{hl.desc}</p>
+                </div>
+              </div>
+            );
+
+            return hl.link ? (
+              <Link key={i} to={hl.link} className="block h-full">
+                {cardInner}
+              </Link>
+            ) : (
+              <div key={i} onClick={hl.action} className="cursor-pointer h-full">
+                {cardInner}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tab Selection (Segmented Control) */}
+        <div className="flex justify-center mt-10 mb-6">
+          <div className="bg-[#F4F6FA] p-1 rounded-xl border border-zinc-200/80 flex gap-1 select-none">
+            <button
+              onClick={() => setActiveTab("listings")}
+              className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "listings"
+                  ? "bg-white text-[#172263] shadow-sm"
+                  : "text-zinc-555 hover:text-[#1A1A1A]"
+              }`}
+            >
+              <LayoutGrid size={13} />
+              <span>Listings</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("operator")}
+              className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "operator"
+                  ? "bg-white text-[#172263] shadow-sm"
+                  : "text-zinc-555 hover:text-[#1A1A1A]"
+              }`}
+            >
+              <UserCheck size={13} />
+              <span>Operator Profile</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Grid Content */}
+        {activeTab === "listings" && (
+          <div>
+            {harvesters.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
+                {harvesters.map((h) => (
+                  <Link
+                    key={h.id}
+                    to={`/harvesters/${h.id}`}
+                    className="bg-[#ffffff] border border-zinc-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 group cursor-pointer flex flex-col hover:-translate-y-0.5"
+                  >
+                    <div className="aspect-[4/3] w-full bg-[#F4F6FA] relative overflow-hidden border-b border-zinc-200">
+                      {h.imagePath ? (
+                        <img src={h.imagePath} alt={h.machineName} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Tractor size={32} className="text-zinc-400 group-hover:scale-110 transition-transform duration-300" />
+                        </div>
+                      )}
+                      <div className="absolute top-2.5 right-2.5">
+                        <span className="px-2 py-0.5 bg-[#E82326]/10 text-[#E82326] border border-[#E82326]/20 rounded text-[9px] font-bold uppercase tracking-wider">
+                          {h.company}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-[#1A1A1A] line-clamp-1 group-hover:text-[#172263] transition-colors">
+                          {h.machineName}
+                        </h4>
+                        <p className="text-xs text-[#57585A] flex items-center gap-1.5 mt-1.5 font-medium">
+                          <MapPin size={12} className="text-[#E82326]" /> {h.location}, {h.state}
+                        </p>
+                      </div>
+                      <div className="h-px bg-zinc-100 my-3.5" />
+                      <div className="flex items-center justify-between text-[11px] text-[#57585A]">
+                        <span>Model: <strong className="text-zinc-700 font-semibold">{h.model || "N/A"}</strong></span>
+                        <span>Year: <strong className="text-zinc-700 font-semibold">{h.year || "N/A"}</strong></span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-center py-20 px-4">
+                <div className="w-16 h-16 rounded-2xl border border-zinc-200 bg-[#F4F6FA] flex items-center justify-center mb-4 text-zinc-400">
+                  <Camera size={28} />
+                </div>
+                <h3 className="text-xl font-bold text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>No Listings Yet</h3>
+                <p className="text-sm text-zinc-550 max-w-xs mb-6">List your harvester equipment so local farmers can browse and contact you.</p>
+                <Link to="/add-harvester">
+                  <button className="bg-[#172263] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-6 rounded-xl transition-colors shadow-sm">
+                    List Your Harvester
+                  </button>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "operator" && (
+          <div>
+            {operatorProfile ? (
+              <div className="max-w-xl mx-auto mt-8 bg-[#ffffff] border border-zinc-200 rounded-2xl p-6 space-y-6 shadow-sm">
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#172263] to-[#E82326] flex items-center justify-center font-bold text-white text-sm shadow-sm">
+                      {user.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-[#1A1A1A]">{user.name}</h4>
+                      <p className="text-[10px] text-zinc-400">{operatorProfile.location || "Location not specified"}</p>
+                    </div>
+                  </div>
+                  <AvailabilityBadge status={operatorProfile.availability || "Available"} />
+                </div>
+
+                <div className="space-y-4 text-sm text-[#57585A]">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-[#F4F6FA] p-3.5 rounded-xl border border-zinc-200/50">
+                      <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1">Experience</span>
+                      <span className="text-[#1A1A1A] font-bold text-base">{operatorProfile.experience} Years</span>
+                    </div>
+                    <div className="bg-[#F4F6FA] p-3.5 rounded-xl border border-zinc-200/50">
+                      <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1">WhatsApp Contact</span>
+                      <span className="text-[#1A1A1A] font-semibold text-sm">+91-{operatorProfile.whatsapp || user.phone}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#F4F6FA] p-4 rounded-xl border border-zinc-200/50">
+                    <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1.5">Machine Expertise</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {operatorProfile.machineExpertise && operatorProfile.machineExpertise.length > 0 ? (
+                        operatorProfile.machineExpertise.map((m: string) => (
+                          <span key={m} className="px-2.5 py-0.5 bg-[#ffffff] text-[#172263] border border-[#172263]/25 rounded-full text-xs font-semibold">
+                            {m}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-zinc-400 text-xs italic">No machines selected</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-[#F4F6FA] p-4 rounded-xl border border-zinc-200/50">
+                    <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1.5">Description / About Me</span>
+                    <p className="text-xs text-zinc-650 leading-relaxed italic">
+                      "{operatorProfile.description || "Active professional operator listed on Tractor Seva."}"
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end gap-3">
+                  <Link to="/profile/edit" className="flex-1">
+                    <button className="w-full py-2.5 bg-[#F4F6FA] hover:bg-zinc-200/80 text-[#1A1A1A] text-xs font-semibold rounded-xl border border-zinc-200/80 transition-colors shadow-sm">
+                      Update Operator Details
+                    </button>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-center py-20 px-4">
+                <div className="w-16 h-16 rounded-2xl border border-zinc-200 bg-[#F4F6FA] flex items-center justify-center mb-4 text-zinc-400">
+                  <UserCheck size={28} />
+                </div>
+                <h3 className="text-xl font-bold text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>Become an Operator</h3>
+                <p className="text-sm text-zinc-550 max-w-xs mb-6">Create your operator profile to specify your experience and machine skills so farmers can hire you.</p>
+                <Link to="/add-operator">
+                  <button className="bg-[#172263] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-6 rounded-xl transition-colors shadow-sm">
+                    Register Operator Profile
+                  </button>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2694,6 +3719,10 @@ export function EditProfile() {
   const [name, setName] = useState("");
   const [state, setState] = useState("");
   const [phone, setPhone] = useState("");
+  const [bio, setBio] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [imagePath, setImagePath] = useState("");
   const [operatorProfile, setOperatorProfile] = useState<any>(null);
   const [location, setLocation] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -2716,6 +3745,9 @@ export function EditProfile() {
           setName(data.name || "");
           setState(data.state || "");
           setPhone(data.phone || "");
+          setBio(data.bio || "");
+          setImagePath(data.imagePath || "");
+          setImagePreview(data.imagePath || "");
 
           if (data.role === "admin") {
             return; // Admin should not see edit profile page
@@ -2752,8 +3784,24 @@ export function EditProfile() {
     e.preventDefault();
     setSaving(true);
     try {
+      let finalImagePath = imagePath;
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          finalImagePath = uploadData.url;
+        } else {
+          toast.error("Failed to upload profile image");
+        }
+      }
+
       const token = localStorage.getItem("tractorsewa_token");
-      const body: any = { name, state, phone };
+      const body: any = { name, state, phone, bio, imagePath: finalImagePath };
       if (operatorProfile) {
         body.location = location;
         body.experience = parseInt(experience) || 0;
@@ -2797,6 +3845,36 @@ export function EditProfile() {
         </Link>
         <PageHeader title="Edit Profile ✎" />
         <form onSubmit={handleSave} className="bg-white rounded-2xl border border-[#E2E8F0] p-8 space-y-5 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
+          {/* Profile Picture Upload preview */}
+          <div className="flex flex-col items-center gap-4 p-4 bg-[#F4F6FA] border border-zinc-200/60 rounded-2xl mb-6">
+            <div className="relative w-24 h-24 rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden flex items-center justify-center group select-none">
+              {imagePreview ? (
+                <img src={imagePreview} alt="Profile Preview" className="w-full h-full object-cover" />
+              ) : (
+                <User size={36} className="text-zinc-400" />
+              )}
+              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                <Camera className="text-white" size={20} />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImageFile(file);
+                      setImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                  className="hidden" 
+                />
+              </label>
+            </div>
+            <div className="text-center">
+              <span className="text-xs text-zinc-500 font-bold block">Upload Profile Image</span>
+              <span className="text-[10px] text-zinc-400 block mt-0.5">JPG, PNG, or WEBP up to 5MB</span>
+            </div>
+          </div>
+
           <div>
             <label className="text-sm text-[#57585A] block mb-1.5">Full Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
@@ -2818,6 +3896,16 @@ export function EditProfile() {
               <option value="">Select State</option>
               {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="text-sm text-[#57585A] block mb-1.5">Bio / Description</label>
+            <textarea 
+              value={bio} 
+              onChange={(e) => setBio(e.target.value)} 
+              placeholder="Tell us about yourself..."
+              rows={3}
+              className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" 
+            />
           </div>
 
           {operatorProfile && (
