@@ -14,7 +14,10 @@ import {
   Heart,
   LayoutGrid,
   User,
-  Settings,
+  Activity,
+  Map,
+  UserCheck,
+  Inbox,
 } from "lucide-react";
 import {
   Navbar,
@@ -202,51 +205,51 @@ export function Dashboard() {
           {/* Stats Row (Full Width) */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Stat 1: Active Machines */}
-            <div className="bg-orange-50 border border-orange-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
-              <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600 mb-2">
-                <Tractor size={18} />
+            <div className="bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-600 mb-2">
+                <Activity size={18} />
               </div>
               <div>
-                <span className="text-[10px] text-orange-600 uppercase font-bold tracking-wider block mb-1">Active Machines</span>
-                <span className="text-2xl font-black text-[#1A1A1A] font-sora">{harvesters.length || 0}</span>
+                <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">Active Machines</span>
+                <span className="text-2xl font-black text-[#172263] font-sora">{harvesters.length || 0}</span>
               </div>
-              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0 text-[#172263]" />
             </div>
 
             {/* Stat 2: Total Areas */}
-            <div className="bg-emerald-50 border border-emerald-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-2">
-                <FileText size={18} />
+            <div className="bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-[#D97706]/10 flex items-center justify-center text-[#D97706] mb-2">
+                <Map size={18} />
               </div>
               <div>
-                <span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider block mb-1">Total Booked</span>
-                <span className="text-2xl font-black text-[#1A1A1A] font-sora">2.53k Hect</span>
+                <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">Total Booked</span>
+                <span className="text-2xl font-black text-[#172263] font-sora">2.53k Hect</span>
               </div>
-              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0 text-[#172263]" />
             </div>
 
             {/* Stat 3: Connections / Operators */}
-            <div className="bg-blue-50 border border-blue-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 mb-2">
-                <Users size={18} />
+            <div className="bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-[#172263]/10 flex items-center justify-center text-[#172263] mb-2">
+                <UserCheck size={18} />
               </div>
               <div>
-                <span className="text-[10px] text-blue-600 uppercase font-bold tracking-wider block mb-1">Verified Operators</span>
-                <span className="text-2xl font-black text-[#1A1A1A] font-sora">{operators.length || 0}</span>
+                <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">Verified Operators</span>
+                <span className="text-2xl font-black text-[#172263] font-sora">{operators.length || 0}</span>
               </div>
-              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0 text-[#172263]" />
             </div>
 
             {/* Stat 4: Enquiries */}
-            <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 mb-2">
-                <MessageSquare size={18} />
+            <div className="bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-[#172263]/10 flex items-center justify-center text-[#172263] mb-2">
+                <Inbox size={18} />
               </div>
               <div>
-                <span className="text-[10px] text-amber-600 uppercase font-bold tracking-wider block mb-1">Messages/Activity</span>
-                <span className="text-2xl font-black text-[#1A1A1A] font-sora">{activities.length || 0}</span>
+                <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">Messages/Activity</span>
+                <span className="text-2xl font-black text-[#172263] font-sora">{activities.length || 0}</span>
               </div>
-              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0 text-[#172263]" />
             </div>
           </div>
 

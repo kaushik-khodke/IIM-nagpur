@@ -741,14 +741,14 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 
   const navItems = userRole === 'admin'
     ? [
-        { to: "/admin", label: t("sidebar.admin", { ns: "dashboard" }), icon: <Settings size={15} /> },
-        { to: "/blogs", label: t("sidebar.blogs", { ns: "dashboard" }), icon: <BookOpen size={15} /> }
+        { to: "/admin", label: t("sidebar.admin", { ns: "dashboard" }), icon: <Settings size={18} /> },
+        { to: "/blogs", label: t("sidebar.blogs", { ns: "dashboard" }), icon: <BookOpen size={18} /> }
       ]
     : [
-        { to: "/dashboard", label: t("nav.home", { ns: "common" }), icon: <Home size={15} /> },
-        { to: "/harvesters", label: t("harvesters.title", { ns: "dashboard" }), icon: <Tractor size={15} /> },
-        { to: "/operators", label: t("operators.title", { ns: "dashboard" }), icon: <User size={15} /> },
-        { to: "/blogs", label: t("sidebar.blogs", { ns: "dashboard" }), icon: <BookOpen size={15} /> },
+        { to: "/dashboard", label: t("nav.home", { ns: "common" }), icon: <Home size={18} /> },
+        { to: "/harvesters", label: t("harvesters.title", { ns: "dashboard" }), icon: <Tractor size={18} /> },
+        { to: "/operators", label: t("operators.title", { ns: "dashboard" }), icon: <User size={18} /> },
+        { to: "/blogs", label: t("sidebar.blogs", { ns: "dashboard" }), icon: <BookOpen size={18} /> },
       ];
 
   const mobileItems = userRole === 'admin'
@@ -813,7 +813,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
             ))}
           </div>
         ) : (isAuthenticated || isPreview) && (
-          <div className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
+          <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
             {navItems.map((item) => (
               <Link
                 key={item.to}
@@ -825,7 +825,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                     setAuthRequiredOpen(true);
                   }
                 }}
-                className="flex items-center gap-1.5 text-sm text-[#57585A] hover:text-[#172263] transition-colors"
+                className="flex items-center gap-2 text-base text-[#57585A] hover:text-[#172263] transition-colors"
               >
                 {item.icon} {item.label}
               </Link>
