@@ -2571,33 +2571,20 @@ export function Blogs() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#ffffff]">
-      <Navbar variant="public" />
+    <div className="min-h-screen bg-[#ffffff]">
+      <Navbar variant="auth" />
+      <div className="w-full mx-auto px-4 sm:px-6 py-8">
+        <PageHeader title="Harvesting Knowledge 📚" subtitle="Tips, guides, and stories from the field" />
 
-      {/* Main Container */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-[calc(100vh-64px)] w-full">
-        {/* Left Sidebar - Filters & Search (Desktop Only) */}
-        <aside className="hidden md:flex flex-col w-80 shrink-0 border-r border-[#E2E8F0] bg-white p-6 justify-between">
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-extrabold text-[#1A1A1A] font-sora">
-                Harvest Knowledge 📚
-              </h2>
-              <p className="text-xs text-[#57585A] mt-1">
-                Guides, stories, and maintenance tips for modern farming.
-              </p>
-            </div>
-
-            {/* Search Input */}
-            <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search articles..."
-                className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] bg-white transition-colors"
-              />
-            </div>
+        <div className="relative mb-4">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search articles..."
+            className="w-full pl-10 pr-4 py-3 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] bg-white"
+          />
+        </div>
 
             {/* Categories */}
             <div className="space-y-2">
@@ -3069,7 +3056,7 @@ export function BlogDetail() {
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
-      <Navbar variant="public" />
+      <Navbar variant="auth" />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <nav className="text-sm text-[#57585A] mb-6 flex items-center gap-2">
           <Link to="/blogs" className="hover:text-[#172263]">Blogs</Link>
