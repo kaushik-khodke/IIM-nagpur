@@ -10,6 +10,11 @@ import {
   Clock,
   CheckCircle2,
   MessageSquare,
+  MapPin,
+  Heart,
+  LayoutGrid,
+  User,
+  Settings,
 } from "lucide-react";
 import {
   Navbar,
@@ -20,6 +25,7 @@ import {
   AuthChooserDialog,
 } from "./shared";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 export function Dashboard() {
   const { t } = useTranslation(["dashboard"]);
@@ -147,7 +153,7 @@ export function Dashboard() {
   }, [userName]);
 
   return (
-    <div className="min-h-screen bg-[#ffffff]">
+    <div className="min-h-screen bg-[#F8FAFC]">
       <Navbar variant="auth" />
 
       {isPreview && (
@@ -162,234 +168,190 @@ export function Dashboard() {
         </div>
       )}
 
-      <div className="w-full mx-auto px-4 sm:px-6 py-8">
-
-
-        {/* Hero action cards + activity feed */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-10">
-          {/* Action cards */}
-          <div className="lg:col-span-2 grid sm:grid-cols-2 gap-6">
-            <motion.div
-              className="relative overflow-hidden bg-gradient-to-br from-blue-500 to-orange-600 text-white rounded-2xl p-6"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-            >
-              <WheatWatermark className="right-0 bottom-0 opacity-[0.06]" />
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
-                <Tractor size={24} />
+      <div className="w-full mx-auto px-4 sm:px-6 py-6 max-w-7xl pb-16 md:pb-8">
+          {/* Greeting Row */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white text-base font-bold shadow-sm ring-2 ring-blue-100">
+                {currentUser?.name ? currentUser.name.charAt(0) : "U"}
               </div>
-              <h3
-                className="text-xl mb-1"
-                style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-              >
-                Browse Machines
-              </h3>
-              <p className="text-blue-100 text-sm mb-4">200+ harvesters listed across India</p>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/20 rounded-full text-xs mb-4">
-                200+ Listed
-              </span>
               <div>
-                <Link
-                  to="/harvesters"
-                  onClick={(e) => {
-                    if (isPreview) {
-                      e.preventDefault();
-                      window.dispatchEvent(
-                        new CustomEvent("trigger-auth-required", {
-                          detail: { redirectPath: "/harvesters" },
-                        })
-                      );
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-orange-600 rounded-xl text-sm hover:bg-blue-50 transition-colors"
-                  style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
-                >
-                  Explore <ArrowRight size={14} />
-                </Link>
+                <h1 className="text-xl font-bold text-[#1A1A1A] font-sora">
+                  Hello, {currentUser?.name || "Farmer Bob"}!
+                </h1>
+                <p className="text-xs text-[#57585A]">Welcome back to your farming hub</p>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              className="relative overflow-hidden bg-gradient-to-br from-green-600 to-green-700 text-white rounded-2xl p-6"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-            >
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
-                <Users size={24} />
+            {/* Search Bar / Action Button */}
+            <div className="flex flex-1 md:flex-initial items-center gap-3 max-w-md w-full md:w-auto">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
+                <input
+                  type="text"
+                  placeholder="Search machines, locations..."
+                  onClick={() => navigate("/harvesters")}
+                  className="w-full pl-10 pr-4 py-2 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] bg-white cursor-pointer"
+                />
               </div>
-              <h3
-                className="text-xl mb-1"
-                style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-              >
-                Find Operators
-              </h3>
-              <p className="text-green-100 text-sm mb-4">500+ verified operators ready to hire</p>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/20 rounded-full text-xs mb-4">
-                500+ Operators
-              </span>
-              <div>
-                <Link
-                  to="/operators"
-                  onClick={(e) => {
-                    if (isPreview) {
-                      e.preventDefault();
-                      window.dispatchEvent(
-                        new CustomEvent("trigger-auth-required", {
-                          detail: { redirectPath: "/operators" },
-                        })
-                      );
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-green-700 rounded-xl text-sm hover:bg-green-50 transition-colors"
-                  style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
-                >
-                  Explore <ArrowRight size={14} />
-                </Link>
-              </div>
-            </motion.div>
-
-
+              <Link to="/add-harvester" className="shrink-0 px-4 py-2 bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-bold rounded-xl shadow-md transition-colors">
+                List Machine
+              </Link>
+            </div>
           </div>
 
-          {/* Activity Feed */}
-          <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
-            <h3
-              className="text-[#1A1A1A] text-base mb-4"
-              style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
-            >
-              {t("dashboard.recentActivity")}
-            </h3>
-            <div className="space-y-4">
-              {activities.length > 0 ? (
-                activities.map((item, i) => (
-                  <div key={i} className="flex gap-3 items-start">
-                    <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mt-0.5">
-                      {item.icon}
-                    </div>
-                    <div>
-                      <p className="text-sm text-[#1A1A1A] leading-snug">{item.text}</p>
-                      <p className="text-xs text-[#57585A] flex items-center gap-1 mt-0.5">
-                        <Clock size={10} /> {item.time}
-                      </p>
-                    </div>
+          {/* Main Two-Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column (Stats & Summary Card) */}
+            <div className="lg:col-span-5 space-y-6">
+              {/* Stats Cards (2x2 Grid) */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Stat 1: Active Machines */}
+                <div className="bg-orange-50 border border-orange-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600 mb-2">
+                    <Tractor size={18} />
                   </div>
-                ))
+                  <div>
+                    <span className="text-[10px] text-orange-600 uppercase font-bold tracking-wider block mb-1">Active Machines</span>
+                    <span className="text-2xl font-black text-[#1A1A1A] font-sora">{harvesters.length || 0}</span>
+                  </div>
+                  <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+                </div>
+
+                {/* Stat 2: Total Areas */}
+                <div className="bg-emerald-50 border border-emerald-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-2">
+                    <FileText size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider block mb-1">Total Booked</span>
+                    <span className="text-2xl font-black text-[#1A1A1A] font-sora">2.53k Hect</span>
+                  </div>
+                  <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+                </div>
+
+                {/* Stat 3: Connections / Operators */}
+                <div className="bg-blue-50 border border-blue-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 mb-2">
+                    <Users size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-blue-600 uppercase font-bold tracking-wider block mb-1">Verified Operators</span>
+                    <span className="text-2xl font-black text-[#1A1A1A] font-sora">{operators.length || 0}</span>
+                  </div>
+                  <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+                </div>
+
+                {/* Stat 4: Enquiries */}
+                <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 mb-2">
+                    <MessageSquare size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-amber-600 uppercase font-bold tracking-wider block mb-1">Messages/Activity</span>
+                    <span className="text-2xl font-black text-[#1A1A1A] font-sora">{activities.length || 0}</span>
+                  </div>
+                  <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+                </div>
+              </div>
+
+              {/* Summary Card */}
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl p-5 shadow-sm space-y-4">
+                <h3 className="text-sm font-bold text-[#1A1A1A] font-sora">Harvester Listings Summary</h3>
+                <div className="flex gap-4 items-center bg-[#F8FAFC] p-3 rounded-2xl border border-[#E2E8F0]/40">
+                  <div className="w-20 h-16 bg-[#172263] rounded-xl flex items-center justify-center text-white shrink-0 relative overflow-hidden">
+                    <Tractor size={28} className="text-amber-500/80" />
+                    <WheatWatermark className="opacity-10 scale-75" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-semibold text-[#1A1A1A] truncate">Prioritized Harvesting</h4>
+                    <p className="text-[10px] text-[#57585A]">Active listing channels</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs py-1">
+                    <span className="text-[#57585A]">Active Machine Listings</span>
+                    <span className="font-bold text-[#1A1A1A]">{harvesters.length}</span>
+                  </div>
+                  <div className="h-px bg-[#E2E8F0]/60" />
+                  <div className="flex justify-between items-center text-xs py-1">
+                    <span className="text-[#57585A]">Total Working Operators</span>
+                    <span className="font-bold text-[#1A1A1A]">{operators.length}</span>
+                  </div>
+                  <div className="h-px bg-[#E2E8F0]/60" />
+                  <div className="flex justify-between items-center text-xs py-1">
+                    <span className="text-[#57585A]">Total Bookings Estimated</span>
+                    <span className="font-bold text-[#15803D]">₹12,500</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column (Harvester Listings Grid) */}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-[#1A1A1A] font-sora">Available Listings</h2>
+                <Link to="/harvesters" className="text-xs font-bold text-[#172263] hover:underline">View All</Link>
+              </div>
+
+              {loading ? (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)}
+                </div>
+              ) : harvesters.length === 0 ? (
+                <div className="bg-white rounded-3xl p-8 text-center border border-[#E2E8F0] text-sm text-[#57585A]">
+                  No harvesters found in your area. Be the first to add one!
+                </div>
               ) : (
-                <div className="text-sm text-[#57585A] py-2">
-                  No recent activities. Post a requirement or add a machine to see updates here!
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {harvesters.slice(0, 4).map((h) => (
+                    <div key={h.id} className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
+                      <div>
+                        {/* Image area */}
+                        <div className="h-36 bg-[#F4F6FA] relative flex items-center justify-center overflow-hidden">
+                          {h.imagePath ? (
+                            <img src={h.imagePath} alt={h.machineName} className="w-full h-full object-cover" />
+                          ) : (
+                            <Tractor size={48} className="text-blue-300" />
+                          )}
+                          <button onClick={() => toast.success("Added to favorites! ❤️")} className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/95 text-[#57585A] hover:text-red-500 rounded-full flex items-center justify-center border border-[#E2E8F0] shadow-sm z-10">
+                            <Heart size={13} />
+                          </button>
+                        </div>
+                        {/* Info area */}
+                        <div className="p-4 space-y-2">
+                          <span className="text-[8px] uppercase font-black tracking-wider text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                            {h.company}
+                          </span>
+                          <h3 className="text-sm font-bold text-[#1A1A1A] font-sora truncate">{h.machineName}</h3>
+                          <div className="flex items-center gap-1 text-[10px] text-amber-500">
+                            <span>★★★★★</span>
+                            <span className="text-[#57585A] font-medium">(Operator Verified)</span>
+                          </div>
+                          <p className="text-[10px] text-[#57585A] flex items-center gap-1">
+                            <MapPin size={10} className="text-[#172263]" /> {h.location}, {h.state}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="p-4 pt-0">
+                        <Link to={`/harvesters/${h.id}`} className="w-full py-2 bg-[#172263] hover:bg-[#11194A] text-white text-xs font-bold rounded-xl flex items-center justify-center transition-colors">
+                          Book Now
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Recent Operators */}
-        <div className="mb-10">
-          <div className="flex items-center justify-between mb-5">
-            <h2
-              className="text-2xl text-[#1A1A1A]"
-              style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-            >
-              {t("operators.title")}
-            </h2>
-            <Link
-              to="/operators"
-              onClick={(e) => {
-                if (isPreview) {
-                  e.preventDefault();
-                  window.dispatchEvent(
-                    new CustomEvent("trigger-auth-required", {
-                      detail: { redirectPath: "/operators" },
-                    })
-                  );
-                }
-              }}
-              className="text-[#172263] text-sm hover:underline flex items-center gap-1"
-            >
-              View All <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="flex gap-5 overflow-x-auto pb-3 scrollbar-hide">
-            {loading
-              ? Array(4).fill(0).map((_, i) => (
-                  <div key={i} className="shrink-0 w-56">
-                    <SkeletonCard />
-                  </div>
-                ))
-              : operators.length > 0 ? (
-                  operators.map((op) => (
-                    <div key={op.id} className="shrink-0 w-56">
-                      <OperatorCard {...op} isOwner={currentUser && op.user_id === currentUser.id} />
-                    </div>
-                  ))
-                ) : (
-                  <div className="w-full bg-white rounded-2xl p-6 text-center border border-[#E2E8F0] text-sm text-[#57585A]">
-                    No operators registered yet.
-                  </div>
-                )
-            }
-          </div>
-        </div>
-
-        {/* Recent Harvesters */}
-        <div className="mb-10">
-          <div className="flex items-center justify-between mb-5">
-            <h2
-              className="text-2xl text-[#1A1A1A]"
-              style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-            >
-              {t("harvesters.title")}
-            </h2>
-            <Link
-              to="/harvesters"
-              onClick={(e) => {
-                if (isPreview) {
-                  e.preventDefault();
-                  window.dispatchEvent(
-                    new CustomEvent("trigger-auth-required", {
-                      detail: { redirectPath: "/harvesters" },
-                    })
-                  );
-                }
-              }}
-              className="text-[#172263] text-sm hover:underline flex items-center gap-1"
-            >
-              View All <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="flex gap-5 overflow-x-auto pb-3 scrollbar-hide">
-            {loading
-              ? Array(4).fill(0).map((_, i) => (
-                  <div key={i} className="shrink-0 w-64">
-                    <SkeletonCard />
-                  </div>
-                ))
-              : harvesters.length > 0 ? (
-                  harvesters.map((h) => (
-                    <div key={h.id} className="shrink-0 w-64">
-                      <HarvesterCard {...h} isOwner={userName === h.ownerName} />
-                    </div>
-                  ))
-                ) : (
-                  <div className="w-full bg-white rounded-2xl p-6 text-center border border-[#E2E8F0] text-sm text-[#57585A]">
-                    No machines listed yet.{" "}
-                    <Link to="/add-harvester" className="text-[#172263] hover:underline font-medium">
-                      List yours today!
-                    </Link>
-                  </div>
-                )
-            }
-          </div>
-        </div>
+        <AuthChooserDialog
+          isOpen={chooserOpen}
+          onClose={() => setChooserOpen(false)}
+          initialMode="login"
+        />
       </div>
-
-      <AuthChooserDialog
-        isOpen={chooserOpen}
-        onClose={() => setChooserOpen(false)}
-        initialMode="login"
-      />
-    </div>
-  );
-}
+    );
+  }

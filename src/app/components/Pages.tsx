@@ -2314,6 +2314,8 @@ export function Blogs() {
   const [newCommentText, setNewCommentText] = useState("");
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Record<string | number, boolean>>({});
 
   const feedRef = useRef<HTMLDivElement>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
@@ -2571,52 +2573,95 @@ export function Blogs() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#ffffff]">
+    <div className="h-screen overflow-hidden flex flex-col bg-[#ffffff]">
       <Navbar variant="auth" />
-      <div className="w-full mx-auto px-4 sm:px-6 py-8">
-        <PageHeader title="Harvesting Knowledge 📚" subtitle="Tips, guides, and stories from the field" />
 
-        <div className="relative mb-4">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search articles..."
-            className="w-full pl-10 pr-4 py-3 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] bg-white"
-          />
-        </div>
+      {/* Main Container */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-[calc(100vh-64px)] w-full relative">
+        {/* Left Sidebar - Filters & Search (Desktop Only) */}
+        <aside
+          className={`hidden md:flex flex-col shrink-0 border-r border-[#E2E8F0] bg-white p-6 justify-between transition-all duration-300 relative ${
+            isSidebarOpen ? "w-80" : "w-0 p-0 border-r-0 overflow-hidden"
+          }`}
+        >
+          {isSidebarOpen && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#1A1A1A] font-sora">
+                    Harvesting Knowledge 📚
+                  </h2>
+                  <p className="text-xs text-[#57585A] mt-1">
+                    Tips, guides, and stories from the field
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="p-1.5 hover:bg-slate-100 rounded-lg text-[#57585A] hover:text-[#172263] transition-colors"
+                  title="Collapse Sidebar"
+                >
+                  <X size={16} />
+                </button>
+              </div>
 
-        {/* Categories */}
-        <div className="space-y-2 mb-4">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-[#57585A]">
-            Categories
-          </label>
-          <div className="flex flex-col gap-1">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCategory(c)}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
-                  category === c
-                    ? "bg-[#172263] text-white border-[#172263]"
-                    : "bg-white border-[#E2E8F0] text-[#57585A] hover:bg-slate-50 hover:border-slate-300"
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
+              {/* Search Input */}
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search articles..."
+                  className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] bg-white transition-colors"
+                />
+              </div>
 
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 text-center mb-4">
-          <Tractor size={32} className="mx-auto text-blue-300 mb-2" />
-          <p className="text-[10px] text-[#57585A]">
-            Need help with a harvester machine? Connect with operators in your area.
-          </p>
-        </div>
+              {/* Categories */}
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-bold tracking-wider text-[#57585A]">
+                  Categories
+                </label>
+                <div className="flex flex-col gap-1">
+                  {CATEGORIES.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCategory(c)}
+                      className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
+                        category === c
+                          ? "bg-[#172263] text-white border-[#172263]"
+                          : "bg-white border-[#E2E8F0] text-[#57585A] hover:bg-slate-50 hover:border-slate-300"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isSidebarOpen && (
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 text-center mt-auto">
+              <Tractor size={32} className="mx-auto text-blue-300 mb-2" />
+              <p className="text-[10px] text-[#57585A]">
+                Need help with a harvester machine? Connect with operators in your area.
+              </p>
+            </div>
+          )}
+        </aside>
+
+        {/* Floating Toggle Button to open Sidebar when collapsed (Desktop Only) */}
+        {!isSidebarOpen && (
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="hidden md:flex absolute left-4 top-4 z-20 p-2.5 bg-white border border-[#E2E8F0] rounded-full shadow-md text-[#172263] hover:bg-slate-50 transition-all active:scale-95 items-center justify-center"
+            title="Open Sidebar"
+          >
+            <ChevronRight size={20} />
+          </button>
+        )}
 
         {/* Mobile Filter & Search Header (Mobile Only) */}
-        <div className="md:hidden bg-white border-b border-[#E2E8F0] p-4 flex flex-col gap-3 shrink-0">
+        <div className="md:hidden bg-white border-b border-[#E2E8F0] p-4 flex flex-col gap-3 shrink-0 w-full">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
             <input
@@ -2667,7 +2712,8 @@ export function Blogs() {
                   typeof blog.id === "number"
                     ? blog.id % fallbackImages.length
                     : String(blog.id).length % fallbackImages.length;
-                const finalImageUrl = blog.imageUrl || fallbackImages[imgIndex];
+                const finalImageUrl = blog.image_url || blog.imageUrl || fallbackImages[imgIndex];
+                const hasImageError = !!imageErrors[blog.id];
 
                 return (
                   <div
@@ -2677,12 +2723,34 @@ export function Blogs() {
                     {/* Shorts-style Card - Horizontal on Desktop, Vertical on Mobile */}
                     <div className="bg-white rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] border border-[#E2E8F0] overflow-hidden w-full max-w-lg md:max-w-4xl h-[92%] md:h-[84%] flex flex-col md:flex-row relative group transition-all duration-300">
                       {/* Visual Banner Header */}
-                      <div className="h-[35%] md:h-full md:w-[45%] bg-gray-100 relative overflow-hidden shrink-0">
-                        <img
-                          src={finalImageUrl}
-                          alt={blog.title}
-                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700"
-                        />
+                      <div className="h-[35%] md:h-full md:w-[45%] bg-gray-100 relative overflow-hidden shrink-0 flex items-center justify-center">
+                        {!hasImageError ? (
+                          <img
+                            src={finalImageUrl}
+                            alt={blog.title}
+                            onError={() => {
+                              setImageErrors((prev) => ({ ...prev, [blog.id]: true }));
+                            }}
+                            className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700"
+                          />
+                        ) : (
+                          <div className={`w-full h-full bg-gradient-to-br ${
+                            [
+                              "from-[#172263] to-[#D97706]",
+                              "from-[#15803D] to-[#172263]",
+                              "from-[#B91C1C] to-[#D97706]",
+                              "from-[#1E3A8A] to-[#3B82F6]",
+                              "from-[#78350F] to-[#D97706]"
+                            ][typeof blog.id === "number" ? blog.id % 5 : 0]
+                          } flex flex-col items-center justify-center p-6 text-white text-center w-full relative`}>
+                            <Tractor size={40} className="text-white/20 mb-2 animate-pulse" />
+                            <span className="text-[9px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full mb-1">
+                              {blog.category}
+                            </span>
+                            <h4 className="text-xs font-bold leading-snug line-clamp-3 px-2">{blog.title}</h4>
+                            <WheatWatermark className="opacity-10 scale-75" />
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent md:hidden" />
 
                         {/* Category Badge & Date (Only on mobile overlay) */}
@@ -2915,6 +2983,7 @@ export function Blogs() {
                 <div className="h-60 bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl flex items-center justify-center border border-[#E2E8F0] relative overflow-hidden">
                   <img
                     src={
+                      activeBlog.image_url ||
                       activeBlog.imageUrl ||
                       fallbackImages[
                         typeof activeBlog.id === "number"
@@ -2922,6 +2991,9 @@ export function Blogs() {
                           : String(activeBlog.id).length % fallbackImages.length
                       ]
                     }
+                    onError={(e) => {
+                      e.currentTarget.src = "/blog-punjab-farmers.png";
+                    }}
                     alt={activeBlog.title}
                     className="w-full h-full object-cover"
                   />
