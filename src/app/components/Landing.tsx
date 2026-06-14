@@ -164,10 +164,13 @@ export function Landing() {
                 {t("landing.getStarted", { ns: "pages" })} <ArrowRight size={18} />
               </button>
               <Link
-                to="/harvesters"
+                to="/dashboard"
+                onClick={() => {
+                  localStorage.setItem("tractorsewa_preview_mode", "true");
+                }}
                 className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
               >
-                {t("landing.exploreHarvesters", { ns: "pages" })}
+                {t("landing.exploreDashboard", { ns: "pages" })}
               </Link>
             </div>
             <div className="flex flex-wrap gap-5 text-sm text-[#57585A]">
