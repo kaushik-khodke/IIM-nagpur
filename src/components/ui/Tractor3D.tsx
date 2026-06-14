@@ -9,21 +9,28 @@ export function TractorModel() {
   useEffect(() => {
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        // Apply a stylized material since the original GLTF has no texture files
-        child.material = new THREE.MeshStandardMaterial({
-          color: child.name === "Object_3" ? "#1A1A1A" : "#172263", // Dark wheels, Navy body
-          roughness: child.name === "Object_3" ? 0.8 : 0.3,
-          metalness: child.name === "Object_3" ? 0.1 : 0.4,
-        });
+        // Enable shadows
+        child.castShadow = true;
+        child.receiveShadow = true;
+        
+        // Enhance material properties if necessary, preserving texture
+        if (child.material) {
+          const mat = child.material as THREE.MeshStandardMaterial;
+          mat.roughness = 0.5;
+          mat.metalness = 0.15;
+          mat.needsUpdate = true;
+        }
       }
     });
   }, [scene]);
 
   return (
     <>
-      <Environment preset="city" />
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+      <Environment preset="studio" />
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[5, 8, 5]} intensity={1.5} castShadow />
+      <directionalLight position={[-5, 5, -5]} intensity={0.5} />
+      
       <OrbitControls 
         enableZoom={false} 
         enablePan={false} 
@@ -36,14 +43,14 @@ export function TractorModel() {
         <primitive 
           ref={modelRef} 
           object={scene} 
-          scale={0.028} 
+          scale={1.6} 
           rotation={[0, -Math.PI / 4, 0]}
         />
       </Center>
       
       {/* Soft shadow on the floor */}
       <ContactShadows 
-        position={[0, -1.5, 0]} 
+        position={[0, -1.2, 0]} 
         opacity={0.6} 
         scale={8} 
         blur={2} 
@@ -54,4 +61,5 @@ export function TractorModel() {
   );
 }
 
-useGLTF.preload("/fiat_60-56_tractor_turkfiat/scene.gltf");
+useGLTF.preload("/riz_x2_paddy_harvester.glb");
+

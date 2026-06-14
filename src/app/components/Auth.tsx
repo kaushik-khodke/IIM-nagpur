@@ -31,7 +31,7 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!email || !password) { toast.error("Please fill in all fields"); return; }
     setLoading(true);
     try {
@@ -57,20 +57,21 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
 
   return (
     <div className="w-full max-w-sm flex flex-col justify-center">
-      <div className="flex justify-center mb-4 md:hidden">
-        <img src={tractorSevaLogo} alt="Tractor Seva" className="h-10 w-auto" />
+      {/* Centered Brand Header */}
+      <div className="flex flex-col items-center mb-6">
+        <img src={tractorSevaLogo} alt="Tractor Seva Logo" className="h-12 w-auto object-contain mb-3" />
+        <h1
+          className="text-2xl text-[#16237A] font-bold text-center"
+          style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
+        >
+          Welcome Back 👋
+        </h1>
+        <p className="text-[#57585A] text-xs mt-1 text-center">Login to your account</p>
       </div>
-      <h1
-        className="text-2xl text-[#1A1A1A] mb-1 font-bold text-center md:text-left"
-        style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-      >
-        Welcome Back 👋
-      </h1>
-      <p className="text-[#57585A] text-sm mb-6 text-center md:text-left">Login to your account</p>
 
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label className="block text-xs text-[#57585A] mb-1">Email Address</label>
+          <label className="block text-xs text-[#57585A] mb-1 font-medium">Email Address</label>
           <div className="relative">
             <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
             <input
@@ -78,14 +79,14 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full pl-9 pr-4 py-2.5 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
+              className="w-full pl-9 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
             />
           </div>
         </div>
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-[#57585A]">Password</label>
-            <button type="button" className="text-[10px] text-[#172263] hover:underline">Forgot Password?</button>
+            <label className="text-xs text-[#57585A] font-medium">Password</label>
+            <button type="button" className="text-[10px] text-[#16237A] hover:underline font-medium">Forgot Password?</button>
           </div>
           <div className="relative">
             <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
@@ -94,12 +95,12 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full pl-9 pr-9 py-2.5 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
+              className="w-full pl-9 pr-9 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
             />
             <button
               type="button"
               onClick={() => setShowPass(!showPass)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#57585A] hover:text-[#172263]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#57585A] hover:text-[#16237A]"
             >
               {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
@@ -108,7 +109,7 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-md disabled:opacity-60 flex items-center justify-center gap-2 text-xs"
+          className="w-full py-2.5 bg-[#16237A] text-white rounded-xl hover:bg-[#0E1754] transition-all duration-200 shadow-md disabled:opacity-60 flex items-center justify-center gap-2 text-xs cursor-pointer"
           style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
         >
           {loading ? (
@@ -123,7 +124,7 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#E2E8F0]" /></div>
         <div className="relative flex justify-center text-[10px] text-[#57585A] bg-white px-2">or continue with</div>
       </div>
-      <button className="w-full py-2.5 border border-[#E2E8F0] rounded-xl text-xs text-[#57585A] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+      <button className="w-full py-2.5 border border-[#E2E8F0] rounded-xl text-xs text-[#57585A] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 cursor-pointer">
         <svg width="15" height="15" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -134,7 +135,7 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
       </button>
       <p className="text-center text-xs text-[#57585A] mt-5 md:hidden">
         New here?{" "}
-        <button onClick={onSwitchToRegister} className="text-[#172263] hover:underline font-semibold cursor-pointer">
+        <button onClick={onSwitchToRegister} className="text-[#16237A] hover:underline font-semibold cursor-pointer">
           Create account
         </button>
       </p>
@@ -155,7 +156,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!name || !email || !password || !phone) { toast.error("Please fill in all required fields"); return; }
     if (!agreed) { toast.error("Please agree to the Terms of Service"); return; }
     if (password !== confirmPass) { toast.error("Passwords do not match"); return; }
@@ -182,16 +183,17 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
 
   return (
     <div className="w-full max-w-sm flex flex-col justify-center">
-      <div className="flex justify-center mb-4 md:hidden">
-        <img src={tractorSevaLogo} alt="Tractor Seva" className="h-10 w-auto" />
+      {/* Centered Brand Header */}
+      <div className="flex flex-col items-center mb-5">
+        <img src={tractorSevaLogo} alt="Tractor Seva Logo" className="h-12 w-auto object-contain mb-3" />
+        <h1
+          className="text-2xl text-[#16237A] font-bold text-center"
+          style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
+        >
+          Create Free Account
+        </h1>
+        <p className="text-[#57585A] text-xs mt-1 text-center">Start your harvest journey today</p>
       </div>
-      <h1
-        className="text-2xl text-[#1A1A1A] mb-1 font-bold text-center md:text-left"
-        style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-      >
-        Create Free Account
-      </h1>
-      <p className="text-[#57585A] text-sm mb-6 text-center md:text-left">Start your harvest journey today</p>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="relative">
@@ -201,7 +203,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Full Name"
-            className="w-full pl-9 pr-4 py-2.5 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
+            className="w-full pl-9 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
           />
         </div>
         <div className="relative">
@@ -211,7 +213,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email Address"
-            className="w-full pl-9 pr-4 py-2.5 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
+            className="w-full pl-9 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -222,7 +224,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              className="w-full pl-9 pr-4 py-2.5 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
+              className="w-full pl-9 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
             />
           </div>
           <div className="relative">
@@ -232,7 +234,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
               value={confirmPass}
               onChange={(e) => setConfirmPass(e.target.value)}
               placeholder="Confirm"
-              className="w-full pl-9 pr-4 py-2.5 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
+              className="w-full pl-9 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
             />
           </div>
         </div>
@@ -240,7 +242,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
           <select
             value={state}
             onChange={(e) => setState(e.target.value)}
-            className="w-full px-3 py-2.5 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-xs text-[#57585A] focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263]"
+            className="w-full px-3 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs text-[#57585A] focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A]"
           >
             <option value="">Select State</option>
             {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -252,7 +254,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Phone"
-              className="w-full pl-12 pr-4 py-2.5 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] focus:ring-1 focus:ring-[#172263] transition-colors"
+              className="w-full pl-12 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
             />
           </div>
         </div>
@@ -261,16 +263,17 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5 rounded border-[#E2E8F0] accent-[#172263]"
+            className="mt-0.5 rounded border-[#E2E8F0] accent-[#16237A]"
           />
           <span className="text-[10px] text-[#57585A] leading-tight">
-            I agree to the <span className="text-[#172263] hover:underline cursor-pointer">Terms</span> and <span className="text-[#172263] hover:underline cursor-pointer">Privacy</span>.
+            I agree to the <span className="text-[#16237A] hover:underline cursor-pointer font-medium">Terms</span> and <span className="text-[#16237A] hover:underline cursor-pointer font-medium">Privacy</span>.
           </span>
         </label>
+        {/* Agricultural Red Submit Button */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-[#15803D] text-white rounded-xl hover:bg-green-700 transition-all duration-200 shadow-md disabled:opacity-60 flex items-center justify-center gap-2 text-xs mt-2"
+          className="w-full py-2.5 bg-[#D61E1E] text-white rounded-xl hover:bg-[#B51717] transition-all duration-200 shadow-md disabled:opacity-60 flex items-center justify-center gap-2 text-xs mt-2 cursor-pointer"
           style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
         >
           {loading ? (
@@ -282,7 +285,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
       </form>
       <p className="text-center text-xs text-[#57585A] mt-5 md:hidden">
         Already have an account?{" "}
-        <button onClick={onSwitchToLogin} className="text-[#172263] hover:underline font-semibold cursor-pointer">
+        <button onClick={onSwitchToLogin} className="text-[#16237A] hover:underline font-semibold cursor-pointer">
           Login
         </button>
       </p>
@@ -311,7 +314,13 @@ export function AuthPage() {
   const isSignUp = mode === "register";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E0E7FF] via-[#F3E8FF] to-[#FDF2F8] p-4 relative overflow-hidden select-none">
+    <div
+      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat p-4 relative overflow-hidden select-none"
+      style={{ backgroundImage: "url('/login-bg.png')" }}
+    >
+      {/* Subtle dark overlay and background blur to let card stand out */}
+      <div className="absolute inset-0 bg-[#0A0F26]/40 backdrop-blur-[5px] pointer-events-none z-0" />
+
       {/* Floating Back Button */}
       <button
         type="button"
@@ -322,24 +331,24 @@ export function AuthPage() {
             navigate("/");
           }
         }}
-        className="fixed top-6 left-6 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-white border border-[#E2E8F0] shadow-md hover:shadow-lg text-[#57585A] hover:text-[#172263] transition-all duration-200 group focus:outline-none"
+        className="fixed top-6 left-6 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-white/90 border border-white/20 shadow-md hover:shadow-lg text-[#57585A] hover:text-[#16237A] transition-all duration-200 group focus:outline-none backdrop-blur-md"
         title="Go Back"
       >
         <ArrowLeft size={20} className="transition-transform group-hover:-translate-x-0.5" />
       </button>
 
-      {/* Main Sliding Card Container */}
-      <div className="relative bg-white rounded-3xl shadow-[0_15px_35px_rgba(0,0,0,0.1)] border border-[#E2E8F0] w-[820px] max-w-full min-h-[540px] overflow-hidden flex flex-col md:block">
+      {/* Main Sliding Card Container with Glassmorphism */}
+      <div className="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-[0_24px_50px_-12px_rgba(22,35,122,0.22)] border border-white/40 w-[820px] max-w-full min-h-[540px] overflow-hidden flex flex-col md:block z-10">
         
         {/* ---- SIGN IN FORM PANEL ---- */}
-        <div className={`absolute top-0 left-0 h-full w-full md:w-1/2 transition-all duration-700 ease-in-out z-2 flex items-center justify-center p-8 bg-white
+        <div className={`absolute top-0 left-0 h-full w-full md:w-1/2 transition-all duration-700 ease-in-out z-2 flex items-center justify-center p-8 bg-transparent
           ${isSignUp ? 'opacity-0 pointer-events-none md:translate-x-full md:z-1' : 'opacity-100 md:z-2'}`}
         >
           <LoginForm onSwitchToRegister={switchToRegister} />
         </div>
 
         {/* ---- SIGN UP FORM PANEL ---- */}
-        <div className={`absolute top-0 left-0 h-full w-full md:w-1/2 transition-all duration-700 ease-in-out z-1 flex items-center justify-center p-8 bg-white
+        <div className={`absolute top-0 left-0 h-full w-full md:w-1/2 transition-all duration-700 ease-in-out z-1 flex items-center justify-center p-8 bg-transparent
           ${isSignUp ? 'opacity-100 md:translate-x-full md:z-5' : 'opacity-0 pointer-events-none md:z-1'}`}
         >
           <RegisterForm onSwitchToLogin={switchToLogin} />
@@ -349,16 +358,46 @@ export function AuthPage() {
         <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-10
           ${isSignUp ? 'transform -translate-x-full' : ''}`}
         >
-          {/* Inner Sliding Gradient Container */}
-          <div className={`relative left-[-100%] h-full w-[200%] bg-gradient-to-br from-[#172263] via-[#1E2E87] to-[#121B4F] text-white transition-transform duration-700 ease-in-out
+          {/* Inner Sliding Gradient Container - Translucent deep navy to royal blue gradient with depth */}
+          <div className={`relative left-[-100%] h-full w-[200%] bg-gradient-to-br from-[#16237A]/94 via-[#1E2E87]/88 to-[#2E3FAE]/94 text-white transition-transform duration-700 ease-in-out
             ${isSignUp ? 'transform translate-x-1/2' : ''}`}
           >
-            {/* Background design elements */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.06),transparent_45%)]" />
-            <WheatWatermark className="right-10 top-10 opacity-[0.06] scale-150" />
-            <WheatWatermark className="left-10 bottom-10 opacity-[0.04] scale-150" />
+            {/* 1. Subtle Lavender & Sky Blue Radial Glows for light reflection/depth */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(224,231,255,0.14),transparent_40%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_75%,rgba(147,197,253,0.08),transparent_50%)]" />
+            <div className="absolute top-1/4 left-1/4 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-1/4 right-1/4 w-40 h-40 rounded-full bg-purple-400/8 blur-3xl pointer-events-none" />
 
-            {/* Left Overlay Panel (shows when SignUp active, prompts user to sign in) */}
+            {/* 2. Repeating Agricultural Patterns (Crop Rows & Tire Tracks) */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="crop-rows" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <line x1="0" y1="0" x2="0" y2="20" stroke="white" strokeWidth="1" opacity="0.035" />
+                  <line x1="10" y1="0" x2="10" y2="20" stroke="white" strokeWidth="0.75" strokeDasharray="2 2" opacity="0.02" />
+                </pattern>
+                <pattern id="tire-tracks" width="30" height="30" patternUnits="userSpaceOnUse" patternTransform="rotate(15)">
+                  <path d="M 5,0 L 15,10 M 15,0 L 5,10 M 20,15 L 10,25" stroke="white" strokeWidth="1" opacity="0.025" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#crop-rows)" />
+              <rect width="100%" height="100%" fill="url(#tire-tracks)" />
+            </svg>
+
+            {/* 3. Abstract Curves/Waves SVG layer representing farm contour lines */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.08]" viewBox="0 0 820 540" fill="none" preserveAspectRatio="none">
+              <path d="M-100 280 C150 180, 400 380, 920 300" stroke="white" strokeWidth="2" strokeDasharray="8 4" />
+              <path d="M-100 340 C180 260, 450 440, 920 360" stroke="white" strokeWidth="2" />
+              <path d="M-100 400 C210 320, 500 500, 920 420" stroke="white" strokeWidth="1" opacity="0.5" />
+              {/* Soft curved filled shape at the bottom */}
+              <path d="M-100 420 C250 350, 550 520, 920 450 L920 540 L-100 540 Z" fill="white" opacity="0.05" />
+            </svg>
+
+
+            {/* Wheat Watermarks */}
+            <WheatWatermark className="right-10 top-10 opacity-[0.08] scale-150" />
+            <WheatWatermark className="left-10 bottom-10 opacity-[0.06] scale-150" />
+
+            {/* Left Overlay Panel */}
             <div className={`absolute top-0 left-0 h-full w-1/2 flex flex-col items-center justify-center text-center px-10 transition-transform duration-700 ease-in-out
               ${isSignUp ? 'transform translate-x-0' : 'transform -translate-x-[20%]'}`}
             >
@@ -366,18 +405,18 @@ export function AuthPage() {
                 <TractorIllustration size={100} className="stroke-white" />
               </div>
               <h2 className="text-2xl font-bold font-sora mb-2">Welcome Back! 👋</h2>
-              <p className="text-slate-200 text-xs leading-relaxed max-w-[280px] mb-6">
+              <p className="text-slate-250 text-xs leading-relaxed max-w-[280px] mb-6">
                 To stay connected with verified operators and listings, please login with your account info.
               </p>
               <button
                 onClick={switchToLogin}
-                className="px-8 py-2 bg-transparent border-2 border-white text-white rounded-xl text-xs hover:bg-white hover:text-[#172263] transition-all duration-200 font-bold uppercase tracking-wider cursor-pointer"
+                className="px-8 py-2 bg-transparent border-2 border-white text-white rounded-xl text-xs hover:bg-white hover:text-[#16237A] transition-all duration-200 font-bold uppercase tracking-wider cursor-pointer"
               >
                 Sign In
               </button>
             </div>
 
-            {/* Right Overlay Panel (shows when SignIn active, prompts user to sign up) */}
+            {/* Right Overlay Panel */}
             <div className={`absolute top-0 right-0 h-full w-1/2 flex flex-col items-center justify-center text-center px-10 transition-transform duration-700 ease-in-out
               ${isSignUp ? 'transform translate-x-[20%]' : 'transform translate-x-0'}`}
             >
@@ -385,12 +424,12 @@ export function AuthPage() {
                 <TractorIllustration size={100} className="stroke-white" />
               </div>
               <h2 className="text-2xl font-bold font-sora mb-2">Join Tractor Seva! 🌾</h2>
-              <p className="text-slate-200 text-xs leading-relaxed max-w-[280px] mb-6">
+              <p className="text-slate-250 text-xs leading-relaxed max-w-[280px] mb-6">
                 Enter your details to create a free account and start your harvest matching journey today.
               </p>
               <button
                 onClick={switchToRegister}
-                className="px-8 py-2 bg-transparent border-2 border-white text-white rounded-xl text-xs hover:bg-white hover:text-[#172263] transition-all duration-200 font-bold uppercase tracking-wider cursor-pointer"
+                className="px-8 py-2 bg-transparent border-2 border-white text-white rounded-xl text-xs hover:bg-white hover:text-[#16237A] transition-all duration-200 font-bold uppercase tracking-wider cursor-pointer"
               >
                 Sign Up
               </button>

@@ -1,7 +1,7 @@
 {
   "name": "tractor-sewa-server",
   "version": "1.0.0",
-  "description": "Backend Express and MySQL server for Tractor Sewa",
+  "description": "Backend Express and MySQL server for Tractor Seva",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

@@ -1,4 +1,4 @@
-# 🚜 Tractor Sewa — How to Run
+# 🚜 Tractor Seva — How to Run
 
 ## Prerequisites
 

@@ -47,7 +47,7 @@ const en = {
   },
   auth: {
     "login": {
-      "title": "Login to Tractor Sewa",
+      "title": "Login to Tractor Seva",
       "email": "Email Address",
       "password": "Password",
       "rememberMe": "Remember Me",
@@ -114,7 +114,7 @@ const en = {
   },
   pages: {
     "landing": {
-      "title": "Welcome to Tractor Sewa",
+      "title": "Welcome to Tractor Seva",
       "subtitle": "Connect with Farmers and Equipment Operators",
       "exploreOperators": "Explore Operators",
       "exploreHarvesters": "Explore Harvesters",
