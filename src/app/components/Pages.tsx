@@ -156,6 +156,12 @@ export function ExploreHarvesters() {
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-4 hover:text-[#172263] transition-colors group"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back
+        </button>
         <PageHeader
           title="Browse Harvesters 🚜"
           subtitle={`${filtered.length} machines available`}
