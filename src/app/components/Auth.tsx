@@ -171,7 +171,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
       if (!res.ok) { toast.error(data.error || "Registration failed"); return; }
       localStorage.setItem("tractorsewa_token", data.token);
       localStorage.removeItem("tractorsewa_preview_mode");
-      toast.success("Account created! Welcome to Tractor Seva 🌾");
+      toast.success("Account created! Welcome to Tractor Seva");
       const redirectPath = localStorage.getItem("tractorsewa_redirect_after_auth") || "/dashboard";
       navigate(redirectPath);
     } catch {
@@ -423,7 +423,7 @@ export function AuthPage() {
               <div className="mb-4">
                 <TractorIllustration size={100} className="stroke-white" />
               </div>
-              <h2 className="text-2xl font-bold font-sora mb-2">Join Tractor Seva! 🌾</h2>
+              <h2 className="text-2xl font-bold font-sora mb-2">Join Tractor Seva!</h2>
               <p className="text-slate-250 text-xs leading-relaxed max-w-[280px] mb-6">
                 Enter your details to create a free account and start your harvest matching journey today.
               </p>

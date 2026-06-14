@@ -534,7 +534,7 @@ export function AuthChooserDialog({
       <DialogContent className="max-w-md bg-[#ffffff] border-[#E2E8F0] p-6 rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl text-[#1A1A1A] text-center" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
-            {t("landing.title", { ns: "pages" })} 🌾
+            {t("landing.title", { ns: "pages" })}
           </DialogTitle>
           <DialogDescription className="text-[#57585A] text-center mt-2 leading-relaxed text-sm">
             {t("landing.subtitle", { ns: "pages" })}
@@ -627,9 +627,9 @@ export function LanguageSwitcher() {
   const { i18n, t } = useTranslation("common");
 
   const languages = [
-    { code: "en", label: "English" },
-    { code: "hi", label: "हिन्दी" },
-    { code: "mr", label: "मराठी" },
+    { code: "en", label: "English", short: "Eng" },
+    { code: "hi", label: "हिन्दी", short: "Hin" },
+    { code: "mr", label: "मराठी", short: "Mar" },
   ];
 
   return (
@@ -637,7 +637,7 @@ export function LanguageSwitcher() {
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-1.5 px-3 py-2 text-[#57585A] hover:text-[#172263] transition-colors rounded-xl hover:bg-blue-50 text-sm">
           <Globe size={16} />
-          <span className="hidden sm:inline">{languages.find((l) => l.code === i18n.language)?.label || "English"}</span>
+          <span className="hidden sm:inline">{languages.find((l) => l.code === i18n.language)?.short || "Eng"}</span>
           <ChevronDown size={13} />
         </button>
       </DropdownMenuTrigger>
@@ -662,6 +662,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userName, setUserName] = useState("User");
   const [userRole, setUserRole] = useState("user");
+  const [userImage, setUserImage] = useState<string | null>(null);
 
   // Dialog state
   const [chooserOpen, setChooserOpen] = useState(false);
@@ -684,7 +685,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 
   const actualVariant = isAuthenticated ? "auth" : variant;
 
-  useEffect(() => {
+  const fetchUser = () => {
     if (isAuthenticated && token) {
       fetch("/api/auth/me", {
         headers: { "Authorization": `Bearer ${token}` }
@@ -700,12 +701,19 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
           if (data && data.name) {
             setUserName(data.name);
             setUserRole(data.role || "user");
+            setUserImage(data.imagePath || data.image || null);
           } else {
             logout();
           }
         })
         .catch(err => console.error("Error fetching user in Navbar:", err));
     }
+  };
+
+  useEffect(() => {
+    fetchUser();
+    window.addEventListener("user-profile-updated", fetchUser);
+    return () => window.removeEventListener("user-profile-updated", fetchUser);
   }, [isAuthenticated, token]);
 
   // Listen for the global trigger-auth-required event
@@ -805,7 +813,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
             ))}
           </div>
         ) : (isAuthenticated || isPreview) && (
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
             {navItems.map((item) => (
               <Link
                 key={item.to}
@@ -851,17 +859,16 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                 </DropdownMenu>
               )}
 
-              {userRole !== 'admin' && (
-                <Link to="/messages" className="relative p-2 rounded-xl hover:bg-blue-50 transition-colors">
-                  <Bell size={20} className="text-[#57585A]" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#172263] rounded-full" />
-                </Link>
-              )}
+              <LanguageSwitcher />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="w-9 h-9 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white font-bold hover:opacity-90 transition-opacity">
-                    {userName.charAt(0)}
+                  <button className="w-9 h-9 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white font-bold hover:opacity-90 transition-opacity overflow-hidden border border-[#E2E8F0]">
+                    {userImage ? (
+                      <img src={userImage} alt={userName} className="w-full h-full object-cover" />
+                    ) : (
+                      userName.charAt(0)
+                    )}
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-white border border-[#E2E8F0] rounded-xl">
@@ -893,6 +900,15 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                           <Settings size={15} /> Settings
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/messages" className="flex items-center gap-2 cursor-pointer">
+                          <div className="relative">
+                            <Bell size={15} />
+                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#172263] rounded-full" />
+                          </div>
+                          Messages
+                        </Link>
+                      </DropdownMenuItem>
                     </>
                   )}
                   <DropdownMenuSeparator />
@@ -905,7 +921,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              <LanguageSwitcher />
+
             </>
           ) : (
             <>

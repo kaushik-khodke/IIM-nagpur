@@ -35,6 +35,19 @@ export function Dashboard() {
   const [userName, setUserName] = useState("User");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showGreeting, setShowGreeting] = useState(() => {
+    return sessionStorage.getItem("greeting_shown") !== "true";
+  });
+
+  useEffect(() => {
+    if (showGreeting) {
+      const timer = setTimeout(() => {
+        setShowGreeting(false);
+        sessionStorage.setItem("greeting_shown", "true");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showGreeting]);
 
   // URL query params
   const [searchParams, setSearchParams] = useSearchParams();
@@ -168,129 +181,81 @@ export function Dashboard() {
         </div>
       )}
 
-      <div className="w-full mx-auto px-4 sm:px-6 py-6 max-w-7xl pb-16 md:pb-8">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 pt-10 max-w-[1600px] pb-16 md:pb-8">
           {/* Greeting Row */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white text-base font-bold shadow-sm ring-2 ring-blue-100">
-                {currentUser?.name ? currentUser.name.charAt(0) : "U"}
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-[#1A1A1A] font-sora">
-                  Hello, {currentUser?.name || "Farmer Bob"}!
-                </h1>
-                <p className="text-xs text-[#57585A]">Welcome back to your farming hub</p>
+          {showGreeting && (
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white text-base font-bold shadow-sm ring-2 ring-blue-100">
+                  {currentUser?.name ? currentUser.name.charAt(0) : "U"}
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-[#1A1A1A] font-sora">
+                    Hello, {currentUser?.name || "Farmer Bob"}!
+                  </h1>
+                  <p className="text-xs text-[#57585A]">Welcome back to your farming hub</p>
+                </div>
               </div>
             </div>
+          )}
 
-            {/* Search Bar / Action Button */}
-            <div className="flex flex-1 md:flex-initial items-center gap-3 max-w-md w-full md:w-auto">
-              <div className="relative flex-1">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
-                <input
-                  type="text"
-                  placeholder="Search machines, locations..."
-                  onClick={() => navigate("/harvesters")}
-                  className="w-full pl-10 pr-4 py-2 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] bg-white cursor-pointer"
-                />
+          {/* Stats Row (Full Width) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* Stat 1: Active Machines */}
+            <div className="bg-orange-50 border border-orange-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600 mb-2">
+                <Tractor size={18} />
               </div>
-              <Link to="/add-harvester" className="shrink-0 px-4 py-2 bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-bold rounded-xl shadow-md transition-colors">
-                List Machine
-              </Link>
+              <div>
+                <span className="text-[10px] text-orange-600 uppercase font-bold tracking-wider block mb-1">Active Machines</span>
+                <span className="text-2xl font-black text-[#1A1A1A] font-sora">{harvesters.length || 0}</span>
+              </div>
+              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+            </div>
+
+            {/* Stat 2: Total Areas */}
+            <div className="bg-emerald-50 border border-emerald-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-2">
+                <FileText size={18} />
+              </div>
+              <div>
+                <span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider block mb-1">Total Booked</span>
+                <span className="text-2xl font-black text-[#1A1A1A] font-sora">2.53k Hect</span>
+              </div>
+              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+            </div>
+
+            {/* Stat 3: Connections / Operators */}
+            <div className="bg-blue-50 border border-blue-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 mb-2">
+                <Users size={18} />
+              </div>
+              <div>
+                <span className="text-[10px] text-blue-600 uppercase font-bold tracking-wider block mb-1">Verified Operators</span>
+                <span className="text-2xl font-black text-[#1A1A1A] font-sora">{operators.length || 0}</span>
+              </div>
+              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
+            </div>
+
+            {/* Stat 4: Enquiries */}
+            <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 mb-2">
+                <MessageSquare size={18} />
+              </div>
+              <div>
+                <span className="text-[10px] text-amber-600 uppercase font-bold tracking-wider block mb-1">Messages/Activity</span>
+                <span className="text-2xl font-black text-[#1A1A1A] font-sora">{activities.length || 0}</span>
+              </div>
+              <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
             </div>
           </div>
 
-          {/* Main Two-Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Column (Stats & Summary Card) */}
-            <div className="lg:col-span-5 space-y-6">
-              {/* Stats Cards (2x2 Grid) */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Stat 1: Active Machines */}
-                <div className="bg-orange-50 border border-orange-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600 mb-2">
-                    <Tractor size={18} />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-orange-600 uppercase font-bold tracking-wider block mb-1">Active Machines</span>
-                    <span className="text-2xl font-black text-[#1A1A1A] font-sora">{harvesters.length || 0}</span>
-                  </div>
-                  <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
-                </div>
-
-                {/* Stat 2: Total Areas */}
-                <div className="bg-emerald-50 border border-emerald-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-2">
-                    <FileText size={18} />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-emerald-600 uppercase font-bold tracking-wider block mb-1">Total Booked</span>
-                    <span className="text-2xl font-black text-[#1A1A1A] font-sora">2.53k Hect</span>
-                  </div>
-                  <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
-                </div>
-
-                {/* Stat 3: Connections / Operators */}
-                <div className="bg-blue-50 border border-blue-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 mb-2">
-                    <Users size={18} />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-blue-600 uppercase font-bold tracking-wider block mb-1">Verified Operators</span>
-                    <span className="text-2xl font-black text-[#1A1A1A] font-sora">{operators.length || 0}</span>
-                  </div>
-                  <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
-                </div>
-
-                {/* Stat 4: Enquiries */}
-                <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 flex flex-col justify-between h-28 relative overflow-hidden">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 mb-2">
-                    <MessageSquare size={18} />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-amber-600 uppercase font-bold tracking-wider block mb-1">Messages/Activity</span>
-                    <span className="text-2xl font-black text-[#1A1A1A] font-sora">{activities.length || 0}</span>
-                  </div>
-                  <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0" />
-                </div>
-              </div>
-
-              {/* Summary Card */}
-              <div className="bg-white border border-[#E2E8F0] rounded-3xl p-5 shadow-sm space-y-4">
-                <h3 className="text-sm font-bold text-[#1A1A1A] font-sora">Harvester Listings Summary</h3>
-                <div className="flex gap-4 items-center bg-[#F8FAFC] p-3 rounded-2xl border border-[#E2E8F0]/40">
-                  <div className="w-20 h-16 bg-[#172263] rounded-xl flex items-center justify-center text-white shrink-0 relative overflow-hidden">
-                    <Tractor size={28} className="text-amber-500/80" />
-                    <WheatWatermark className="opacity-10 scale-75" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-xs font-semibold text-[#1A1A1A] truncate">Prioritized Harvesting</h4>
-                    <p className="text-[10px] text-[#57585A]">Active listing channels</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs py-1">
-                    <span className="text-[#57585A]">Active Machine Listings</span>
-                    <span className="font-bold text-[#1A1A1A]">{harvesters.length}</span>
-                  </div>
-                  <div className="h-px bg-[#E2E8F0]/60" />
-                  <div className="flex justify-between items-center text-xs py-1">
-                    <span className="text-[#57585A]">Total Working Operators</span>
-                    <span className="font-bold text-[#1A1A1A]">{operators.length}</span>
-                  </div>
-                  <div className="h-px bg-[#E2E8F0]/60" />
-                  <div className="flex justify-between items-center text-xs py-1">
-                    <span className="text-[#57585A]">Total Bookings Estimated</span>
-                    <span className="font-bold text-[#15803D]">₹12,500</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column (Harvester Listings Grid) */}
-            <div className="lg:col-span-7 space-y-4">
-              <div className="flex items-center justify-between">
+          {/* Main Two-Column Layout for lower content */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 flex-col-reverse lg:flex-row">
+            
+            {/* Left Column (Available Listings) */}
+            <div className="lg:col-span-8 space-y-4 order-2 lg:order-1">
+              <div className="flex items-center justify-between mb-2">
                 <h2 className="text-lg font-bold text-[#1A1A1A] font-sora">Available Listings</h2>
                 <Link to="/harvesters" className="text-xs font-bold text-[#172263] hover:underline">View All</Link>
               </div>
@@ -304,8 +269,8 @@ export function Dashboard() {
                   No harvesters found in your area. Be the first to add one!
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {harvesters.slice(0, 4).map((h) => (
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {harvesters.slice(0, 6).map((h) => (
                     <div key={h.id} className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
                       <div>
                         {/* Image area */}
@@ -344,6 +309,73 @@ export function Dashboard() {
                 </div>
               )}
             </div>
+
+            {/* Right Column (Summary & Widgets) */}
+            <div className="lg:col-span-4 order-1 lg:order-2 h-full">
+              <div className="flex flex-col h-full space-y-4">
+                
+                {/* Aligning Header (Matches Left Column) */}
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-lg font-bold text-[#1A1A1A] font-sora">Overview</h2>
+                </div>
+
+                {/* Summary Card */}
+                <div className="bg-white border border-[#E2E8F0] rounded-3xl p-5 shadow-sm space-y-4">
+                  <div className="flex gap-4 items-center bg-[#F8FAFC] p-3 rounded-2xl border border-[#E2E8F0]/40">
+                    <div className="w-20 h-16 bg-[#172263] rounded-xl flex items-center justify-center text-white shrink-0 relative overflow-hidden">
+                      <Tractor size={28} className="text-amber-500/80" />
+                      <WheatWatermark className="opacity-10 scale-75" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-semibold text-[#1A1A1A] truncate">Prioritized Harvesting</h4>
+                      <p className="text-[10px] text-[#57585A]">Active listing channels</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs py-1">
+                      <span className="text-[#57585A]">Active Machine Listings</span>
+                      <span className="font-bold text-[#1A1A1A]">{harvesters.length}</span>
+                    </div>
+                    <div className="h-px bg-[#E2E8F0]/60" />
+                    <div className="flex justify-between items-center text-xs py-1">
+                      <span className="text-[#57585A]">Total Working Operators</span>
+                      <span className="font-bold text-[#1A1A1A]">{operators.length}</span>
+                    </div>
+                    <div className="h-px bg-[#E2E8F0]/60" />
+                    <div className="flex justify-between items-center text-xs py-1">
+                      <span className="text-[#57585A]">Total Bookings Estimated</span>
+                      <span className="font-bold text-[#15803D]">₹12,500</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Activity Card */}
+                <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 shadow-sm flex flex-col flex-1">
+                  <h3 className="text-base font-bold text-[#1A1A1A] font-sora border-b border-[#E2E8F0] pb-4 mb-6">Recent Activity</h3>
+                  {activities.length > 0 ? (
+                    <div className="space-y-6">
+                      {activities.map((act, i) => (
+                        <div key={i} className="flex gap-4 items-start">
+                          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                            {act.icon}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-[#1A1A1A]">{act.text}</p>
+                            <p className="text-xs text-[#57585A] mt-1">{act.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="text-sm text-[#57585A] text-center">No recent activity</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
           </div>
         </div>
 

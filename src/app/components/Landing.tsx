@@ -142,7 +142,7 @@ export function Landing() {
             transition={{ duration: 0.7 }}
           >
             <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-sm mb-6">
-              🌾 India's Leading Agri-Harvesting Network
+              India's Leading Agri-Harvesting Network
             </span>
             <h1
               className="text-5xl md:text-6xl leading-[1.1] mb-6"

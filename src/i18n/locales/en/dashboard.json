@@ -17,7 +17,7 @@
     "recentActivity": "Recent Activity"
   },
   "operators": {
-    "title": "Harvester Operators",
+    "title": "Operators",
     "filterByLocation": "Filter by Location",
     "noResults": "No operators found",
     "experience": "Experience",
@@ -26,7 +26,7 @@
     "viewProfile": "View Profile"
   },
   "harvesters": {
-    "title": "Available Harvesters",
+    "title": "Machines",
     "filterByType": "Filter by Type",
     "noResults": "No harvesters found",
     "capacity": "Capacity",

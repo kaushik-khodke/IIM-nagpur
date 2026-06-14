@@ -251,7 +251,7 @@ export function ExploreHarvesters() {
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back
         </button>
         <PageHeader
-          title="Browse Harvesters 🚜"
+          title="Browse Harvesters"
           subtitle={`${filtered.length} machines available`}
           action={
             <Link
@@ -689,7 +689,7 @@ export function ExploreOperators() {
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
-        <PageHeader title="Find Operators 👨‍🌾" subtitle={`${filtered.length} operators available`} />
+        <PageHeader title="Find Operators" subtitle={`${filtered.length} operators available`} />
 
         <div className="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-sm mb-8">
           <div className="flex flex-col md:flex-row gap-3">
@@ -1086,7 +1086,7 @@ export function AddOperator() {
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
           Back to Dashboard
         </Link>
-        <PageHeader title="Register as Operator 👨‍🌾" subtitle="Complete your profile to get discovered by farmers" />
+        <PageHeader title="Register as Operator" subtitle="Complete your profile to get discovered by farmers" />
 
         {/* Stepper */}
         <div className="flex items-center gap-2 mb-8">
@@ -1499,7 +1499,7 @@ export function AddHarvester() {
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
           Back to Dashboard
         </Link>
-        <PageHeader title="List Your Harvester 🚜" subtitle="Add your machine to reach thousands of farmers" />
+        <PageHeader title="List Your Harvester" subtitle="Add your machine to reach thousands of farmers" />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
           <div 
@@ -1855,7 +1855,7 @@ export function Requests() {
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader
-          title="Browse Requirements 📋"
+          title="Browse Requirements"
           action={
             <button
               onClick={() => {
@@ -1889,7 +1889,7 @@ export function Requests() {
                   tab === t ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
                 }`}
               >
-                {t === "operator" ? "👨‍🌾 Need Operator" : "🚜 Need Harvester"}
+                {t === "operator" ? "Need Operator" : "Need Harvester"}
               </button>
             ))}
           </div>
@@ -1950,7 +1950,7 @@ export function Requests() {
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className={`text-xs px-2 py-0.5 rounded-full border ${req.type === "operator" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"}`}>
-                        {req.type === "operator" ? "👨‍🌾 Need Operator" : "🚜 Need Harvester"}
+                        {req.type === "operator" ? "Need Operator" : "Need Harvester"}
                       </span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${req.status === "Open" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                         {req.status}
@@ -2008,7 +2008,7 @@ export function Requests() {
             <div className="flex gap-2 mb-4">
               {(["operator", "harvester"] as const).map((t) => (
                 <button key={t} onClick={() => setReqType(t)} className={`flex-1 py-2 rounded-xl text-sm border-2 transition-all ${reqType === t ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A]"}`}>
-                  {t === "operator" ? "👨‍🌾 Need Operator" : "🚜 Need Harvester"}
+                  {t === "operator" ? "Need Operator" : "Need Harvester"}
                 </button>
               ))}
             </div>
@@ -2209,7 +2209,7 @@ export function RequestDetail() {
         <div className="bg-white rounded-2xl border border-[#E2E8F0] p-8 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <span className={`text-sm px-3 py-1 rounded-full border ${req.type === "operator" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"}`}>
-              {req.type === "operator" ? "👨‍🌾 Need Operator" : "🚜 Need Harvester"}
+              {req.type === "operator" ? "Need Operator" : "Need Harvester"}
             </span>
             <span className={`text-sm px-3 py-1 rounded-full ${req.status === "Open" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{req.status}</span>
             {isOwner && (
@@ -2589,7 +2589,7 @@ export function Blogs() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-extrabold text-[#1A1A1A] font-sora">
-                    Harvesting Knowledge 📚
+                    Harvesting Knowledge
                   </h2>
                   <p className="text-xs text-[#57585A] mt-1">
                     Tips, guides, and stories from the field
@@ -2917,7 +2917,7 @@ export function Blogs() {
                       className="text-[#1A1A1A] text-lg md:text-xl font-bold mb-2"
                       style={{ fontFamily: "'Sora', sans-serif" }}
                     >
-                      You're All Caught Up! 🌾
+                      You're All Caught Up!
                     </h3>
                     <p className="text-[#57585A] text-xs md:text-sm max-w-xs mb-8">
                       This was all for today. Check back tomorrow for more agri guides and harvester
@@ -3364,11 +3364,11 @@ export function Profile() {
             </button>
             <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#ffffff] border border-zinc-200 rounded-lg shadow-2xl py-1 z-30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
               <Link to="/add-harvester" className="block px-4 py-2 text-xs text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
-                🚜 Add Harvester
+                Add Harvester
               </Link>
               <div className="h-px bg-zinc-200 my-1" />
               <Link to="/add-operator" className="block px-4 py-2 text-xs text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
-                👨‍🌾 Register Operator
+                Register Operator
               </Link>
             </div>
           </div>
@@ -3883,6 +3883,7 @@ export function EditProfile() {
         body: JSON.stringify(body)
       });
       if (res.ok) {
+        window.dispatchEvent(new Event('user-profile-updated'));
         toast.success("Profile updated successfully!");
         navigate("/profile");
       } else {
