@@ -2187,7 +2187,7 @@ export function Blogs() {
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
-      <Navbar variant="public" />
+      <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader title="Harvesting Knowledge 📚" subtitle="Tips, guides, and stories from the field" />
 
@@ -2268,7 +2268,7 @@ export function BlogDetail() {
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
-      <Navbar variant="public" />
+      <Navbar variant="auth" />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <nav className="text-sm text-[#57585A] mb-6 flex items-center gap-2">
           <Link to="/blogs" className="hover:text-[#172263]">Blogs</Link>
