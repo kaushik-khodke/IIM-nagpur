@@ -51,6 +51,7 @@ import {
 import { toast } from "sonner";
 import districtsData from "./districts.json";
 import { detectUserLocation, matchLocationWithDistricts } from "./locationHelper";
+import { ImageCropperDialog } from "./ImageCropperDialog";
 
 const INDIAN_STATES = districtsData.states.map(s => s.state);
 
@@ -543,7 +544,7 @@ export function HarvesterDetail() {
               ) : (
                 <div className="space-y-2">
                   <a
-                    href={`https://wa.me/91${harvester.phone}`}
+                    href={`https://wa.me/91${harvester.whatsapp || harvester.phone}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
@@ -966,6 +967,8 @@ export function AddOperator() {
   const [whatsapp, setWhatsapp] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -1117,9 +1120,10 @@ export function AddOperator() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      setImageFile(file);
-                      setImagePreview(URL.createObjectURL(file));
+                      setCropperImageSrc(URL.createObjectURL(file));
+                      setCropperOpen(true);
                     }
+                    e.target.value = "";
                   }}
                 />
                 {imagePreview ? (
@@ -1353,6 +1357,19 @@ export function AddOperator() {
           )}
         </div>
       </div>
+      <ImageCropperDialog
+        open={cropperOpen}
+        onOpenChange={setCropperOpen}
+        imageSrc={cropperImageSrc}
+        aspect={1}
+        onCropCompleteAction={async (croppedUrl) => {
+          setImagePreview(croppedUrl);
+          const res = await fetch(croppedUrl);
+          const blob = await res.blob();
+          const file = new File([blob], "operator_photo.jpg", { type: "image/jpeg" });
+          setImageFile(file);
+        }}
+      />
     </div>
   );
 }
@@ -1369,9 +1386,12 @@ export function AddHarvester() {
   const [location, setLocation] = useState("");
   const [state, setState] = useState("");
   const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [description, setDescription] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -1471,6 +1491,7 @@ export function AddHarvester() {
           location,
           state,
           phone,
+          whatsapp,
           description,
           imagePath
         })
@@ -1514,9 +1535,10 @@ export function AddHarvester() {
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  setImageFile(file);
-                  setImagePreview(URL.createObjectURL(file));
+                  setCropperImageSrc(URL.createObjectURL(file));
+                  setCropperOpen(true);
                 }
+                e.target.value = "";
               }}
             />
             {imagePreview ? (
@@ -1592,16 +1614,23 @@ export function AddHarvester() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="text-sm text-[#57585A] block mb-1.5">Year of Manufacture</label>
               <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g. 2020" className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
             </div>
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Phone Number</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">Phone Number *</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" required className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-[#57585A] block mb-1.5">WhatsApp Number</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
+                <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="9876543210" className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
               </div>
             </div>
           </div>
@@ -1657,12 +1686,24 @@ export function AddHarvester() {
             <label className="text-sm text-[#57585A] block mb-1.5">Description</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Describe the machine condition and availability..." className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" />
           </div>
-
           <button type="submit" disabled={loading} className="w-full py-3 bg-[#15803D] text-white rounded-xl hover:bg-green-700 transition-colors shadow-md disabled:opacity-60 flex items-center justify-center gap-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
             {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "Submit Listing →"}
           </button>
         </form>
       </div>
+      <ImageCropperDialog
+        open={cropperOpen}
+        onOpenChange={setCropperOpen}
+        imageSrc={cropperImageSrc}
+        aspect={4 / 3}
+        onCropCompleteAction={async (croppedUrl) => {
+          setImagePreview(croppedUrl);
+          const res = await fetch(croppedUrl);
+          const blob = await res.blob();
+          const file = new File([blob], "harvester_photo.jpg", { type: "image/jpeg" });
+          setImageFile(file);
+        }}
+      />
     </div>
   );
 }
@@ -3785,6 +3826,8 @@ export function EditProfile() {
   const [bio, setBio] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
   const [imagePath, setImagePath] = useState("");
   const [operatorProfile, setOperatorProfile] = useState<any>(null);
   const [location, setLocation] = useState("");
@@ -3925,9 +3968,10 @@ export function EditProfile() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      setImageFile(file);
-                      setImagePreview(URL.createObjectURL(file));
+                      setCropperImageSrc(URL.createObjectURL(file));
+                      setCropperOpen(true);
                     }
+                    e.target.value = "";
                   }}
                   className="hidden" 
                 />
@@ -4058,6 +4102,19 @@ export function EditProfile() {
           </button>
         </form>
       </div>
+      <ImageCropperDialog
+        open={cropperOpen}
+        onOpenChange={setCropperOpen}
+        imageSrc={cropperImageSrc}
+        aspect={1}
+        onCropCompleteAction={async (croppedUrl) => {
+          setImagePreview(croppedUrl);
+          const res = await fetch(croppedUrl);
+          const blob = await res.blob();
+          const file = new File([blob], "profile_photo.jpg", { type: "image/jpeg" });
+          setImageFile(file);
+        }}
+      />
     </div>
   );
 }

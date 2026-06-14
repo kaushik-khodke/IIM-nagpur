@@ -60,6 +60,7 @@ Contains listings of harvesting machines.
 | `location` | `VARCHAR(255)` | NO | *None* | District |
 | `state` | `VARCHAR(100)` | NO | *None* | State |
 | `phone` | `VARCHAR(20)` | YES | `NULL` | Contact phone number |
+| `whatsapp` | `VARCHAR(20)` | YES | `NULL` | WhatsApp number |
 | `description` | `TEXT` | YES | `NULL` | Machine description / details |
 | `image_path` | `VARCHAR(255)` | YES | `NULL` | Harvester photo file path |
 | `created_at` | `TIMESTAMP` | YES | `CURRENT_TIMESTAMP` | Listing creation timestamp |

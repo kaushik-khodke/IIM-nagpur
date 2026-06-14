@@ -106,6 +106,7 @@ async function initializeDatabase() {
         location VARCHAR(255) NOT NULL,
         state VARCHAR(100) NOT NULL,
         phone VARCHAR(20) DEFAULT NULL,
+        whatsapp VARCHAR(20) DEFAULT NULL,
         description TEXT DEFAULT NULL,
         image_path VARCHAR(255) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -257,6 +258,13 @@ async function initializeDatabase() {
     try {
       await activePool.query('ALTER TABLE blogs ADD COLUMN image_url VARCHAR(255) DEFAULT NULL AFTER date');
       console.log('Successfully added image_url column to blogs table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
+    }
+
+    try {
+      await activePool.query('ALTER TABLE harvesters ADD COLUMN whatsapp VARCHAR(20) DEFAULT NULL AFTER phone');
+      console.log('Successfully added whatsapp column to harvesters table.');
     } catch (err) {
       // Column might already exist, safe to ignore
     }

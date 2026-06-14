@@ -354,6 +354,7 @@ app.get('/api/harvesters', async (req, res) => {
       location: r.location,
       state: r.state,
       phone: r.phone,
+      whatsapp: r.whatsapp,
       description: r.description,
       imagePath: r.image_path,
       ownerName: r.ownerName
@@ -385,6 +386,7 @@ app.get('/api/harvesters/:id', async (req, res) => {
       location: r.location,
       state: r.state,
       phone: r.phone,
+      whatsapp: r.whatsapp,
       description: r.description,
       imagePath: r.image_path,
       ownerName: r.ownerName
@@ -396,15 +398,15 @@ app.get('/api/harvesters/:id', async (req, res) => {
 });
 
 app.post('/api/harvesters', authenticateToken, async (req, res) => {
-  const { machineName, company, model, year, location, state, phone, description, imagePath } = req.body;
+  const { machineName, company, model, year, location, state, phone, whatsapp, description, imagePath } = req.body;
   if (!machineName || !company || !model || !location || !state) {
     return res.status(400).json({ error: 'Please provide all required fields' });
   }
 
   try {
     await db.query(
-      'INSERT INTO harvesters (id, user_id, machine_name, company, model, year, location, state, phone, description, image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [require('crypto').randomUUID(), req.user.id, machineName, company, model, year ? parseInt(year) : null, location, state, phone || null, description || null, imagePath || null]
+      'INSERT INTO harvesters (id, user_id, machine_name, company, model, year, location, state, phone, whatsapp, description, image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [require('crypto').randomUUID(), req.user.id, machineName, company, model, year ? parseInt(year) : null, location, state, phone || null, whatsapp || null, description || null, imagePath || null]
     );
     res.status(201).json({ message: 'Harvester listed successfully' });
   } catch (error) {

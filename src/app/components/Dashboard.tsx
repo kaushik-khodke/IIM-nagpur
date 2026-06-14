@@ -293,10 +293,7 @@ export function Dashboard() {
                             {h.company}
                           </span>
                           <h3 className="text-sm font-bold text-[#1A1A1A] font-sora truncate">{h.machineName}</h3>
-                          <div className="flex items-center gap-1 text-[10px] text-amber-500">
-                            <span>★★★★★</span>
-                            <span className="text-[#57585A] font-medium">(Operator Verified)</span>
-                          </div>
+
                           <p className="text-[10px] text-[#57585A] flex items-center gap-1">
                             <MapPin size={10} className="text-[#172263]" /> {h.location}, {h.state}
                           </p>
