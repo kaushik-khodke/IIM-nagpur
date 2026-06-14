@@ -13,11 +13,14 @@ export function TractorModel() {
         child.castShadow = true;
         child.receiveShadow = true;
         
-        // Enhance material properties if necessary, preserving texture
         if (child.material) {
           const mat = child.material as THREE.MeshStandardMaterial;
-          mat.roughness = 0.5;
-          mat.metalness = 0.15;
+          
+          // Make the entire tractor dark blue
+          mat.color = new THREE.Color("#1A2B5C"); 
+          
+          mat.roughness = 0.4;
+          mat.metalness = 0.2;
           mat.needsUpdate = true;
         }
       }
@@ -39,12 +42,12 @@ export function TractorModel() {
         autoRotateSpeed={0.5}
       />
       
-      <Center position={[0, -0.4, 0]}>
+      <Center position={[-0.5, -0.2, 0]}>
         <primitive 
           ref={modelRef} 
           object={scene} 
-          scale={1.6} 
-          rotation={[0, -Math.PI / 4, 0]}
+          scale={0.028} 
+          rotation={[0, -Math.PI / 3, 0]}
         />
       </Center>
       
@@ -60,6 +63,4 @@ export function TractorModel() {
     </>
   );
 }
-
-useGLTF.preload("/riz_x2_paddy_harvester.glb");
 
