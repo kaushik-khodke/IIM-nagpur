@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router";
 import { Toaster } from "sonner";
 import { Landing } from "./components/Landing";
-import { Login, Register } from "./components/Auth";
+import { AuthPage } from "./components/Auth";
 import { Dashboard } from "./components/Dashboard";
 import {
   ExploreHarvesters,
@@ -19,6 +19,7 @@ import {
   EditProfile,
   AdminPortal,
 } from "./components/Pages";
+import { EnquiryPage } from "./components/Enquiry";
 import { ProtectedRoute } from "./components/shared";
 
 function ProtectedPage({ children }: { children: React.ReactNode }) {
@@ -41,10 +42,11 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/register" element={<AuthPage />} />
         <Route path="/blogs" element={<Blogs />} />
         <Route path="/blogs/:id" element={<BlogDetail />} />
+        <Route path="/enquiry" element={<EnquiryPage />} />
 
         {/* Protected */}
         <Route

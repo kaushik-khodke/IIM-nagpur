@@ -244,6 +244,12 @@ export function ExploreHarvesters() {
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-4 hover:text-[#172263] transition-colors group"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back
+        </button>
         <PageHeader
           title="Browse Harvesters 🚜"
           subtitle={`${filtered.length} machines available`}
@@ -4027,6 +4033,7 @@ export function AdminPortal() {
   // Moderator listings
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
+  const [enquiries, setEnquiries] = useState<any[]>([]);
 
   // Confirmation modal states
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -4076,6 +4083,7 @@ export function AdminPortal() {
     fetchAllUsers();
     fetchHarvesters();
     fetchRequests();
+    fetchEnquiries();
   };
 
   const fetchStats = async () => {
@@ -4126,6 +4134,20 @@ export function AdminPortal() {
       if (res.ok) {
         const data = await res.json();
         setRequests(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchEnquiries = async () => {
+    try {
+      const res = await fetch("/api/admin/enquiries", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEnquiries(data);
       }
     } catch (err) {
       console.error(err);
@@ -4316,7 +4338,8 @@ export function AdminPortal() {
             { id: "nlSearch", label: "NL English Search" },
             { id: "csvImport", label: "CSV Bulk Import" },
             { id: "harvesters", label: "Machines Moderation" },
-            { id: "requests", label: "Requests Moderation" }
+            { id: "requests", label: "Requests Moderation" },
+            { id: "enquiries", label: "Enquiries" }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -4785,6 +4808,85 @@ export function AdminPortal() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* ================================== */}
+        {/* TAB 6: ENQUIRIES MODERATION        */}
+        {/* ================================== */}
+        {activeTab === "enquiries" && (
+          <div className="space-y-6">
+            <div className="bg-[#1E293B] border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
+              <div className="p-6 border-b border-slate-700">
+                <h3 className="text-lg font-semibold text-white">General Enquiries</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-slate-300">
+                  <thead className="text-xs uppercase bg-slate-800 text-slate-400 border-b border-slate-700">
+                    <tr>
+                      <th className="px-6 py-3.5">Name</th>
+                      <th className="px-6 py-3.5">Phone</th>
+                      <th className="px-6 py-3.5">Location</th>
+                      <th className="px-6 py-3.5">Requirement</th>
+                      <th className="px-6 py-3.5">Date Needed</th>
+                      <th className="px-6 py-3.5">Status</th>
+                      <th className="px-6 py-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50">
+                    {enquiries.length > 0 ? (
+                      enquiries.map((enq) => (
+                        <tr key={enq.id} className="hover:bg-slate-800/40 transition-colors">
+                          <td className="px-6 py-4 font-medium text-white">{enq.name}</td>
+                          <td className="px-6 py-4">{enq.phone}</td>
+                          <td className="px-6 py-4">{enq.location}</td>
+                          <td className="px-6 py-4">{enq.requirement}</td>
+                          <td className="px-6 py-4">{enq.date_needed ? new Date(enq.date_needed).toLocaleDateString() : "-"}</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                              enq.status === 'Resolved' ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                            }`}>
+                              {enq.status || "Pending"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                            <button
+                              onClick={async () => {
+                                const newStatus = enq.status === 'Resolved' ? 'Pending' : 'Resolved';
+                                const res = await fetch(`/api/admin/enquiries/${enq.id}/status`, {
+                                  method: 'PUT',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                  },
+                                  body: JSON.stringify({ status: newStatus })
+                                });
+                                if (res.ok) {
+                                  refreshAllData();
+                                }
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                                enq.status === 'Resolved'
+                                  ? "bg-amber-600/20 text-amber-400 border border-amber-600/30 hover:bg-amber-600/30"
+                                  : "bg-green-600/20 text-green-400 border border-green-600/30 hover:bg-green-600/30"
+                              }`}
+                            >
+                              Mark {enq.status === 'Resolved' ? 'Pending' : 'Resolved'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                          No enquiries found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

@@ -179,23 +179,23 @@ export function Landing() {
             </div>
           </motion.div>
 
-          {/* Right Floating Stats (Over the 3D Tractor) */}
-          <div className="md:col-span-2 relative h-[400px] w-full pointer-events-none hidden md:block">
-            {/* Top Right Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="absolute top-10 right-0 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl px-5 py-3 border border-white/40 flex items-center gap-3"
-            >
-              <div className="bg-green-100 p-2 rounded-full">
-                <CheckCircle size={18} className="text-green-600" />
-              </div>
-              <div>
-                <p className="text-[#1A1A1A] font-bold text-sm">500+ Operators</p>
-                <p className="text-[#57585A] text-xs">Online Now</p>
-              </div>
-            </motion.div>
+              {/* Right Floating Stats (Over the 3D Tractor) */}
+              <div className="md:col-span-2 relative h-[400px] w-full pointer-events-none hidden md:block">
+                {/* Top Right Badge */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.8 }}
+                  className="absolute top-10 right-0 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl px-5 py-3 border border-white/40 flex items-center gap-3"
+                >
+                  <div className="bg-green-100 p-2 rounded-full">
+                    <CheckCircle size={18} className="text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-[#1A1A1A] font-bold text-sm">500+ Operators</p>
+                    <p className="text-[#57585A] text-xs">Online Now</p>
+                  </div>
+                </motion.div>
 
             {/* Bottom Left Badge */}
             <motion.div
@@ -302,38 +302,38 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ---- FEATURES ---- */}
-      <section id="features" className="py-20 bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA]">
-        <div className="w-full mx-auto px-4 sm:px-6">
-          <div className="text-center mb-14">
-            <h2
-              className="text-4xl text-[#1A1A1A] mb-3"
-              style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-            >
-              {t("landing.features", { ns: "pages" })}
-            </h2>
-            <p className="text-[#57585A] max-w-xl mx-auto">
-              Built for the realities of Indian agricultural workflow — field-tested, farmer-approved.
-            </p>
+        {/* ---- FEATURES ---- */}
+        <section id="features" className="py-20 bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA]">
+          <div className="w-full mx-auto px-4 sm:px-6">
+            <div className="text-center mb-14">
+              <h2
+                className="text-4xl text-[#1A1A1A] mb-3"
+                style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
+              >
+                {t("landing.features", { ns: "pages" })}
+              </h2>
+              <p className="text-[#57585A] max-w-xl mx-auto">
+                Built for the realities of Indian agricultural workflow — field-tested, farmer-approved.
+              </p>
+            </div>
+            <BentoGrid className="max-w-6xl mx-auto">
+              {features.map((f, i) => (
+                <BentoGridItem
+                  key={i}
+                  title={
+                    <span className="text-[#1A1A1A] text-lg mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+                      {f.title}
+                    </span>
+                  }
+                  description={<span className="text-[#57585A] text-sm leading-relaxed">{f.desc}</span>}
+                  header={f.headerComponent}
+                  icon={<div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-[#172263]">{f.icon}</div>}
+                  className={i === 3 || i === 6 ? "md:col-span-2" : ""}
+                />
+              ))}
+            </BentoGrid>
           </div>
-          <BentoGrid className="max-w-6xl mx-auto">
-            {features.map((f, i) => (
-              <BentoGridItem
-                key={i}
-                title={
-                  <span className="text-[#1A1A1A] text-lg mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
-                    {f.title}
-                  </span>
-                }
-                description={<span className="text-[#57585A] text-sm leading-relaxed">{f.desc}</span>}
-                header={f.headerComponent}
-                icon={<div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-[#172263]">{f.icon}</div>}
-                className={i === 3 || i === 6 ? "md:col-span-2" : ""}
-              />
-            ))}
-          </BentoGrid>
-        </div>
-      </section>
+        </section>
 
 
 

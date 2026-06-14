@@ -763,6 +763,38 @@ app.post('/api/blogs/:id/comments', authenticateToken, async (req, res) => {
 });
 
 
+// 9. Enquiry Routes
+app.post('/api/enquiries', async (req, res) => {
+  const { name, phone, location, requirement, dateNeeded } = req.body;
+  if (!name || !phone || !location || !requirement) {
+    return res.status(400).json({ error: 'Please provide all required fields' });
+  }
+
+  try {
+    const enquiryId = require('crypto').randomUUID();
+    let formattedDate = dateNeeded || null;
+    if (dateNeeded) {
+      const parsedDate = new Date(dateNeeded);
+      if (!isNaN(parsedDate.getTime())) {
+        const yyyy = parsedDate.getFullYear();
+        const mm = String(parsedDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(parsedDate.getDate()).padStart(2, '0');
+        formattedDate = `${yyyy}-${mm}-${dd}`;
+      }
+    }
+
+    await db.query(
+      'INSERT INTO enquiries (id, name, phone, location, requirement, date_needed, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [enquiryId, name, phone, location, requirement, formattedDate, 'Pending']
+    );
+    res.status(201).json({ message: 'Enquiry submitted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 // --- ADMIN PRIVILEGED MIDDLEWARE & ROUTES ---
 
 const isAdmin = async (req, res, next) => {
@@ -868,6 +900,28 @@ app.delete('/api/admin/requests/:id', authenticateToken, isAdmin, async (req, re
   try {
     await db.query('DELETE FROM requests WHERE id = ?', [req.params.id]);
     res.json({ message: 'Request deleted by administrator.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Admin Enquiries Routes
+app.get('/api/admin/enquiries', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM enquiries ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/admin/enquiries/:id/status', authenticateToken, isAdmin, async (req, res) => {
+  const { status } = req.body;
+  try {
+    await db.query('UPDATE enquiries SET status = ? WHERE id = ?', [status, req.params.id]);
+    res.json({ message: 'Enquiry status updated successfully.' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
