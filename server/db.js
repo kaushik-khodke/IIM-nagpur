@@ -129,6 +129,20 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create Enquiries Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS enquiries (
+        id VARCHAR(36) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        location VARCHAR(255) NOT NULL,
+        requirement VARCHAR(50) NOT NULL,
+        date_needed DATE DEFAULT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Safe Alter Table for existing installations
     try {
       await activePool.query('ALTER TABLE requests ADD COLUMN state VARCHAR(100) DEFAULT NULL AFTER location');

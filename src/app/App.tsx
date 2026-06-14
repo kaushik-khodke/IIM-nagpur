@@ -19,6 +19,7 @@ import {
   EditProfile,
   AdminPortal,
 } from "./components/Pages";
+import { EnquiryPage } from "./components/Enquiry";
 import { ProtectedRoute } from "./components/shared";
 
 function ProtectedPage({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/register" element={<AuthPage />} />
         <Route path="/blogs" element={<Blogs />} />
         <Route path="/blogs/:id" element={<BlogDetail />} />
+        <Route path="/enquiry" element={<EnquiryPage />} />
 
         {/* Protected */}
         <Route
