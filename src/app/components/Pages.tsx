@@ -2586,36 +2586,34 @@ export function Blogs() {
           />
         </div>
 
-            {/* Categories */}
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold tracking-wider text-[#57585A]">
-                Categories
-              </label>
-              <div className="flex flex-col gap-1">
-                {CATEGORIES.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setCategory(c)}
-                    className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
-                      category === c
-                        ? "bg-[#172263] text-white border-[#172263]"
-                        : "bg-white border-[#E2E8F0] text-[#57585A] hover:bg-slate-50 hover:border-slate-300"
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* Categories */}
+        <div className="space-y-2 mb-4">
+          <label className="text-[10px] uppercase font-bold tracking-wider text-[#57585A]">
+            Categories
+          </label>
+          <div className="flex flex-col gap-1">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                onClick={() => setCategory(c)}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
+                  category === c
+                    ? "bg-[#172263] text-white border-[#172263]"
+                    : "bg-white border-[#E2E8F0] text-[#57585A] hover:bg-slate-50 hover:border-slate-300"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 text-center">
-            <Tractor size={32} className="mx-auto text-blue-300 mb-2" />
-            <p className="text-[10px] text-[#57585A]">
-              Need help with a harvester machine? Connect with operators in your area.
-            </p>
-          </div>
-        </aside>
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 text-center mb-4">
+          <Tractor size={32} className="mx-auto text-blue-300 mb-2" />
+          <p className="text-[10px] text-[#57585A]">
+            Need help with a harvester machine? Connect with operators in your area.
+          </p>
+        </div>
 
         {/* Mobile Filter & Search Header (Mobile Only) */}
         <div className="md:hidden bg-white border-b border-[#E2E8F0] p-4 flex flex-col gap-3 shrink-0">
