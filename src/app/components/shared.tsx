@@ -780,7 +780,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         </Link>
 
         {/* Desktop nav */}
-        {actualVariant === "public" ? (
+        {actualVariant === "public" || location.pathname === "/" ? (
           <div className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
             {[
               { label: "Home", anchor: "top" },
@@ -840,7 +840,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <>
-              {userRole !== 'admin' && (
+              {userRole !== 'admin' && location.pathname !== "/" && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors">
@@ -958,6 +958,33 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden bg-[#ffffff] border-t border-[#E2E8F0] px-4 py-4 space-y-2">
+          {location.pathname === "/" && (
+            <div className="mb-2 pb-2 border-b border-[#E2E8F0] space-y-2">
+              {[
+                { label: "Home", anchor: "top" },
+                { label: "How it Works", anchor: "how-it-works" },
+                { label: "Features", anchor: "features" },
+                { label: "Contact", anchor: "contact" },
+              ].map((item) => (
+                <a
+                  key={item.anchor}
+                  href={`#${item.anchor}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (item.anchor === "top") {
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    } else {
+                      document.getElementById(item.anchor)?.scrollIntoView({ behavior: "smooth" });
+                    }
+                    setMobileOpen(false);
+                  }}
+                  className="block py-2 text-[#57585A] hover:text-[#172263] transition-colors"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          )}
           {(isAuthenticated || isPreview) ? (
             <>
               {mobileItems.map((item) => {

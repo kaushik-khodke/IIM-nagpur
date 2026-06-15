@@ -288,24 +288,32 @@ export function Landing() {
               {t("landing.subtitle", { ns: "pages" })}
             </p>
             <div className="flex flex-wrap gap-4 mb-8">
-              <button
-                onClick={() => {
-                  setChooserMode("register");
-                  setChooserOpen(true);
-                }}
-                className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
-              >
-                {t("landing.getStarted", { ns: "pages" })} <ArrowRight size={18} />
-              </button>
-              <Link
-                to="/dashboard"
-                onClick={() => {
-                  localStorage.setItem("tractorsewa_preview_mode", "true");
-                }}
-                className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
-              >
-                {t("landing.exploreDashboard", { ns: "pages" })}
-              </Link>
+              {localStorage.getItem("tractorsewa_token") ? (
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
+                >
+                  Go to Dashboard <ArrowRight size={18} />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/enquiry"
+                    className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
+                  >
+                    Submit Enquiry <ArrowRight size={18} />
+                  </Link>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => {
+                      localStorage.setItem("tractorsewa_preview_mode", "true");
+                    }}
+                    className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
+                  >
+                    {t("landing.exploreDashboard", { ns: "pages" })}
+                  </Link>
+                </>
+              )}
             </div>
             <div className="flex flex-wrap gap-5 text-sm text-[#57585A]">
               {["Free to Join", "Verified Profiles", "50+ Cities"].map((t) => (
@@ -471,30 +479,30 @@ export function Landing() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.1 }}
-              className="relative z-10 group"
+              className="relative z-10 group h-full"
             >
-              <div className="w-full text-left rounded-2xl border border-[#E2E8F0] bg-white group-hover:border-[#172263]/50 group-hover:shadow-[0_8px_32px_rgba(23,34,99,0.13)] transition-all duration-300 overflow-hidden">
+              <div className="w-full h-full flex flex-col text-left rounded-2xl border border-[#E2E8F0] bg-white group-hover:border-[#172263]/50 group-hover:shadow-[0_8px_32px_rgba(23,34,99,0.13)] transition-all duration-300 overflow-hidden">
                 {/* Always-visible top content */}
-                <div className="p-5">
+                <div className="p-5 flex-1 flex flex-col">
                   <div className="flex justify-center mb-4">
-                    <div className={`w-16 h-16 bg-gradient-to-br ${step.color} rounded-2xl flex flex-col items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110`}>
+                    <div className={`w-16 h-16 bg-gradient-to-br ${step.color} rounded-2xl flex flex-col items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110 shrink-0`}>
                       <span className="text-white/70 text-[10px] font-bold mb-0.5">{step.num}</span>
                       <span className="text-white">{step.icon}</span>
                     </div>
                   </div>
-                  <h3 className="text-[#1A1A1A] text-base text-center mb-1.5 group-hover:text-[#172263] transition-colors duration-300" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+                  <h3 className="text-[#1A1A1A] text-base text-center mb-1.5 group-hover:text-[#172263] transition-colors duration-300 shrink-0" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
                     {step.title}
                   </h3>
-                  <p className="text-[#57585A] text-sm leading-relaxed text-center">{step.desc}</p>
+                  <p className="text-[#57585A] text-sm leading-relaxed text-center flex-1">{step.desc}</p>
 
                   {/* Hover hint */}
-                  <div className="flex items-center justify-center gap-1 mt-3 text-xs font-semibold text-zinc-300 group-hover:opacity-0 transition-opacity duration-200">
+                  <div className="flex items-center justify-center gap-1 mt-auto pt-3 text-xs font-semibold text-zinc-300 group-hover:opacity-0 transition-opacity duration-200 shrink-0">
                     Hover to learn more ↓
                   </div>
                 </div>
 
                 {/* Hover-reveal detail panel */}
-                <div className="max-h-0 group-hover:max-h-48 overflow-hidden transition-all duration-500 ease-in-out">
+                <div className="max-h-0 group-hover:max-h-48 overflow-hidden transition-all duration-500 ease-in-out shrink-0">
                   <div className={`bg-gradient-to-br ${step.color} mx-3 mb-3 rounded-xl p-4`}>
                     <p className="text-white text-sm leading-relaxed">{step.detail}</p>
                   </div>
