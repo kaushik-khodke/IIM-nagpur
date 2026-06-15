@@ -41,6 +41,82 @@ import {
   LocationHeader,
   GlobeHeader,
 } from "@/components/ui/bento-headers";
+import { CardContainer, CardBody, CardItem } from "@/components/ui/3d-card";
+
+function BlogCard3D({
+  id,
+  title,
+  category,
+  shortDescription,
+  date,
+  image_url,
+}: {
+  id: string | number;
+  title: string;
+  category: string;
+  shortDescription: string;
+  date: string;
+  image_url?: string;
+}) {
+  const { t } = useTranslation(["pages"]);
+  
+  const fallbackImages = [
+    "/login-bg.png"
+  ];
+  const imgIndex = typeof id === 'number' ? id % fallbackImages.length : String(id).length % fallbackImages.length;
+  const finalImageUrl = image_url || fallbackImages[imgIndex];
+
+  return (
+    <CardContainer className="inter-var w-full h-full py-0" containerClassName="w-full h-full py-0">
+      <CardBody className="bg-white relative group/card border-[#E2E8F0] w-full h-full rounded-2xl border flex flex-col hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] shadow-[0_2px_16px_rgba(232,114,12,0.08)] transition-all duration-300">
+        <Link to={`/blogs/${id}`} className="block h-full flex flex-col w-full">
+          <CardItem translateZ="50" className="w-full h-48 overflow-hidden rounded-t-2xl shrink-0 bg-gray-200">
+            <img
+              src={finalImageUrl}
+              alt={title}
+              className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                const target = e.currentTarget;
+                const fallback = "/login-bg.png";
+                if (target.src !== window.location.origin + fallback) {
+                  target.src = fallback;
+                }
+              }}
+            />
+          </CardItem>
+          <div className="p-5 flex-1 flex flex-col w-full">
+            <CardItem translateZ="40" className="flex items-center gap-2 mb-3">
+              <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 border border-green-200 rounded-full">
+                {category}
+              </span>
+              <span className="text-xs text-[#57585A]">{date}</span>
+            </CardItem>
+            <CardItem
+              translateZ="60"
+              className="text-[#1A1A1A] text-base mb-2 line-clamp-2"
+              style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
+            >
+              {title}
+            </CardItem>
+            <CardItem
+              as="p"
+              translateZ="50"
+              className="text-[#57585A] text-sm line-clamp-2 mb-4 flex-1 w-full"
+            >
+              {shortDescription}
+            </CardItem>
+            <CardItem
+              translateZ="30"
+              className="text-[#172263] text-sm font-medium group-hover/card:underline mt-auto"
+            >
+              {t("blogs.readMore", { ns: "pages" })} →
+            </CardItem>
+          </div>
+        </Link>
+      </CardBody>
+    </CardContainer>
+  );
+}
 
 export function Landing() {
   const { t } = useTranslation(["pages", "common", "dashboard"]);
@@ -356,7 +432,7 @@ export function Landing() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading
             ? Array(3).fill(0).map((_, i) => <SkeletonCard key={i} />)
-            : blogs.map((b) => <BlogCard key={b.id} {...b} />)}
+            : blogs.map((b) => <BlogCard3D key={b.id} {...b} />)}
         </div>
       </section>
 

@@ -467,98 +467,107 @@ export function HarvesterDetail() {
           <ArrowLeft size={16} /> Back to Harvesters
         </Link>
 
-        <div className="bg-gradient-to-br from-blue-50 to-amber-100 rounded-2xl aspect-video flex items-center justify-center mb-6 relative overflow-hidden border border-[#E2E8F0]">
-          {harvester.imagePath ? (
-            <img src={harvester.imagePath} alt={harvester.machineName} className="w-full h-full object-cover" />
-          ) : (
-            <TractorIllustration size={200} />
-          )}
-          <WheatWatermark className="right-10 top-5" />
+        <div className="flex flex-col lg:flex-row gap-6 mb-8">
+          {/* Harvester Image (Left) */}
+          <div className="w-full lg:w-2/3 h-64 md:h-80 lg:h-96 bg-white rounded-2xl border border-[#E2E8F0] shadow-sm flex items-center justify-center p-6 relative overflow-hidden">
+            <WheatWatermark className="absolute right-10 top-5 pointer-events-none opacity-20" />
+            {harvester.imagePath ? (
+              <img src={harvester.imagePath} alt={harvester.machineName} className="max-w-full max-h-full object-contain drop-shadow-md relative z-10" />
+            ) : (
+              <TractorIllustration size={200} className="relative z-10" />
+            )}
+          </div>
+
+          {/* Owner Card (Right) */}
+          <div className="w-full lg:w-1/3">
+            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)] h-full flex flex-col justify-center">
+              <h3 className="text-[#1A1A1A] mb-4 text-lg" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+                {isOwner ? "Machine Owner (You)" : "Machine Owner"}
+              </h3>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-2 ring-blue-100 shadow-sm shrink-0">
+                  <span className="text-white font-bold text-xl">{harvester.ownerName?.charAt(0) || 'U'}</span>
+                </div>
+                <div>
+                  <p className="text-[#1A1A1A] text-lg" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{harvester.ownerName}</p>
+                  <p className="text-sm text-[#57585A] flex items-center gap-1.5 mt-1"><Phone size={13} /> +91-{harvester.phone || 'XXXXXXXXXX'}</p>
+                  {harvester.whatsapp && (
+                    <p className="text-sm text-[#57585A] flex items-center gap-1.5 mt-1"><MessageCircle size={13} className="text-green-600" /> +91-{harvester.whatsapp}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-auto">
+                {isOwner ? (
+                  <div className="space-y-3">
+                    <div className="text-center text-sm py-2 px-3 bg-green-50 border border-green-200 text-green-700 rounded-xl font-semibold mb-2">
+                      This is your listing
+                    </div>
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="w-full py-3 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                    >
+                      <Trash2 size={18} /> Delete Listing
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <a
+                      href={`https://wa.me/91${harvester.whatsapp || harvester.phone}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                    >
+                      <MessageSquare size={18} /> WhatsApp Owner
+                    </a>
+                    <button
+                      onClick={() => toast.success("Message feature coming soon! Or contact directly via phone.")}
+                      className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors font-medium"
+                    >
+                      Message Owner
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        <div>
+          <div className="w-full">
             <h1
               className="text-3xl text-[#1A1A1A] mb-3"
               style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
             >
               {harvester.machineName}
             </h1>
-            <div className="flex flex-wrap gap-2 mb-6">
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm border border-blue-200">{harvester.company}</span>
-              <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">{harvester.model}</span>
+            <div className="flex flex-wrap gap-2 mb-8">
+              <span className="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200 font-medium">{harvester.company}</span>
+              <span className="px-4 py-1.5 bg-gray-50 text-gray-700 rounded-full text-sm border border-gray-200 font-medium">{harvester.model}</span>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
               {[
-                { icon: <MapPin size={18} className="text-[#172263]" />, label: "Location", value: harvester.location },
-                { icon: <Tractor size={18} className="text-[#172263]" />, label: "Company", value: harvester.company },
-                { icon: <Award size={18} className="text-[#172263]" />, label: "Model", value: harvester.model },
+                { icon: <MapPin size={20} className="text-[#172263]" />, label: "Location", value: harvester.location },
+                { icon: <Tractor size={20} className="text-[#172263]" />, label: "Company", value: harvester.company },
+                { icon: <Award size={20} className="text-[#172263]" />, label: "Model", value: harvester.model },
               ].map((item) => (
-                <div key={item.label} className="bg-white rounded-xl p-4 border border-[#E2E8F0]">
-                  <div className="flex items-center gap-2 mb-1">
-                    {item.icon}
-                    <span className="text-xs text-[#57585A]">{item.label}</span>
+                <div key={item.label} className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-blue-50 rounded-lg">{item.icon}</div>
+                    <span className="text-sm text-[#57585A] font-medium">{item.label}</span>
                   </div>
-                  <p className="text-sm text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{item.value}</p>
+                  <p className="text-lg text-[#1A1A1A] ml-11" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{item.value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 mb-6">
-              <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>About This Machine</h3>
-              <div className="w-full h-px bg-[#E2E8F0] mb-4" />
-              <p className="text-[#57585A] text-sm leading-relaxed">
+            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-8 mb-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+              <h3 className="text-xl text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>About This Machine</h3>
+              <div className="w-12 h-1 bg-[#172263] rounded-full mb-6" />
+              <p className="text-[#57585A] text-base leading-relaxed whitespace-pre-line">
                 {harvester.description || `This ${harvester.company} ${harvester.model} is well-maintained and suitable for harvesting wheat, rice, and other Rabi/Kharif crops. Available for seasonal hire with experienced operator on request.`}
               </p>
-            </div>
-          </div>
-
-          {/* Owner Card */}
-          <div>
-            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)]">
-              <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
-                {isOwner ? "Machine Owner (You)" : "Machine Owner"}
-              </h3>
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-2 ring-blue-200">
-                  <span className="text-white font-bold">{harvester.ownerName?.charAt(0) || 'U'}</span>
-                </div>
-                <div>
-                  <p className="text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{harvester.ownerName}</p>
-                  <p className="text-xs text-[#57585A] flex items-center gap-1"><Phone size={11} /> +91-{harvester.phone || 'XXXXXXXXXX'}</p>
-                </div>
-              </div>
-              {isOwner ? (
-                <div className="space-y-2">
-                  <div className="text-center text-xs py-1.5 px-3 bg-green-50 border border-green-200 text-green-700 rounded-xl font-semibold mb-2">
-                    This is your listing
-                  </div>
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="w-full py-2.5 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 transition-colors flex items-center justify-center gap-2 font-medium"
-                  >
-                    <Trash2 size={16} /> Delete Listing
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <a
-                    href={`https://wa.me/91${harvester.whatsapp || harvester.phone}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
-                  >
-                    <MessageSquare size={16} /> WhatsApp Owner
-                  </a>
-                  <button
-                    onClick={() => toast.success("Message feature coming soon! Or contact directly via phone.")}
-                    className="w-full py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors"
-                  >
-                    Message Owner
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -912,9 +921,14 @@ export function OperatorProfile() {
             <div>
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)]">
                 <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Contact Operator</h3>
-                <p className="text-sm text-[#57585A] mb-4 flex items-center gap-2">
+                <p className="text-sm text-[#57585A] mb-2 flex items-center gap-2">
                   <Phone size={14} /> +91-{operator.phone || 'XXXXXXXXXX'}
                 </p>
+                {operator.whatsapp && (
+                  <p className="text-sm text-[#57585A] mb-4 flex items-center gap-2">
+                    <MessageCircle size={14} className="text-green-600" /> +91-{operator.whatsapp}
+                  </p>
+                )}
                 <div className="space-y-2">
                   <a
                     href={`https://wa.me/91${operator.whatsapp || operator.phone}`}

@@ -444,26 +444,22 @@ export function BlogCard({
   category,
   shortDescription,
   date,
-  imageUrl,
+  image_url,
 }: {
   id: string | number;
   title: string;
   category: string;
   shortDescription: string;
   date: string;
-  imageUrl?: string;
+  image_url?: string;
 }) {
   const { t } = useTranslation(["pages"]);
   
   const fallbackImages = [
-    "/blog-punjab-farmers.png",
-    "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1592982537447-6f233c7f12e2?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1495107334309-fcf20504a5ab?auto=format&fit=crop&q=80&w=800"
+    "/login-bg.png"
   ];
   const imgIndex = typeof id === 'number' ? id % fallbackImages.length : String(id).length % fallbackImages.length;
-  const finalImageUrl = imageUrl || fallbackImages[imgIndex];
+  const finalImageUrl = image_url || fallbackImages[imgIndex];
 
   return (
     <Link to={`/blogs/${id}`} className="block group">
@@ -475,8 +471,9 @@ export function BlogCard({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={(e) => {
               const target = e.currentTarget;
-              if (target.src !== window.location.origin + "/blog-punjab-farmers.png") {
-                target.src = "/blog-punjab-farmers.png";
+              const fallback = "/login-bg.png";
+              if (target.src !== window.location.origin + fallback) {
+                target.src = fallback;
               }
             }}
           />
