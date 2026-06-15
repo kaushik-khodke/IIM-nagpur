@@ -498,36 +498,30 @@ export function HarvesterDetail() {
               </div>
               
               <div className="mt-auto">
-                {isOwner ? (
-                  <div className="space-y-3">
-                    <div className="text-center text-sm py-2 px-3 bg-green-50 border border-green-200 text-green-700 rounded-xl font-semibold mb-2">
-                      This is your listing
-                    </div>
+                <div className="space-y-3">
+                  {isOwner && (
                     <button
-                      onClick={() => setShowDeleteConfirm(true)}
-                      className="w-full py-3 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                      onClick={() => navigate(`/harvesters/${id}/edit`)}
+                      className="w-full py-3 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 font-medium"
                     >
-                      <Trash2 size={18} /> Delete Listing
+                      <Pencil size={18} /> Edit Harvester
                     </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <a
-                      href={`https://wa.me/91${harvester.whatsapp || harvester.phone}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-3 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
-                    >
-                      <MessageSquare size={18} /> WhatsApp Owner
-                    </a>
-                    <button
-                      onClick={() => toast.success("Message feature coming soon! Or contact directly via phone.")}
-                      className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors font-medium"
-                    >
-                      Message Owner
-                    </button>
-                  </div>
-                )}
+                  )}
+                  <a
+                    href={`https://wa.me/91${harvester.whatsapp || harvester.phone}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                  >
+                    <MessageSquare size={18} /> {isOwner ? "WhatsApp" : "WhatsApp Owner"}
+                  </a>
+                  <button
+                    onClick={() => toast.success("Message feature coming soon! Or contact directly via phone.")}
+                    className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors font-medium"
+                  >
+                    Message Owner
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -569,6 +563,17 @@ export function HarvesterDetail() {
                 {harvester.description || `This ${harvester.company} ${harvester.model} is well-maintained and suitable for harvesting wheat, rice, and other Rabi/Kharif crops. Available for seasonal hire with experienced operator on request.`}
               </p>
             </div>
+
+            {isOwner && (
+              <div className="flex justify-end mb-8">
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm hover:bg-red-100 hover:text-red-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                >
+                  <Trash2 size={18} /> Delete Listing
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1702,6 +1707,376 @@ export function AddHarvester() {
           </div>
           <button type="submit" disabled={loading} className="w-full py-3 bg-[#15803D] text-white rounded-xl hover:bg-green-700 transition-colors shadow-md disabled:opacity-60 flex items-center justify-center gap-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
             {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "Submit Listing →"}
+          </button>
+        </form>
+      </div>
+      <ImageCropperDialog
+        open={cropperOpen}
+        onOpenChange={setCropperOpen}
+        imageSrc={cropperImageSrc}
+        aspect={4 / 3}
+        onCropCompleteAction={async (croppedUrl) => {
+          setImagePreview(croppedUrl);
+          const res = await fetch(croppedUrl);
+          const blob = await res.blob();
+          const file = new File([blob], "harvester_photo.jpg", { type: "image/jpeg" });
+          setImageFile(file);
+        }}
+      />
+    </div>
+  );
+}
+
+
+// ===========================
+// EDIT HARVESTER FORM
+// ===========================
+export function EditHarvester() {
+  const { id } = useParams();
+  const [company, setCompany] = useState("");
+  const [customCompany, setCustomCompany] = useState("");
+  const [model, setModel] = useState("");
+  const [customModel, setCustomModel] = useState("");
+  const [year, setYear] = useState("");
+  const [location, setLocation] = useState("");
+  const [state, setState] = useState("");
+  const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchHarvester = async () => {
+      try {
+        const token = localStorage.getItem("tractorsewa_token");
+        const res = await fetch(`/api/harvesters/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const isStandardCompany = HARVESTER_COMPANIES.includes(data.company);
+          setCompany(isStandardCompany ? data.company : "Other");
+          if (!isStandardCompany) setCustomCompany(data.company);
+          
+          const isStandardModel = HARVESTER_MODELS[data.company]?.includes(data.model);
+          setModel(isStandardModel ? data.model : "Other / Custom Model");
+          if (!isStandardModel) setCustomModel(data.model);
+
+          setYear(data.year?.toString() || "");
+          setLocation(data.location || "");
+          setState(data.state || "");
+          setPhone(data.phone || "");
+          setWhatsapp(data.whatsapp || "");
+          setDescription(data.description || "");
+          if (data.imagePath) setImagePreview(data.imagePath);
+        } else {
+          toast.error("Failed to load harvester details");
+          navigate("/harvesters");
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Error loading harvester");
+      } finally {
+        setFetching(false);
+      }
+    };
+    if (id) fetchHarvester();
+  }, [id, navigate]);
+
+  const handleDetectLocation = async () => {
+    const loadingToastId = toast.loading("Detecting location...");
+    const detected = await detectUserLocation();
+    toast.dismiss(loadingToastId);
+    if (detected) {
+      const matched = matchLocationWithDistricts(detected.state, detected.district);
+      if (matched) {
+        setState(matched.state);
+        setLocation(matched.district);
+        localStorage.setItem("tractorsewa_default_state", matched.state);
+        localStorage.setItem("tractorsewa_default_district", matched.district);
+        toast.success(`Location set to ${matched.district}, ${matched.state}`);
+      } else {
+        toast.error("Could not match detected location with Indian states/districts.");
+      }
+    } else {
+      toast.error("Could not detect location. Please select manually.");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const finalCompany = company === "Other" ? customCompany.trim() : company;
+    const finalModel = model === "Other / Custom Model" ? customModel.trim() : model;
+
+    if (!finalCompany) {
+      toast.error("Please specify a manufacturer company");
+      return;
+    }
+    if (!finalModel) {
+      toast.error("Please specify a harvester model");
+      return;
+    }
+    
+    const machineName = `${finalCompany} ${finalModel}`;
+
+    if (year && (isNaN(Number(year)) || parseInt(year) < 1900 || parseInt(year) > new Date().getFullYear() + 1)) {
+      toast.error("Please enter a valid model year");
+      return;
+    }
+    if (!state) {
+      toast.error("Please select the state");
+      return;
+    }
+    if (!location) {
+      toast.error("Please select the district location");
+      return;
+    }
+    if (!phone.trim()) {
+      toast.error("Please enter a contact phone number");
+      return;
+    }
+    if (phone.trim().length !== 10 || isNaN(Number(phone.trim()))) {
+      toast.error("Please enter a valid 10-digit phone number");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      let imagePath = undefined;
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          imagePath = uploadData.url;
+        }
+      }
+
+      const token = localStorage.getItem("tractorsewa_token");
+      const res = await fetch(`/api/harvesters/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          machineName,
+          company: finalCompany,
+          model: finalModel,
+          year,
+          location,
+          state,
+          phone,
+          whatsapp,
+          description,
+          ...(imagePath && { imagePath })
+        })
+      });
+
+      if (res.ok) {
+        toast.success("Harvester updated successfully!");
+        navigate(`/harvesters/${id}`);
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to update harvester");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error updating harvester");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (fetching) return <LoadingSpinner />;
+
+  return (
+    <div className="min-h-screen bg-[#ffffff]">
+      <Navbar variant="auth" />
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        <Link to={`/harvesters/${id}`} className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263] transition-colors group">
+          <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+          Back to Harvester Detail
+        </Link>
+        <PageHeader title="Edit Harvester" subtitle="Update your machine details" />
+
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
+          <div 
+            onClick={() => document.getElementById("harvester-photo")?.click()}
+            className="border-2 border-dashed border-[#172263] rounded-2xl bg-blue-50 py-10 text-center cursor-pointer hover:bg-blue-100 transition-colors relative overflow-hidden h-44 flex flex-col items-center justify-center"
+          >
+            <input 
+              type="file" 
+              id="harvester-photo" 
+              accept="image/*" 
+              className="hidden" 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setCropperImageSrc(URL.createObjectURL(file));
+                  setCropperOpen(true);
+                }
+                e.target.value = "";
+              }}
+            />
+            {imagePreview ? (
+              <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <>
+                <Upload size={32} className="text-orange-400 mx-auto mb-2" />
+                <p className="text-sm text-[#57585A]">Upload new machine photo</p>
+              </>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-[#57585A] block mb-1.5">Manufacturer Company</label>
+              <select 
+                value={company} 
+                onChange={(e) => {
+                  setCompany(e.target.value);
+                  setModel("");
+                  setCustomCompany("");
+                  setCustomModel("");
+                }} 
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
+              >
+                <option value="">Select Company</option>
+                {HARVESTER_COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model</label>
+              <select 
+                value={model} 
+                onChange={(e) => {
+                  setModel(e.target.value);
+                  setCustomModel("");
+                }}
+                disabled={!company}
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
+              >
+                <option value="">Select Model</option>
+                {company && HARVESTER_MODELS[company]?.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {company === "Other" && (
+            <div>
+              <label className="text-sm text-[#57585A] block mb-1.5">Custom Company Name *</label>
+              <input 
+                value={customCompany} 
+                onChange={(e) => setCustomCompany(e.target.value)} 
+                placeholder="Enter manufacturer name (e.g. John Deere)" 
+                required 
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" 
+              />
+            </div>
+          )}
+
+          {(company === "Other" || model === "Other / Custom Model") && company !== "" && (
+            <div>
+              <label className="text-sm text-[#57585A] block mb-1.5">Custom Model Name *</label>
+              <input 
+                value={customModel} 
+                onChange={(e) => setCustomModel(e.target.value)} 
+                placeholder="Enter harvester model name (e.g. S660)" 
+                required 
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" 
+              />
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm text-[#57585A] block mb-1.5">Year of Manufacture</label>
+              <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g. 2020" className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+            </div>
+            <div>
+              <label className="text-sm text-[#57585A] block mb-1.5">Phone Number *</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" required className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-[#57585A] block mb-1.5">WhatsApp Number</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
+                <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="9876543210" className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-[#E2E8F0] pt-4 my-2">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-sm font-medium text-[#1A1A1A]">Location Details</span>
+              <button
+                type="button"
+                onClick={handleDetectLocation}
+                className="text-xs text-[#172263] hover:underline flex items-center gap-1 font-semibold"
+              >
+                <MapPin size={12} className="text-[#172263]" /> Auto-detect Location
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-[#57585A] block mb-1">State *</label>
+                <select 
+                  value={state} 
+                  onChange={(e) => {
+                    setState(e.target.value);
+                    setLocation("");
+                  }} 
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
+                >
+                  <option value="">Select State</option>
+                  {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-[#57585A] block mb-1">District / City *</label>
+                <select 
+                  value={location} 
+                  onChange={(e) => setLocation(e.target.value)} 
+                  disabled={!state}
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
+                >
+                  <option value="">Select District</option>
+                  {state &&
+                    districtsData.states
+                      .find((s) => s.state === state)
+                      ?.districts.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm text-[#57585A] block mb-1.5">Description</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Describe the machine condition and availability..." className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" />
+          </div>
+          <button type="submit" disabled={loading} className="w-full py-3 bg-[#15803D] text-white rounded-xl hover:bg-green-700 transition-colors shadow-md disabled:opacity-60 flex items-center justify-center gap-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+            {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "Save Changes →"}
           </button>
         </form>
       </div>

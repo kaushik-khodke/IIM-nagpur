@@ -415,6 +415,34 @@ app.post('/api/harvesters', authenticateToken, async (req, res) => {
   }
 });
 
+app.put('/api/harvesters/:id', authenticateToken, async (req, res) => {
+  const { machineName, company, model, year, location, state, phone, whatsapp, description, imagePath } = req.body;
+  if (!machineName || !company || !model || !location || !state) {
+    return res.status(400).json({ error: 'Please provide all required fields' });
+  }
+
+  try {
+    const [rows] = await db.query('SELECT * FROM harvesters WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Harvester not found' });
+    }
+
+    const harvester = rows[0];
+    if (harvester.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized to edit this machine listing' });
+    }
+
+    await db.query(
+      'UPDATE harvesters SET machine_name = ?, company = ?, model = ?, year = ?, location = ?, state = ?, phone = ?, whatsapp = ?, description = ?, image_path = ? WHERE id = ?',
+      [machineName, company, model, year ? parseInt(year) : null, location, state, phone || null, whatsapp || null, description || null, imagePath !== undefined ? imagePath : harvester.image_path, req.params.id]
+    );
+    res.json({ message: 'Harvester updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.delete('/api/harvesters/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM harvesters WHERE id = ?', [req.params.id]);

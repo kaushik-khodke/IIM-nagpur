@@ -18,6 +18,7 @@ import {
   Messages,
   EditProfile,
   AdminPortal,
+  EditHarvester,
 } from "./components/Pages";
 import { EnquiryPage } from "./components/Enquiry";
 import { ProtectedRoute } from "./components/shared";
@@ -70,6 +71,14 @@ export default function App() {
           element={
             <ProtectedPage>
               <HarvesterDetail />
+            </ProtectedPage>
+          }
+        />
+        <Route
+          path="/harvesters/:id/edit"
+          element={
+            <ProtectedPage>
+              <EditHarvester />
             </ProtectedPage>
           }
         />
