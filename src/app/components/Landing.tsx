@@ -173,12 +173,70 @@ export function Landing() {
   }, []);
 
 
+  const [activePersona, setActivePersona] = useState<'farmer' | 'operator'>('farmer');
+  const [expandedStep, setExpandedStep] = useState<number | null>(null);
+
   const steps = [
     { num: "01", icon: <Users size={24} />, title: "Register", desc: "Create your free account as farmer, operator, or both." },
     { num: "02", icon: <Star size={24} />, title: "Create Profile", desc: "Add your machine expertise, location, and availability." },
     { num: "03", icon: <Search size={24} />, title: "Find Match", desc: "Search and filter operators or harvesters near you." },
     { num: "04", icon: <Wheat size={24} />, title: "Connect & Harvest", desc: "Message directly, agree on terms, and get to work!" },
   ];
+
+  const personaSteps = {
+    farmer: [
+      {
+        num: "01", icon: <Users size={22} />, title: "Register as Farmer",
+        desc: "Create your free account in under 2 minutes.",
+        detail: "Sign up with your phone number, select your state and district. No paperwork, no fees — just a quick profile and you're in.",
+        color: "from-blue-600 to-blue-800",
+      },
+      {
+        num: "02", icon: <MapPin size={22} />, title: "Post Your Requirement",
+        desc: "Tell us what crop, machine type, and dates you need.",
+        detail: "Select your crop type (paddy, wheat, soybean...), pick your harvest start date, and specify how many days you need a harvester. Done in seconds.",
+        color: "from-amber-500 to-orange-600",
+      },
+      {
+        num: "03", icon: <Search size={22} />, title: "Browse & Filter Matches",
+        desc: "See verified operators and harvesters near you instantly.",
+        detail: "Filter by district, machine brand, availability, and experience. View full profiles with ratings, past harvests, and contact info before you connect.",
+        color: "from-green-500 to-green-700",
+      },
+      {
+        num: "04", icon: <Wheat size={22} />, title: "Connect & Get Harvested",
+        desc: "WhatsApp or message directly. Agree on terms. Harvest!",
+        detail: "No middlemen. Contact the operator or owner directly via WhatsApp or the in-app message system. Agree on your rate, confirm dates, and your crop is harvested on time.",
+        color: "from-[#172263] to-[#0f174d]",
+      },
+    ],
+    operator: [
+      {
+        num: "01", icon: <Users size={22} />, title: "Register as Operator",
+        desc: "Create your operator profile and showcase your skills.",
+        detail: "Register with your machine type, years of experience, and operating district. Add your photo and certifications to stand out to farmers looking for reliable operators.",
+        color: "from-blue-600 to-blue-800",
+      },
+      {
+        num: "02", icon: <Star size={22} />, title: "List Your Availability",
+        desc: "Set your schedule and service areas so farmers find you.",
+        detail: "Mark which months you're available, which districts you travel to, and what machines you can operate. Update anytime — you're always in control.",
+        color: "from-amber-500 to-orange-600",
+      },
+      {
+        num: "03", icon: <BarChart3 size={22} />, title: "Receive Requests",
+        desc: "Farmers will find and contact you directly.",
+        detail: "When a farmer posts a requirement matching your profile, they'll see you in search results. You'll get direct WhatsApp or in-app messages from interested farmers.",
+        color: "from-green-500 to-green-700",
+      },
+      {
+        num: "04", icon: <Wheat size={22} />, title: "Work & Earn",
+        desc: "Confirm the job, head to the field, and earn fairly.",
+        detail: "Agree on your daily rate directly with the farmer — no commission cuts, no middlemen. More work, better pay, and a growing reputation on the platform.",
+        color: "from-[#172263] to-[#0f174d]",
+      },
+    ],
+  };
 
   const features = [
     { icon: <Search size={22} />, title: "Operator Search", desc: "Find verified operators by location, experience & machine type.", headerComponent: <SearchHeader /> },
@@ -230,24 +288,32 @@ export function Landing() {
               {t("landing.subtitle", { ns: "pages" })}
             </p>
             <div className="flex flex-wrap gap-4 mb-8">
-              <button
-                onClick={() => {
-                  setChooserMode("register");
-                  setChooserOpen(true);
-                }}
-                className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
-              >
-                {t("landing.getStarted", { ns: "pages" })} <ArrowRight size={18} />
-              </button>
-              <Link
-                to="/dashboard"
-                onClick={() => {
-                  localStorage.setItem("tractorsewa_preview_mode", "true");
-                }}
-                className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
-              >
-                {t("landing.exploreDashboard", { ns: "pages" })}
-              </Link>
+              {localStorage.getItem("tractorsewa_token") ? (
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
+                >
+                  Go to Dashboard <ArrowRight size={18} />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/enquiry"
+                    className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
+                  >
+                    Submit Enquiry <ArrowRight size={18} />
+                  </Link>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => {
+                      localStorage.setItem("tractorsewa_preview_mode", "true");
+                    }}
+                    className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
+                  >
+                    {t("landing.exploreDashboard", { ns: "pages" })}
+                  </Link>
+                </>
+              )}
             </div>
             <div className="flex flex-wrap gap-5 text-sm text-[#57585A]">
               {["Free to Join", "Verified Profiles", "50+ Cities"].map((t) => (
@@ -337,50 +403,6 @@ export function Landing() {
       </section>
       </div>
 
-      {/* ---- HOW IT WORKS ---- */}
-      <section id="how-it-works" className="py-20 w-full mx-auto px-4 sm:px-6 min-h-[calc(100vh-64px)] flex flex-col justify-center">
-        <div className="text-center mb-14">
-          <h2
-            className="text-4xl text-[#1A1A1A] mb-3"
-            style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-          >
-            How It Works
-          </h2>
-          <p className="text-[#57585A] max-w-xl mx-auto">
-            Get started in minutes and connect with the right people for your harvest season.
-          </p>
-        </div>
-        <div className="relative grid md:grid-cols-4 gap-8">
-          <div className="hidden md:block absolute top-10 left-[12%] right-[12%] h-0.5 border-t-2 border-dashed border-blue-200" />
-          {steps.map((step, i) => (
-            <motion.div
-              key={i}
-              className="relative text-center"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.15 }}
-            >
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-[#172263] rounded-full flex flex-col items-center justify-center relative z-10">
-                  <span className="text-white text-xs mb-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                    {step.num}
-                  </span>
-                  <span className="text-white">{step.icon}</span>
-                </div>
-              </div>
-              <h3
-                className="text-[#1A1A1A] text-lg mb-2"
-                style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
-              >
-                {step.title}
-              </h3>
-              <p className="text-[#57585A] text-sm leading-relaxed">{step.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
         {/* ---- FEATURES ---- */}
         <section id="features" className="py-20 bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA]">
           <div className="w-full mx-auto px-4 sm:px-6">
@@ -413,6 +435,101 @@ export function Landing() {
             </BentoGrid>
           </div>
         </section>
+
+      {/* ---- HOW IT WORKS ---- */}
+      <section id="how-it-works" className="py-20 w-full mx-auto px-4 sm:px-6 min-h-[calc(100vh-64px)] flex flex-col justify-center">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h2 className="text-4xl text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
+            How It Works
+          </h2>
+          <p className="text-[#57585A] max-w-xl mx-auto mb-8">
+            A tailored journey for every person on the platform. Choose your role below.
+          </p>
+
+          {/* Persona Toggle */}
+          <div className="inline-flex items-center bg-[#F4F6FA] border border-[#E2E8F0] rounded-2xl p-1.5 gap-1">
+            {([['farmer', '🌾 I am a Farmer'], ['operator', '🚜 I am an Operator']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => { setActivePersona(key); setExpandedStep(null); }}
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                  activePersona === key
+                    ? 'bg-[#172263] text-white shadow-md scale-[1.02]'
+                    : 'text-[#57585A] hover:text-[#172263] hover:bg-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Steps Grid */}
+        <motion.div
+          key={activePersona}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="grid md:grid-cols-4 gap-5 relative"
+        >
+          {personaSteps[activePersona].map((step, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: i * 0.1 }}
+              className="relative z-10 group h-full"
+            >
+              <div className="w-full h-full flex flex-col text-left rounded-2xl border border-[#E2E8F0] bg-white group-hover:border-[#172263]/50 group-hover:shadow-[0_8px_32px_rgba(23,34,99,0.13)] transition-all duration-300 overflow-hidden">
+                {/* Always-visible top content */}
+                <div className="p-5 flex-1 flex flex-col">
+                  <div className="flex justify-center mb-4">
+                    <div className={`w-16 h-16 bg-gradient-to-br ${step.color} rounded-2xl flex flex-col items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110 shrink-0`}>
+                      <span className="text-white/70 text-[10px] font-bold mb-0.5">{step.num}</span>
+                      <span className="text-white">{step.icon}</span>
+                    </div>
+                  </div>
+                  <h3 className="text-[#1A1A1A] text-base text-center mb-1.5 group-hover:text-[#172263] transition-colors duration-300 shrink-0" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+                    {step.title}
+                  </h3>
+                  <p className="text-[#57585A] text-sm leading-relaxed text-center flex-1">{step.desc}</p>
+
+                  {/* Hover hint */}
+                  <div className="flex items-center justify-center gap-1 mt-auto pt-3 text-xs font-semibold text-zinc-300 group-hover:opacity-0 transition-opacity duration-200 shrink-0">
+                    Hover to learn more ↓
+                  </div>
+                </div>
+
+                {/* Hover-reveal detail panel */}
+                <div className="max-h-0 group-hover:max-h-48 overflow-hidden transition-all duration-500 ease-in-out shrink-0">
+                  <div className={`bg-gradient-to-br ${step.color} mx-3 mb-3 rounded-xl p-4`}>
+                    <p className="text-white text-sm leading-relaxed">{step.detail}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* CTA below steps */}
+        <motion.div
+          className="text-center mt-12"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.5 }}
+        >
+          <p className="text-sm text-zinc-500 mb-4">Ready to get started?</p>
+          <button
+            onClick={() => { setChooserMode("register"); setChooserOpen(true); }}
+            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#172263] text-white rounded-xl font-semibold hover:bg-[#11194A] transition-all shadow-[0_4px_14px_rgba(23,34,99,0.3)] hover:shadow-[0_6px_20px_rgba(23,34,99,0.4)] hover:-translate-y-0.5"
+          >
+            Join Free — It Takes 2 Minutes <ArrowRight size={16} />
+          </button>
+        </motion.div>
+      </section>
+
 
 
 
