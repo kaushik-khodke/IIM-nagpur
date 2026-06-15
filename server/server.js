@@ -1181,6 +1181,134 @@ app.post('/api/admin/users/bulk', authenticateToken, isAdmin, csvUpload.single('
   });
 });
 
+// =============================================
+// SETTINGS ROUTES
+// =============================================
+
+// GET /api/settings — fetch current user's full settings data
+app.get('/api/settings', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT id, name, email, phone, whatsapp_number, state, bio, image_path, created_at,
+              notifications_email, notifications_sms, do_not_disturb_start, do_not_disturb_end,
+              profile_visibility, show_contact_info
+       FROM users WHERE id = ?`,
+      [req.user.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const u = rows[0];
+    res.json({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      phone: u.phone,
+      whatsappNumber: u.whatsapp_number,
+      state: u.state,
+      bio: u.bio,
+      imagePath: u.image_path ? `/uploads/${path.basename(u.image_path)}` : null,
+      createdAt: u.created_at,
+      notificationsEmail: u.notifications_email === 1,
+      notificationsSms: u.notifications_sms === 1,
+      doNotDisturbStart: u.do_not_disturb_start,
+      doNotDisturbEnd: u.do_not_disturb_end,
+      profileVisibility: u.profile_visibility || 'public',
+      showContactInfo: u.show_contact_info === 1,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// PATCH /api/settings/account — update name, phone, whatsapp, state, bio
+app.patch('/api/settings/account', authenticateToken, async (req, res) => {
+  try {
+    const { name, phone, whatsappNumber, state, bio } = req.body;
+    await db.query(
+      'UPDATE users SET name = ?, phone = ?, whatsapp_number = ?, state = ?, bio = ? WHERE id = ?',
+      [name, phone, whatsappNumber || null, state, bio || null, req.user.id]
+    );
+    res.json({ message: 'Account updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update account' });
+  }
+});
+
+// POST /api/settings/password — change password
+app.post('/api/settings/password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Both current and new password are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+    const [rows] = await db.query('SELECT password FROM users WHERE id = ?', [req.user.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const valid = await bcrypt.compare(currentPassword, rows[0].password);
+    if (!valid) return res.status(401).json({ error: 'Current password is incorrect' });
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await db.query('UPDATE users SET password = ? WHERE id = ?', [hashed, req.user.id]);
+    res.json({ message: 'Password changed successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// PATCH /api/settings/notifications — update notification preferences
+app.patch('/api/settings/notifications', authenticateToken, async (req, res) => {
+  try {
+    const { notificationsEmail, notificationsSms, doNotDisturbStart, doNotDisturbEnd } = req.body;
+    await db.query(
+      'UPDATE users SET notifications_email = ?, notifications_sms = ?, do_not_disturb_start = ?, do_not_disturb_end = ? WHERE id = ?',
+      [notificationsEmail ? 1 : 0, notificationsSms ? 1 : 0, doNotDisturbStart || null, doNotDisturbEnd || null, req.user.id]
+    );
+    res.json({ message: 'Notification preferences updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update notifications' });
+  }
+});
+
+// PATCH /api/settings/privacy — update privacy settings
+app.patch('/api/settings/privacy', authenticateToken, async (req, res) => {
+  try {
+    const { profileVisibility, showContactInfo } = req.body;
+    const validVisibility = ['public', 'private', 'hidden'];
+    if (profileVisibility && !validVisibility.includes(profileVisibility)) {
+      return res.status(400).json({ error: 'Invalid profile visibility value' });
+    }
+    await db.query(
+      'UPDATE users SET profile_visibility = ?, show_contact_info = ? WHERE id = ?',
+      [profileVisibility || 'public', showContactInfo ? 1 : 0, req.user.id]
+    );
+    res.json({ message: 'Privacy settings updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update privacy settings' });
+  }
+});
+
+// DELETE /api/settings/account — permanently delete account (requires password confirmation)
+app.delete('/api/settings/account', authenticateToken, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Password confirmation required' });
+    const [rows] = await db.query('SELECT password FROM users WHERE id = ?', [req.user.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const valid = await bcrypt.compare(password, rows[0].password);
+    if (!valid) return res.status(401).json({ error: 'Incorrect password' });
+    await db.query('DELETE FROM users WHERE id = ?', [req.user.id]);
+    res.json({ message: 'Account permanently deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete account' });
+  }
+});
+
 // Start Server and Initialize Database
 db.initializeDatabase().then(() => {
   app.listen(PORT, () => {

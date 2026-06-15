@@ -20,6 +20,7 @@ import {
   AdminPortal,
   EditHarvester,
 } from "./components/Pages";
+import { Settings } from "./components/Settings";
 import { EnquiryPage } from "./components/Enquiry";
 import { ProtectedRoute } from "./components/shared";
 
@@ -159,6 +160,14 @@ export default function App() {
           element={
             <ProtectedPage>
               <Messages />
+            </ProtectedPage>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedPage>
+              <Settings />
             </ProtectedPage>
           }
         />

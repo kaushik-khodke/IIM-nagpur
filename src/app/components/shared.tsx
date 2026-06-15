@@ -899,7 +899,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/profile/edit" className="flex items-center gap-2 cursor-pointer">
+                        <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
                           <Settings size={15} /> Settings
                         </Link>
                       </DropdownMenuItem>

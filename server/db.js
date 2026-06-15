@@ -175,6 +175,30 @@ async function initializeDatabase() {
       // Column might already exist, safe to ignore
     }
 
+    // Settings columns
+    try {
+      await activePool.query("ALTER TABLE users ADD COLUMN notifications_email TINYINT(1) DEFAULT 1 AFTER image_path");
+    } catch (err) { /* already exists */ }
+    try {
+      await activePool.query("ALTER TABLE users ADD COLUMN notifications_sms TINYINT(1) DEFAULT 1 AFTER notifications_email");
+    } catch (err) { /* already exists */ }
+    try {
+      await activePool.query("ALTER TABLE users ADD COLUMN do_not_disturb_start TIME DEFAULT NULL AFTER notifications_sms");
+    } catch (err) { /* already exists */ }
+    try {
+      await activePool.query("ALTER TABLE users ADD COLUMN do_not_disturb_end TIME DEFAULT NULL AFTER do_not_disturb_start");
+    } catch (err) { /* already exists */ }
+    try {
+      await activePool.query("ALTER TABLE users ADD COLUMN profile_visibility VARCHAR(20) DEFAULT 'public' AFTER do_not_disturb_end");
+    } catch (err) { /* already exists */ }
+    try {
+      await activePool.query("ALTER TABLE users ADD COLUMN show_contact_info TINYINT(1) DEFAULT 1 AFTER profile_visibility");
+    } catch (err) { /* already exists */ }
+    try {
+      await activePool.query("ALTER TABLE users ADD COLUMN whatsapp_number VARCHAR(20) DEFAULT NULL AFTER phone");
+    } catch (err) { /* already exists */ }
+
+
     // Seed hardcoded administrator account if not exists
     try {
       const [admins] = await activePool.query("SELECT id FROM users WHERE email = 'admin@123'");
