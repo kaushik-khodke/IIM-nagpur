@@ -485,8 +485,12 @@ export function HarvesterDetail() {
                 {isOwner ? "Machine Owner (You)" : "Machine Owner"}
               </h3>
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-2 ring-blue-100 shadow-sm shrink-0">
-                  <span className="text-white font-bold text-xl">{harvester.ownerName?.charAt(0) || 'U'}</span>
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-2 ring-blue-100 shadow-sm shrink-0 overflow-hidden">
+                  {harvester.ownerProfilePic ? (
+                    <img src={harvester.ownerProfilePic} alt={harvester.ownerName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white font-bold text-xl">{harvester.ownerName?.charAt(0) || 'U'}</span>
+                  )}
                 </div>
                 <div>
                   <p className="text-[#1A1A1A] text-lg" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{harvester.ownerName}</p>
@@ -850,9 +854,9 @@ export function OperatorProfile() {
         </div>
         <div className="w-full mx-auto px-4 sm:px-6 -mt-16">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden">
-              {operator.image_path ? (
-                <img src={operator.image_path} alt={operator.name} className="w-full h-full object-cover" />
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden shrink-0">
+              {operator.image_path || operator.ownerProfilePic ? (
+                <img src={operator.image_path || operator.ownerProfilePic} alt={operator.name} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-white text-3xl font-bold">{operator.name.charAt(0)}</span>
               )}
@@ -3683,6 +3687,12 @@ export function Profile() {
     <div className="min-h-screen bg-[#ffffff] text-[#1A1A1A]">
       <Navbar variant="auth" />
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+        <div className="mb-6">
+          <Link to="/dashboard" className="inline-flex items-center gap-2 text-[#57585A] text-sm hover:text-[#172263] transition-colors group">
+            <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+            Back to Dashboard
+          </Link>
+        </div>
         {/* Header Info Section */}
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-16 pb-8 border-b border-zinc-200">
           {/* Left: Avatar with modern rounded-2xl border and shadow */}

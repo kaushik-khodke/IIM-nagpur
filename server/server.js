@@ -259,13 +259,18 @@ app.get('/api/operators', async (req, res) => {
 
 app.get('/api/operators/:id', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM operators WHERE id = ?', [req.params.id]);
+    const [rows] = await db.query(
+      'SELECT o.*, u.name as ownerName, u.image_path as ownerProfilePic FROM operators o JOIN users u ON o.user_id = u.id WHERE o.id = ?', 
+      [req.params.id]
+    );
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Operator not found' });
     }
     const op = rows[0];
     res.json({
       ...op,
+      ownerName: op.ownerName,
+      ownerProfilePic: op.ownerProfilePic,
       machineExpertise: JSON.parse(op.machine_expertise || '[]')
     });
   } catch (error) {
@@ -309,7 +314,7 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
 // 5. Harvester Routes
 app.get('/api/harvesters', async (req, res) => {
   const { search, location, state, company, limit, operatorId } = req.query;
-  let queryStr = 'SELECT h.*, u.name as ownerName FROM harvesters h JOIN users u ON h.user_id = u.id WHERE 1=1';
+  let queryStr = 'SELECT h.*, u.name as ownerName, u.image_path as ownerProfilePic FROM harvesters h JOIN users u ON h.user_id = u.id WHERE 1=1';
   const queryParams = [];
 
   if (search) {
@@ -357,7 +362,8 @@ app.get('/api/harvesters', async (req, res) => {
       whatsapp: r.whatsapp,
       description: r.description,
       imagePath: r.image_path,
-      ownerName: r.ownerName
+      ownerName: r.ownerName,
+      ownerProfilePic: r.ownerProfilePic
     }));
     res.json(formattedRows);
   } catch (error) {
@@ -369,7 +375,7 @@ app.get('/api/harvesters', async (req, res) => {
 app.get('/api/harvesters/:id', async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT h.*, u.name as ownerName FROM harvesters h JOIN users u ON h.user_id = u.id WHERE h.id = ?', 
+      'SELECT h.*, u.name as ownerName, u.image_path as ownerProfilePic FROM harvesters h JOIN users u ON h.user_id = u.id WHERE h.id = ?', 
       [req.params.id]
     );
     if (rows.length === 0) {
@@ -389,7 +395,8 @@ app.get('/api/harvesters/:id', async (req, res) => {
       whatsapp: r.whatsapp,
       description: r.description,
       imagePath: r.image_path,
-      ownerName: r.ownerName
+      ownerName: r.ownerName,
+      ownerProfilePic: r.ownerProfilePic
     });
   } catch (error) {
     console.error(error);

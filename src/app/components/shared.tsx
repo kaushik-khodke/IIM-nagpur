@@ -371,6 +371,7 @@ export function HarvesterCard({
   model,
   location,
   ownerName,
+  ownerProfilePic,
   imagePath,
   isOwner,
 }: {
@@ -381,6 +382,7 @@ export function HarvesterCard({
   model: string;
   location: string;
   ownerName: string;
+  ownerProfilePic?: string;
   imagePath?: string;
   isOwner?: boolean;
 }) {
@@ -426,8 +428,12 @@ export function HarvesterCard({
             <MapPin size={12} /> {location}
           </p>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center">
-              <span className="text-white text-xs font-bold">{ownerName.charAt(0)}</span>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center overflow-hidden shrink-0">
+              {ownerProfilePic ? (
+                <img src={ownerProfilePic} alt={ownerName} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white text-xs font-bold">{ownerName.charAt(0)}</span>
+              )}
             </div>
             <span className="text-xs text-[#57585A]">Owner: {ownerName}</span>
           </div>
