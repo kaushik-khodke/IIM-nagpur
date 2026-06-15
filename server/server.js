@@ -472,8 +472,8 @@ app.delete('/api/harvesters/:id', authenticateToken, async (req, res) => {
 
 // 6. Request Routes
 app.get('/api/requests', authenticateToken, async (req, res) => {
-  const { tab, userId, location, state } = req.query;
-  let queryStr = 'SELECT r.*, u.name as requesterName, u.phone as requesterPhone FROM requests r JOIN users u ON r.user_id = u.id WHERE 1=1';
+  const { tab, userId, location, state, limit } = req.query;
+  let queryStr = 'SELECT r.*, u.name as requesterName, u.phone as requesterPhone, u.image_path as requesterProfilePic FROM requests r JOIN users u ON r.user_id = u.id WHERE 1=1';
   const queryParams = [];
 
   if (tab) {
@@ -495,7 +495,10 @@ app.get('/api/requests', authenticateToken, async (req, res) => {
 
   queryStr += ' ORDER BY r.id DESC';
 
-
+  if (limit) {
+    queryStr += ' LIMIT ?';
+    queryParams.push(parseInt(limit));
+  }
   try {
     const [rows] = await db.query(queryStr, queryParams);
     const formattedRows = rows.map(r => ({
@@ -509,7 +512,8 @@ app.get('/api/requests', authenticateToken, async (req, res) => {
       status: r.status,
       description: r.description,
       requesterName: r.requesterName,
-      requesterPhone: r.requesterPhone
+      requesterPhone: r.requesterPhone,
+      requesterProfilePic: r.requesterProfilePic
     }));
     res.json(formattedRows);
   } catch (error) {
@@ -521,7 +525,7 @@ app.get('/api/requests', authenticateToken, async (req, res) => {
 app.get('/api/requests/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT r.*, u.name as requesterName, u.phone as requesterPhone FROM requests r JOIN users u ON r.user_id = u.id WHERE r.id = ?', 
+      'SELECT r.*, u.name as requesterName, u.phone as requesterPhone, u.image_path as requesterProfilePic FROM requests r JOIN users u ON r.user_id = u.id WHERE r.id = ?', 
       [req.params.id]
     );
     if (rows.length === 0) {
@@ -540,7 +544,8 @@ app.get('/api/requests/:id', authenticateToken, async (req, res) => {
       status: r.status,
       description: r.description,
       requesterName: r.requesterName,
-      requesterPhone: r.requesterPhone
+      requesterPhone: r.requesterPhone,
+      requesterProfilePic: r.requesterProfilePic
     });
   } catch (error) {
     console.error(error);

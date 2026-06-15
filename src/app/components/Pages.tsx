@@ -2637,8 +2637,8 @@ export function RequestDetail() {
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <Link to="/requests" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263]">
-          <ArrowLeft size={16} /> Back to Requests
+        <Link to="/dashboard" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263] group transition-colors">
+          <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" /> Back to Dashboard
         </Link>
         <div className="bg-white rounded-2xl border border-[#E2E8F0] p-8 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
           <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -2676,8 +2676,12 @@ export function RequestDetail() {
           <div className="bg-[#ffffff] rounded-xl p-4 border border-[#E2E8F0] mb-4">
             <p className="text-sm text-[#57585A] mb-1">{isOwner ? "Posted by You" : "Posted by"}</p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center">
-                <span className="text-white font-bold">{req.requesterName?.charAt(0) || 'U'}</span>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center overflow-hidden shrink-0">
+                {req.requesterProfilePic ? (
+                  <img src={req.requesterProfilePic} alt={req.requesterName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-white font-bold">{req.requesterName?.charAt(0) || 'U'}</span>
+                )}
               </div>
               <div>
                 <p className="text-[#1A1A1A] text-sm" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{req.requesterName}</p>
@@ -3686,7 +3690,7 @@ export function Profile() {
   return (
     <div className="min-h-screen bg-[#ffffff] text-[#1A1A1A]">
       <Navbar variant="auth" />
-      <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-6">
           <Link to="/dashboard" className="inline-flex items-center gap-2 text-[#57585A] text-sm hover:text-[#172263] transition-colors group">
             <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
@@ -3732,57 +3736,57 @@ export function Profile() {
             <div className="flex flex-wrap items-center gap-3 mb-5">
               <button 
                 onClick={() => setActiveTab("listings")} 
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold select-none transition-all duration-200 ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-sm font-semibold select-none transition-all duration-200 ${
                   activeTab === "listings"
                     ? "bg-[#172263] border-[#172263] text-white shadow-sm"
                     : "bg-[#F4F6FA] border-zinc-200 text-[#57585A] hover:bg-zinc-200/50"
                 }`}
               >
-                <Tractor size={13} className={activeTab === "listings" ? "text-white" : "text-[#E82326]"} />
+                <Tractor size={15} className={activeTab === "listings" ? "text-white" : "text-[#E82326]"} />
                 <span><strong className={activeTab === "listings" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.harvesters || 0}</strong> Harvesters</span>
               </button>
               <button 
                 onClick={() => setActiveTab("operator")} 
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold select-none transition-all duration-200 ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-sm font-semibold select-none transition-all duration-200 ${
                   activeTab === "operator"
                     ? "bg-[#172263] border-[#172263] text-white shadow-sm"
                     : "bg-[#F4F6FA] border-zinc-200 text-[#57585A] hover:bg-zinc-200/50"
                 }`}
               >
-                <UserCheck size={13} className={activeTab === "operator" ? "text-white" : "text-[#172263]"} />
+                <UserCheck size={15} className={activeTab === "operator" ? "text-white" : "text-[#172263]"} />
                 <span><strong className={activeTab === "operator" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.operators || 0}</strong> Operator Profile</span>
               </button>
             </div>
 
             {/* Bio / Details */}
             <div className="space-y-1.5 w-full text-center md:text-left">
-              <p className="text-xs text-[#57585A] font-semibold uppercase tracking-wider">Tractor Seva Community Member</p>
+              <p className="text-sm text-[#57585A] font-semibold uppercase tracking-wider">Tractor Seva Community Member</p>
               
-              <div className="flex flex-col gap-1 mt-2 text-xs text-[#57585A]">
+              <div className="flex flex-col gap-1 mt-2 text-sm text-[#57585A]">
                 <p className="flex items-center justify-center md:justify-start gap-1.5">
-                  <MapPin size={13} className="text-[#E82326]" /> {user.state || "Maharashtra, India"}
+                  <MapPin size={15} className="text-[#E82326]" /> {user.state || "Maharashtra, India"}
                 </p>
                 <p className="flex items-center justify-center md:justify-start gap-1.5">
-                  <Phone size={13} className="text-zinc-400" /> +91-{user.phone}
+                  <Phone size={15} className="text-zinc-400" /> +91-{user.phone}
                 </p>
                 <p className="flex items-center justify-center md:justify-start gap-1.5">
-                  <Mail size={13} className="text-zinc-400" /> {user.email}
+                  <Mail size={15} className="text-zinc-400" /> {user.email}
                 </p>
               </div>
 
               {/* Bio description */}
-              <p className="text-xs text-[#57585A] max-w-md mt-3 leading-relaxed italic">
+              <p className="text-sm text-[#57585A] max-w-md mt-3 leading-relaxed italic">
                 "{user.bio || operatorProfile?.description || "Agriculture enthusiast. Verified operator/harvester member of the Tractor Seva network."}"
               </p>
 
               {/* Mutual followed details */}
               <div className="flex items-center justify-center md:justify-start gap-2.5 mt-4 pt-3 border-t border-zinc-200">
                 <div className="flex -space-x-1.5">
-                  <div className="w-5.5 h-5.5 rounded-full bg-[#172263] border-2 border-white flex items-center justify-center text-[7px] font-bold text-white">TS</div>
-                  <div className="w-5.5 h-5.5 rounded-full bg-[#E82326] border-2 border-white flex items-center justify-center text-[7px] font-bold text-white">IN</div>
-                  <div className="w-5.5 h-5.5 rounded-full bg-zinc-300 border-2 border-white flex items-center justify-center text-[7px] font-bold text-zinc-700">AG</div>
+                  <div className="w-6 h-6 rounded-full bg-[#172263] border-2 border-white flex items-center justify-center text-[9px] font-bold text-white">TS</div>
+                  <div className="w-6 h-6 rounded-full bg-[#E82326] border-2 border-white flex items-center justify-center text-[9px] font-bold text-white">IN</div>
+                  <div className="w-6 h-6 rounded-full bg-zinc-300 border-2 border-white flex items-center justify-center text-[9px] font-bold text-zinc-700">AG</div>
                 </div>
-                <p className="text-[11px] text-zinc-500">
+                <p className="text-xs text-zinc-500">
                   Active in <span className="font-semibold text-zinc-750">{user.state || "Maharashtra"}</span> and surrounding agricultural hubs
                 </p>
               </div>
@@ -3791,23 +3795,23 @@ export function Profile() {
         </div>
 
         {/* Action Buttons Row */}
-        <div className="flex flex-wrap gap-3 mt-6 w-full max-w-md justify-center md:justify-start">
+        <div className="flex flex-wrap gap-3 mt-6 w-full justify-center md:justify-start">
           <Link to="/profile/edit" className="flex-1 min-w-[120px]">
-            <button className="w-full bg-[#F4F6FA] hover:bg-zinc-200/80 text-[#1A1A1A] text-xs font-semibold py-2 px-4 rounded-lg transition-colors border border-zinc-200/80">
+            <button className="w-full bg-[#F4F6FA] hover:bg-zinc-200/80 text-[#1A1A1A] text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors border border-zinc-200/80">
               Edit Profile
             </button>
           </Link>
           
           <div className="flex-1 min-w-[140px] relative group">
-            <button className="w-full bg-[#172263] hover:bg-opacity-90 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-1">
-              Add Listing <ChevronDown size={12} />
+            <button className="w-full bg-[#172263] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-1">
+              Add Listing <ChevronDown size={14} />
             </button>
             <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#ffffff] border border-zinc-200 rounded-lg shadow-2xl py-1 z-30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <Link to="/add-harvester" className="block px-4 py-2 text-xs text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
+              <Link to="/add-harvester" className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
                 Add Harvester
               </Link>
               <div className="h-px bg-zinc-200 my-1" />
-              <Link to="/add-operator" className="block px-4 py-2 text-xs text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
+              <Link to="/add-operator" className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
                 Register Operator
               </Link>
             </div>
@@ -3815,10 +3819,10 @@ export function Profile() {
 
           <button
             onClick={logout}
-            className="bg-[#E82326] hover:bg-opacity-90 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+            className="bg-[#E82326] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-1.5"
             title="Logout"
           >
-            <LogOut size={14} /> <span>Logout</span>
+            <LogOut size={16} /> <span>Logout</span>
           </button>
         </div>
 
@@ -3831,13 +3835,13 @@ export function Profile() {
             { label: "Messages", desc: "Chat with users", icon: <MessageSquare size={18} className="text-[#1A1A1A]" />, link: "/messages" },
           ].map((hl, i) => {
             const cardInner = (
-              <div className="flex items-center gap-3 p-3 bg-[#F4F6FA] hover:bg-[#EAEFF8] rounded-xl border border-zinc-200/60 hover:border-[#172263]/30 transition-all duration-200 h-full group text-left">
-                <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-200">
+              <div className="flex items-center gap-3 p-3.5 bg-[#F4F6FA] hover:bg-[#EAEFF8] rounded-xl border border-zinc-200/60 hover:border-[#172263]/30 transition-all duration-200 h-full group text-left">
+                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-200">
                   {hl.icon}
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-xs font-bold text-[#1A1A1A] truncate">{hl.label}</h4>
-                  <p className="text-[10px] text-zinc-400 truncate">{hl.desc}</p>
+                  <h4 className="text-sm font-bold text-[#1A1A1A] truncate">{hl.label}</h4>
+                  <p className="text-xs text-zinc-500 truncate">{hl.desc}</p>
                 </div>
               </div>
             );
@@ -3856,27 +3860,27 @@ export function Profile() {
 
         {/* Tab Selection (Segmented Control) */}
         <div className="flex justify-center mt-10 mb-6">
-          <div className="bg-[#F4F6FA] p-1 rounded-xl border border-zinc-200/80 flex gap-1 select-none">
+          <div className="bg-[#F4F6FA] p-1.5 rounded-xl border border-zinc-200/80 flex gap-1 select-none">
             <button
               onClick={() => setActiveTab("listings")}
-              className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeTab === "listings"
                   ? "bg-white text-[#172263] shadow-sm"
                   : "text-zinc-555 hover:text-[#1A1A1A]"
               }`}
             >
-              <LayoutGrid size={13} />
+              <LayoutGrid size={15} />
               <span>Listings</span>
             </button>
             <button
               onClick={() => setActiveTab("operator")}
-              className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeTab === "operator"
                   ? "bg-white text-[#172263] shadow-sm"
                   : "text-zinc-555 hover:text-[#1A1A1A]"
               }`}
             >
-              <UserCheck size={13} />
+              <UserCheck size={15} />
               <span>Operator Profile</span>
             </button>
           </div>

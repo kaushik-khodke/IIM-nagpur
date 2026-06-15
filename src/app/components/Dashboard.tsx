@@ -35,6 +35,7 @@ export function Dashboard() {
   const [operators, setOperators] = useState<any[]>([]);
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [userName, setUserName] = useState("User");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -105,6 +106,15 @@ export function Dashboard() {
         const harvsRes = await fetch('/api/harvesters?limit=6');
         const harvsData = harvsRes.ok ? await harvsRes.json() : [];
         setHarvesters(harvsData);
+
+        if (token) {
+          const allReqsRes = await fetch('/api/requests?limit=4', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (allReqsRes.ok) {
+            setRecentRequests(await allReqsRes.json());
+          }
+        }
 
         // Build dynamic activity feed
         const newActivities: any[] = [];
@@ -316,38 +326,36 @@ export function Dashboard() {
                 
                 {/* Aligning Header (Matches Left Column) */}
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-lg font-bold text-[#1A1A1A] font-sora">Overview</h2>
+                  <h2 className="text-lg font-bold text-[#1A1A1A] font-sora">Recent Requests</h2>
+                  <Link to="/requests" className="text-xs font-bold text-[#172263] hover:underline">View All</Link>
                 </div>
 
-                {/* Summary Card */}
+                {/* Requests List Card */}
                 <div className="bg-white border border-[#E2E8F0] rounded-3xl p-5 shadow-sm space-y-4">
-                  <div className="flex gap-4 items-center bg-[#F8FAFC] p-3 rounded-2xl border border-[#E2E8F0]/40">
-                    <div className="w-20 h-16 bg-[#172263] rounded-xl flex items-center justify-center text-white shrink-0 relative overflow-hidden">
-                      <Tractor size={28} className="text-amber-500/80" />
-                      <WheatWatermark className="opacity-10 scale-75" />
+                  {recentRequests.length > 0 ? (
+                    <div className="space-y-4">
+                      {recentRequests.map((req, i) => (
+                        <Link key={i} to={`/requests/${req.id}`} className="flex gap-3 items-start bg-[#F8FAFC] p-3 rounded-2xl border border-[#E2E8F0]/40 hover:border-[#172263]/30 hover:bg-[#EAEFF8] transition-all duration-200 cursor-pointer group">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white shrink-0 relative overflow-hidden">
+                            <FileText size={18} className="text-white/90" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex justify-between items-start mb-1">
+                              <h4 className="text-sm font-semibold text-[#1A1A1A] truncate pr-2 group-hover:text-[#172263] transition-colors">{req.type} - {req.machineType}</h4>
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">{req.status || "Open"}</span>
+                            </div>
+                            <p className="text-xs text-[#57585A] flex items-center gap-1 truncate">
+                              <MapPin size={10} className="text-[#E82326]" /> {req.location}, {req.state}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-semibold text-[#1A1A1A] truncate">Prioritized Harvesting</h4>
-                      <p className="text-[10px] text-[#57585A]">Active listing channels</p>
+                  ) : (
+                    <div className="py-8 text-center text-sm text-[#57585A]">
+                      {localStorage.getItem("tractorsewa_token") ? "No recent requests found." : "Please log in to view requests."}
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-xs py-1">
-                      <span className="text-[#57585A]">Active Machine Listings</span>
-                      <span className="font-bold text-[#1A1A1A]">{harvesters.length}</span>
-                    </div>
-                    <div className="h-px bg-[#E2E8F0]/60" />
-                    <div className="flex justify-between items-center text-xs py-1">
-                      <span className="text-[#57585A]">Total Working Operators</span>
-                      <span className="font-bold text-[#1A1A1A]">{operators.length}</span>
-                    </div>
-                    <div className="h-px bg-[#E2E8F0]/60" />
-                    <div className="flex justify-between items-center text-xs py-1">
-                      <span className="text-[#57585A]">Total Bookings Estimated</span>
-                      <span className="font-bold text-[#15803D]">₹12,500</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Recent Activity Card */}
