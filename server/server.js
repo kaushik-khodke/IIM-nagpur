@@ -89,12 +89,56 @@ const getOptionalUser = (req) => {
 // --- API ROUTES ---
 
 // 1. Image Upload Endpoint
-app.post('/api/upload', upload.single('image'), (req, res) => {
+app.post('/api/upload', upload.single('image'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
-  const filePath = `/uploads/${req.file.filename}`;
-  res.json({ url: filePath });
+
+  const localPath = req.file.path;
+  const mimeType = req.file.mimetype;
+  const fileName = req.file.filename;
+
+  try {
+    const fileBuffer = fs.readFileSync(localPath);
+    
+    // Supabase project constants
+    const ref = 'nwlhjvthqggfzvnukagg';
+    const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53bGhqdnRocWdnZnp2bnVrYWdnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTYyMDY4OCwiZXhwIjoyMDg1MTk2Njg4fQ.P3aSVSC5zhDCDMxfHnpPkUFqFYTunjrEZ5AsyXkpt14';
+    const bucket = 'TractorSeva';
+    
+    const uploadUrl = `https://${ref}.supabase.co/storage/v1/object/${bucket}/${fileName}`;
+    
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'apikey': key,
+        'Content-Type': mimeType
+      },
+      body: fileBuffer
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Supabase upload error:', response.status, errorText);
+      return res.status(500).json({ error: 'Failed to upload image to Supabase storage.' });
+    }
+
+    const publicUrl = `https://${ref}.supabase.co/storage/v1/object/public/${bucket}/${fileName}`;
+    
+    // Delete local temp file
+    fs.unlink(localPath, (err) => {
+      if (err) console.error('Failed to delete temporary local file:', err);
+    });
+
+    res.json({ url: publicUrl });
+  } catch (error) {
+    console.error('Upload handler error:', error);
+    if (fs.existsSync(localPath)) {
+      fs.unlinkSync(localPath);
+    }
+    res.status(500).json({ error: 'Internal Server Error during upload.' });
+  }
 });
 
 // 2. Auth Routes
@@ -118,6 +162,12 @@ app.post('/api/auth/register', async (req, res) => {
     );
 
     const token = jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      await db.query('INSERT IGNORE INTO login_logs (user_id, login_date) VALUES (?, ?)', [userId, today]);
+    } catch (err) {
+      console.error('Failed to log signup activity:', err);
+    }
     res.status(201).json({ token, user: { id: userId, name, email } });
   } catch (error) {
     console.error(error);
@@ -148,6 +198,12 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      await db.query('INSERT IGNORE INTO login_logs (user_id, login_date) VALUES (?, ?)', [user.id, today]);
+    } catch (err) {
+      console.error('Failed to log login activity:', err);
+    }
     res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
   } catch (error) {
     console.error(error);
@@ -160,6 +216,13 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     const [users] = await db.query('SELECT id, name, email, role, state, phone, bio, image_path, is_blocked, created_at FROM users WHERE id = ?', [req.user.id]);
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      await db.query('INSERT IGNORE INTO login_logs (user_id, login_date) VALUES (?, ?)', [req.user.id, today]);
+    } catch (err) {
+      console.error('Failed to log active session:', err);
     }
 
     if (users[0].is_blocked) {
@@ -866,12 +929,70 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     const [requests] = await db.query('SELECT COUNT(*) as count FROM requests');
     const [blocked] = await db.query('SELECT COUNT(*) as count FROM users WHERE is_blocked = 1');
 
+    // Get daily login logs for the last 7 days
+    const [loginLogs] = await db.query(`
+      SELECT login_date, COUNT(DISTINCT user_id) as count
+      FROM login_logs
+      WHERE login_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+      GROUP BY login_date
+      ORDER BY login_date ASC
+    `);
+
+    // Format last 7 days continuous timeline
+    const loginHistory = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      
+      const found = loginLogs.find(row => {
+        // SQL DATE field might come as Date object or string depending on timezone settings
+        const rowDate = row.login_date instanceof Date 
+          ? row.login_date.toISOString().slice(0, 10) 
+          : String(row.login_date).slice(0, 10);
+        return rowDate === dateStr;
+      });
+      
+      const displayDate = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
+      loginHistory.push({
+        dateStr,
+        displayDate,
+        count: found ? found.count : 0
+      });
+    }
+
+    // Query performers (user metrics)
+    const [performers] = await db.query(`
+      SELECT u.id, u.name, u.email, u.image_path as imagePath, u.created_at as createdAt,
+             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id) as harvesterCount,
+             (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as requestCount,
+             COALESCE((
+               SELECT AVG(rating) 
+               FROM ratings 
+               WHERE (target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = u.id))
+                  OR (target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = u.id))
+             ), 0) as avgRating
+      FROM users u
+      WHERE u.role != 'admin'
+    `);
+
     res.json({
       totalUsers: users[0].count,
       totalOperators: operators[0].count,
       totalHarvesters: harvesters[0].count,
       totalRequests: requests[0].count,
-      blockedUsers: blocked[0].count
+      blockedUsers: blocked[0].count,
+      loginHistory,
+      performers: performers.map(p => ({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        imagePath: p.imagePath,
+        createdAt: p.createdAt,
+        harvesterCount: p.harvesterCount,
+        requestCount: p.requestCount,
+        avgRating: parseFloat(p.avgRating || 0).toFixed(1)
+      }))
     });
   } catch (error) {
     console.error(error);
@@ -1306,6 +1427,147 @@ app.delete('/api/settings/account', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete account' });
+  }
+});
+
+// =============================================
+// RATINGS & REVIEWS ROUTES
+// =============================================
+
+// POST /api/ratings — Submit a new rating/review
+app.post('/api/ratings', authenticateToken, async (req, res) => {
+  const { targetType, targetId, rating, review } = req.body;
+  const raterId = req.user.id;
+
+  if (!targetType || !targetId || !rating) {
+    return res.status(400).json({ error: 'targetType, targetId, and rating are required' });
+  }
+
+  if (targetType !== 'machine' && targetType !== 'operator') {
+    return res.status(400).json({ error: 'targetType must be either machine or operator' });
+  }
+
+  const numRating = parseInt(rating);
+  if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+    return res.status(400).json({ error: 'Rating must be an integer between 1 and 5' });
+  }
+
+  try {
+    // Self-rating checks:
+    if (targetType === 'operator') {
+      const [ops] = await db.query('SELECT user_id FROM operators WHERE id = ?', [targetId]);
+      if (ops.length === 0) {
+        return res.status(404).json({ error: 'Operator not found' });
+      }
+      if (ops[0].user_id === raterId) {
+        return res.status(400).json({ error: 'You cannot rate your own operator profile' });
+      }
+    } else if (targetType === 'machine') {
+      const [harvs] = await db.query('SELECT user_id FROM harvesters WHERE id = ?', [targetId]);
+      if (harvs.length === 0) {
+        return res.status(404).json({ error: 'Harvester not found' });
+      }
+      if (harvs[0].user_id === raterId) {
+        return res.status(400).json({ error: 'You cannot rate your own harvester listing' });
+      }
+    }
+
+    const ratingId = crypto.randomUUID();
+    // Upsert rating using ON DUPLICATE KEY UPDATE:
+    await db.query(
+      `INSERT INTO ratings (id, rater_id, target_type, target_id, rating, review)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE rating = VALUES(rating), review = VALUES(review)`,
+      [ratingId, raterId, targetType, targetId, numRating, review || null]
+    );
+
+    res.status(201).json({ message: 'Rating submitted successfully' });
+  } catch (error) {
+    console.error('Error submitting rating:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// GET /api/ratings/my-score — Fetch average rating for the logged-in user (as operator + their listed harvesters)
+app.get('/api/ratings/my-score', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    // 1. Get operator profile id if exists
+    const [ops] = await db.query('SELECT id FROM operators WHERE user_id = ?', [userId]);
+    const opId = ops[0]?.id || null;
+
+    // 2. Get harvester ids if exist
+    const [harvs] = await db.query('SELECT id FROM harvesters WHERE user_id = ?', [userId]);
+    const harvIds = harvs.map(h => h.id);
+
+    let averageRating = null;
+    let count = 0;
+
+    if (opId || harvIds.length > 0) {
+      let queryStr = 'SELECT AVG(rating) as avg, COUNT(*) as count FROM ratings WHERE 1=0';
+      const queryParams = [];
+
+      if (opId) {
+        queryStr += ' OR (target_type = ? AND target_id = ?)';
+        queryParams.push('operator', opId);
+      }
+
+      if (harvIds.length > 0) {
+        queryStr += ` OR (target_type = ? AND target_id IN (${harvIds.map(() => '?').join(',')}))`;
+        queryParams.push('machine', ...harvIds);
+      }
+
+      const [rows] = await db.query(queryStr, queryParams);
+      if (rows.length > 0 && rows[0].count > 0) {
+        averageRating = parseFloat(rows[0].avg).toFixed(1);
+        count = rows[0].count;
+      }
+    }
+
+    res.json({ averageRating, count });
+  } catch (error) {
+    console.error('Error fetching user score:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// GET /api/ratings — Fetch all ratings/reviews and stats for a target
+app.get('/api/ratings', async (req, res) => {
+  const { targetType, targetId } = req.query;
+
+  if (!targetType || !targetId) {
+    return res.status(400).json({ error: 'targetType and targetId are required' });
+  }
+
+  try {
+    const [stats] = await db.query(
+      'SELECT AVG(rating) as avg, COUNT(*) as count FROM ratings WHERE target_type = ? AND target_id = ?',
+      [targetType, targetId]
+    );
+
+    const [reviews] = await db.query(
+      `SELECT r.rating, r.review, r.created_at, u.name as raterName, u.id as raterId
+       FROM ratings r
+       JOIN users u ON r.rater_id = u.id
+       WHERE r.target_type = ? AND r.target_id = ?
+       ORDER BY r.created_at DESC`,
+      [targetType, targetId]
+    );
+
+    res.json({
+      averageRating: stats[0].count > 0 ? parseFloat(stats[0].avg).toFixed(1) : null,
+      count: stats[0].count,
+      reviews: reviews.map(rev => ({
+        raterName: rev.raterName,
+        raterId: rev.raterId,
+        rating: rev.rating,
+        review: rev.review,
+        createdAt: rev.created_at
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching ratings:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

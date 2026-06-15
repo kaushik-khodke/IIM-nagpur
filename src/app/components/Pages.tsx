@@ -23,6 +23,7 @@ import {
   LayoutGrid,
   Settings,
   LogOut,
+  Bell,
   Heart,
   MessageCircle,
   FileText,
@@ -33,6 +34,7 @@ import {
   Share2,
   X,
   Loader2,
+  Star,
 } from "lucide-react";
 import {
   Navbar,
@@ -55,8 +57,8 @@ import { ImageCropperDialog } from "./ImageCropperDialog";
 
 const INDIAN_STATES = districtsData.states.map(s => s.state);
 
-const MACHINE_TYPES = ["Combine Harvester","Rice Harvester","Wheat Harvester","Maize Harvester","Sugarcane Harvester","Paddy Harvester"];
-const COMPANIES = ["John Deere","Claas","Mahindra","New Holland","AGCO","Preet","Sonalika","Other"];
+const MACHINE_TYPES = ["Combine Harvester", "Rice Harvester", "Wheat Harvester", "Maize Harvester", "Sugarcane Harvester", "Paddy Harvester"];
+const COMPANIES = ["John Deere", "Claas", "Mahindra", "New Holland", "AGCO", "Preet", "Sonalika", "Other"];
 
 export const HARVESTER_MODELS: Record<string, string[]> = {
   "John Deere": [
@@ -229,7 +231,7 @@ export function ExploreHarvesters() {
         setLoading(false);
       }
     };
-    
+
     const delayDebounce = setTimeout(() => {
       fetchHarvesters();
     }, 300);
@@ -275,7 +277,7 @@ export function ExploreHarvesters() {
                 className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
             </div>
-            
+
             <select
               value={selectedState}
               onChange={(e) => {
@@ -314,13 +316,13 @@ export function ExploreHarvesters() {
               {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
             {(search || selectedState || selectedDistrict || company) && (
-              <button 
-                onClick={() => { 
-                  setSearch(""); 
-                  setSelectedState(""); 
-                  setSelectedDistrict(""); 
-                  setCompany(""); 
-                }} 
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setSelectedState("");
+                  setSelectedDistrict("");
+                  setCompany("");
+                }}
                 className="text-[#172263] text-sm px-3 hover:underline"
               >
                 Clear All
@@ -334,21 +336,19 @@ export function ExploreHarvesters() {
         <div className="flex gap-2 border-b border-[#E2E8F0] mb-6">
           <button
             onClick={() => setTab("all")}
-            className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-              tab === "all"
+            className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${tab === "all"
                 ? "border-[#172263] text-[#172263]"
                 : "border-transparent text-[#57585A] hover:text-[#172263]"
-            }`}
+              }`}
           >
             All Machines
           </button>
           <button
             onClick={() => setTab("mine")}
-            className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-              tab === "mine"
+            className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${tab === "mine"
                 ? "border-[#172263] text-[#172263]"
                 : "border-transparent text-[#57585A] hover:text-[#172263]"
-            }`}
+              }`}
           >
             My Listings
           </button>
@@ -368,10 +368,10 @@ export function ExploreHarvesters() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((h) => (
-              <HarvesterCard 
-                key={h.id} 
-                {...h} 
-                isOwner={currentUser && h.ownerName === currentUser.name} 
+              <HarvesterCard
+                key={h.id}
+                {...h}
+                isOwner={currentUser && h.ownerName === currentUser.name}
               />
             ))}
           </div>
@@ -391,6 +391,27 @@ export function HarvesterDetail() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const navigate = useNavigate();
+
+  const [ratingsData, setRatingsData] = useState<{ averageRating: string | null, count: number, reviews: any[] }>({
+    averageRating: null,
+    count: 0,
+    reviews: []
+  });
+  const [userRating, setUserRating] = useState<number>(0);
+  const [userReview, setUserReview] = useState<string>("");
+  const [submittingRating, setSubmittingRating] = useState<boolean>(false);
+
+  const fetchRatings = async () => {
+    try {
+      const res = await fetch(`/api/ratings?targetType=machine&targetId=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRatingsData(data);
+      }
+    } catch (err) {
+      console.error("Error fetching ratings:", err);
+    }
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -430,7 +451,62 @@ export function HarvesterDetail() {
       }
     };
     fetchDetail();
+    fetchRatings();
   }, [id]);
+
+  useEffect(() => {
+    if (currentUser && ratingsData.reviews.length > 0) {
+      const myRatingObj = ratingsData.reviews.find(r => r.raterId === currentUser.id);
+      if (myRatingObj) {
+        setUserRating(myRatingObj.rating);
+        setUserReview(myRatingObj.review || "");
+      }
+    }
+  }, [currentUser, ratingsData.reviews]);
+
+  const handleRatingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userRating === 0) {
+      toast.error("Please select a rating of 1 to 5 stars");
+      return;
+    }
+
+    const token = localStorage.getItem("tractorsewa_token");
+    if (!token) {
+      toast.error("Please log in to submit a rating");
+      return;
+    }
+
+    setSubmittingRating(true);
+    try {
+      const res = await fetch('/api/ratings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          targetType: 'machine',
+          targetId: id,
+          rating: userRating,
+          review: userReview
+        })
+      });
+
+      if (res.ok) {
+        toast.success("Rating submitted successfully!");
+        fetchRatings();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to submit rating");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error submitting rating");
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
 
   const handleDelete = async () => {
     try {
@@ -500,7 +576,7 @@ export function HarvesterDetail() {
                   )}
                 </div>
               </div>
-              
+
               <div className="mt-auto">
                 <div className="space-y-3">
                   {isOwner && (
@@ -525,6 +601,16 @@ export function HarvesterDetail() {
                   >
                     Message Owner
                   </button>
+                  {!isOwner && (
+                    <button
+                      onClick={() => {
+                        document.getElementById("ratings-section")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-semibold cursor-pointer"
+                    >
+                      <Star size={18} fill="currentColor" /> Rate Machine
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -566,6 +652,134 @@ export function HarvesterDetail() {
               <p className="text-[#57585A] text-base leading-relaxed whitespace-pre-line">
                 {harvester.description || `This ${harvester.company} ${harvester.model} is well-maintained and suitable for harvesting wheat, rice, and other Rabi/Kharif crops. Available for seasonal hire with experienced operator on request.`}
               </p>
+            </div>
+
+            {/* Ratings & Reviews Section */}
+            <div id="ratings-section" className="bg-white rounded-2xl border border-[#E2E8F0] p-8 mb-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] space-y-8">
+              <div>
+                <h3 className="text-xl text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Ratings & Reviews</h3>
+                <div className="w-12 h-1 bg-[#172263] rounded-full" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                {/* Left side: average display */}
+                <div className="md:col-span-4 flex flex-col items-center justify-center p-6 bg-slate-50 rounded-2xl text-center border border-[#E2E8F0]">
+                  {ratingsData.averageRating !== null ? (
+                    <>
+                      <span className="text-5xl font-black text-[#172263] font-sora mb-1">{ratingsData.averageRating}</span>
+                      <div className="flex gap-0.5 text-amber-500 mb-2">
+                        {Array(5).fill(0).map((_, i) => (
+                          <Star
+                            key={i}
+                            size={18}
+                            fill={i < Math.round(parseFloat(ratingsData.averageRating || "0")) ? "currentColor" : "none"}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-[#57585A] font-medium">Based on {ratingsData.count} {ratingsData.count === 1 ? 'rating' : 'ratings'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm font-semibold text-[#57585A]">No ratings yet</span>
+                      <span className="text-xs text-[#57585A] mt-1">Be the first to rate this harvester!</span>
+                    </>
+                  )}
+                </div>
+
+                {/* Right side: Submit Review form (if not owner) */}
+                <div className="md:col-span-8">
+                  {isOwner ? (
+                    <div className="h-full flex items-center justify-center p-6 border border-dashed border-[#E2E8F0] rounded-2xl bg-slate-50/50">
+                      <p className="text-xs text-[#57585A] text-center font-medium">You cannot rate your own harvester listing.</p>
+                    </div>
+                  ) : currentUser ? (
+                    <form onSubmit={handleRatingSubmit} className="space-y-4">
+                      <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">Submit Your Rating</h4>
+
+                      {/* Interactive Stars */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-[#57585A] font-medium">Your Score:</span>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setUserRating(star)}
+                              className="text-amber-500 transition-transform hover:scale-110 focus:outline-none"
+                            >
+                              <Star
+                                size={22}
+                                fill={star <= userRating ? "currentColor" : "none"}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Review Input */}
+                      <div className="space-y-2">
+                        <textarea
+                          value={userReview}
+                          onChange={(e) => setUserReview(e.target.value)}
+                          placeholder="Write a brief review about your experience with this harvester (optional)..."
+                          className="w-full p-3 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] min-h-[80px]"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={submittingRating}
+                        className="px-5 py-2.5 bg-[#172263] text-white hover:bg-[#11194A] transition-colors rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50"
+                      >
+                        {submittingRating ? "Submitting..." : "Submit Review"}
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center p-6 border border-[#E2E8F0] rounded-2xl bg-amber-50/40 text-center">
+                      <p className="text-xs text-[#57585A] font-medium mb-2">You must be logged in to submit a review.</p>
+                      <button
+                        onClick={() => navigate('/login')}
+                        className="px-4 py-2 bg-[#172263] text-white rounded-lg text-xs font-semibold hover:bg-[#11194A] transition-colors"
+                      >
+                        Log In / Register
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Reviews List */}
+              <div className="border-t border-[#E2E8F0] pt-6 space-y-4">
+                <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">User Reviews</h4>
+                {ratingsData.reviews.length > 0 ? (
+                  <div className="divide-y divide-[#E2E8F0] space-y-4">
+                    {ratingsData.reviews.map((rev, idx) => (
+                      <div key={idx} className={`${idx > 0 ? 'pt-4' : ''} space-y-2`}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#1A1A1A] font-sora">{rev.raterName}</span>
+                          <span className="text-[10px] text-[#57585A]">{new Date(rev.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="flex gap-0.5 text-amber-500">
+                            {Array(5).fill(0).map((_, i) => (
+                              <Star
+                                key={i}
+                                size={12}
+                                fill={i < rev.rating ? "currentColor" : "none"}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        {rev.review && (
+                          <p className="text-xs text-[#57585A] leading-relaxed whitespace-pre-line">{rev.review}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#57585A] italic">No reviews have been written yet.</p>
+                )}
+              </div>
             </div>
 
             {isOwner && (
@@ -721,7 +935,7 @@ export function ExploreOperators() {
                 className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
             </div>
-            
+
             <select
               value={selectedState}
               onChange={(e) => {
@@ -762,13 +976,13 @@ export function ExploreOperators() {
               <option value="Not Available">Not Available</option>
             </select>
             {(search || selectedState || selectedDistrict || availability) && (
-              <button 
-                onClick={() => { 
-                  setSearch(""); 
-                  setSelectedState(""); 
-                  setSelectedDistrict(""); 
-                  setAvailability(""); 
-                }} 
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setSelectedState("");
+                  setSelectedDistrict("");
+                  setAvailability("");
+                }}
                 className="text-[#172263] text-sm px-3 hover:underline"
               >
                 Clear All
@@ -808,6 +1022,48 @@ export function OperatorProfile() {
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [ratingsData, setRatingsData] = useState<{ averageRating: string | null, count: number, reviews: any[] }>({
+    averageRating: null,
+    count: 0,
+    reviews: []
+  });
+  const [userRating, setUserRating] = useState<number>(0);
+  const [userReview, setUserReview] = useState<string>("");
+  const [submittingRating, setSubmittingRating] = useState<boolean>(false);
+
+  const fetchRatings = async () => {
+    try {
+      const res = await fetch(`/api/ratings?targetType=operator&targetId=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRatingsData(data);
+      }
+    } catch (err) {
+      console.error("Error fetching ratings:", err);
+    }
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("tractorsewa_token");
+        if (token) {
+          const res = await fetch("/api/auth/me", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setCurrentUser(data);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchUser();
+  }, []);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -834,7 +1090,62 @@ export function OperatorProfile() {
       }
     };
     fetchProfile();
+    fetchRatings();
   }, [id]);
+
+  useEffect(() => {
+    if (currentUser && ratingsData.reviews.length > 0) {
+      const myRatingObj = ratingsData.reviews.find(r => r.raterId === currentUser.id);
+      if (myRatingObj) {
+        setUserRating(myRatingObj.rating);
+        setUserReview(myRatingObj.review || "");
+      }
+    }
+  }, [currentUser, ratingsData.reviews]);
+
+  const handleRatingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userRating === 0) {
+      toast.error("Please select a rating of 1 to 5 stars");
+      return;
+    }
+
+    const token = localStorage.getItem("tractorsewa_token");
+    if (!token) {
+      toast.error("Please log in to submit a rating");
+      return;
+    }
+
+    setSubmittingRating(true);
+    try {
+      const res = await fetch('/api/ratings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          targetType: 'operator',
+          targetId: id,
+          rating: userRating,
+          review: userReview
+        })
+      });
+
+      if (res.ok) {
+        toast.success("Rating submitted successfully!");
+        fetchRatings();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to submit rating");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error submitting rating");
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
 
   if (loading) return <LoadingSpinner />;
   if (!operator) return <EmptyState title="Operator profile not found" />;
@@ -924,6 +1235,134 @@ export function OperatorProfile() {
                   </div>
                 </div>
               )}
+
+              {/* Ratings & Reviews Section */}
+              <div id="ratings-section" className="bg-white rounded-2xl border border-[#E2E8F0] p-6 space-y-6">
+                <div>
+                  <h3 className="text-lg text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Ratings & Reviews</h3>
+                  <div className="w-12 h-1 bg-[#172263] rounded-full" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                  {/* Left side: average display */}
+                  <div className="md:col-span-4 flex flex-col items-center justify-center p-5 bg-slate-50 rounded-2xl text-center border border-[#E2E8F0]">
+                    {ratingsData.averageRating !== null ? (
+                      <>
+                        <span className="text-4xl font-black text-[#172263] font-sora mb-1">{ratingsData.averageRating}</span>
+                        <div className="flex gap-0.5 text-amber-500 mb-1">
+                          {Array(5).fill(0).map((_, i) => (
+                            <Star
+                              key={i}
+                              size={16}
+                              fill={i < Math.round(parseFloat(ratingsData.averageRating || "0")) ? "currentColor" : "none"}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-[#57585A] font-semibold">Based on {ratingsData.count} {ratingsData.count === 1 ? 'rating' : 'ratings'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-xs font-bold text-[#57585A]">No ratings yet</span>
+                        <span className="text-[10px] text-[#57585A] mt-0.5">Be the first to rate this operator!</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Right side: Submit Review form (if not owner) */}
+                  <div className="md:col-span-8">
+                    {currentUser && (operator.user_id === currentUser.id) ? (
+                      <div className="h-full flex items-center justify-center p-4 border border-dashed border-[#E2E8F0] rounded-2xl bg-slate-50/50">
+                        <p className="text-xs text-[#57585A] text-center font-medium">You cannot rate your own operator profile.</p>
+                      </div>
+                    ) : currentUser ? (
+                      <form onSubmit={handleRatingSubmit} className="space-y-3">
+                        <h4 className="text-xs font-bold text-[#1A1A1A] font-sora">Submit Your Rating</h4>
+
+                        {/* Interactive Stars */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-[#57585A] font-semibold">Your Score:</span>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setUserRating(star)}
+                                className="text-amber-500 transition-transform hover:scale-110 focus:outline-none"
+                              >
+                                <Star
+                                  size={18}
+                                  fill={star <= userRating ? "currentColor" : "none"}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Review Input */}
+                        <div className="space-y-1">
+                          <textarea
+                            value={userReview}
+                            onChange={(e) => setUserReview(e.target.value)}
+                            placeholder="Write a brief review about your experience with this operator (optional)..."
+                            className="w-full p-2.5 border border-[#E2E8F0] rounded-xl text-[11px] focus:outline-none focus:border-[#172263] min-h-[70px]"
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={submittingRating}
+                          className="px-4 py-2 bg-[#172263] text-white hover:bg-[#11194A] transition-colors rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50"
+                        >
+                          {submittingRating ? "Submitting..." : "Submit Review"}
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center p-4 border border-[#E2E8F0] rounded-2xl bg-amber-50/40 text-center">
+                        <p className="text-xs text-[#57585A] font-semibold mb-1.5">You must be logged in to submit a review.</p>
+                        <button
+                          onClick={() => navigate('/login')}
+                          className="px-3.5 py-1.5 bg-[#172263] text-white rounded-lg text-xs font-semibold hover:bg-[#11194A] transition-colors"
+                        >
+                          Log In / Register
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Reviews List */}
+                <div className="border-t border-[#E2E8F0] pt-4 space-y-3">
+                  <h4 className="text-xs font-bold text-[#1A1A1A] font-sora">User Reviews</h4>
+                  {ratingsData.reviews.length > 0 ? (
+                    <div className="divide-y divide-[#E2E8F0] space-y-3">
+                      {ratingsData.reviews.map((rev, idx) => (
+                        <div key={idx} className={`${idx > 0 ? 'pt-3' : ''} space-y-1.5`}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#1A1A1A] font-sora">{rev.raterName}</span>
+                            <span className="text-[9px] text-[#57585A]">{new Date(rev.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="flex gap-0.5 text-amber-500">
+                              {Array(5).fill(0).map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={10}
+                                  fill={i < rev.rating ? "currentColor" : "none"}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          {rev.review && (
+                            <p className="text-xs text-[#57585A] leading-relaxed whitespace-pre-line">{rev.review}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[#57585A] italic">No reviews have been written yet.</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Contact card */}
@@ -953,6 +1392,16 @@ export function OperatorProfile() {
                   >
                     Send Message
                   </button>
+                  {currentUser && (operator.user_id !== currentUser.id) && (
+                    <button
+                      onClick={() => {
+                        document.getElementById("ratings-section")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-semibold cursor-pointer"
+                    >
+                      <Star size={16} fill="currentColor" /> Rate Operator
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1131,15 +1580,15 @@ export function AddOperator() {
         <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8">
           {step === 1 && (
             <div className="space-y-5">
-              <div 
+              <div
                 onClick={() => document.getElementById("operator-photo")?.click()}
                 className="border-2 border-dashed border-[#172263] rounded-2xl bg-blue-50 py-10 text-center cursor-pointer hover:bg-blue-100 transition-colors relative overflow-hidden h-48 flex flex-col items-center justify-center"
               >
-                <input 
-                  type="file" 
-                  id="operator-photo" 
-                  accept="image/*" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  id="operator-photo"
+                  accept="image/*"
+                  className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
@@ -1158,7 +1607,7 @@ export function AddOperator() {
                   </>
                 )}
               </div>
-              
+
               <div>
                 <label className="text-sm text-[#57585A] block mb-1.5">Full Name</label>
                 <div className="relative">
@@ -1198,7 +1647,7 @@ export function AddOperator() {
                     <MapPin size={12} className="text-[#172263]" /> Auto-detect Location
                   </button>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-[#57585A] block mb-1">State *</label>
@@ -1273,11 +1722,10 @@ export function AddOperator() {
                       key={m}
                       type="button"
                       onClick={() => toggleMachine(m)}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
-                        selectedMachines.includes(m)
+                      className={`px-3 py-1.5 rounded-full text-sm border transition-all ${selectedMachines.includes(m)
                           ? "bg-blue-100 border-blue-300 text-blue-700"
                           : "bg-white border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
-                      }`}
+                        }`}
                     >
                       {selectedMachines.includes(m) ? "✓ " : ""}{m}
                     </button>
@@ -1288,18 +1736,17 @@ export function AddOperator() {
               <div>
                 <label className="text-sm text-[#57585A] block mb-3">Availability</label>
                 <div className="flex gap-2">
-                  {["Available","Busy","Not Available"].map((a) => (
+                  {["Available", "Busy", "Not Available"].map((a) => (
                     <button
                       key={a}
                       type="button"
                       onClick={() => setAvailability(a)}
-                      className={`flex-1 py-2 rounded-xl text-sm border-2 transition-all ${
-                        availability === a
+                      className={`flex-1 py-2 rounded-xl text-sm border-2 transition-all ${availability === a
                           ? a === "Available" ? "bg-green-50 border-green-500 text-green-700"
                             : a === "Busy" ? "bg-yellow-50 border-yellow-500 text-yellow-700"
-                            : "bg-red-50 border-red-400 text-red-600"
+                              : "bg-red-50 border-red-400 text-red-600"
                           : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
-                      }`}
+                        }`}
                     >
                       {a === "Available" ? "✓" : a === "Busy" ? "⏳" : "✗"} {a}
                     </button>
@@ -1447,7 +1894,7 @@ export function AddHarvester() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const finalCompany = company === "Other" ? customCompany.trim() : company;
     const finalModel = model === "Other / Custom Model" ? customModel.trim() : model;
 
@@ -1459,7 +1906,7 @@ export function AddHarvester() {
       toast.error("Please specify a harvester model");
       return;
     }
-    
+
     const machineName = `${finalCompany} ${finalModel}`;
 
     if (year && (isNaN(Number(year)) || parseInt(year) < 1900 || parseInt(year) > new Date().getFullYear() + 1)) {
@@ -1546,15 +1993,15 @@ export function AddHarvester() {
         <PageHeader title="List Your Harvester" subtitle="Add your machine to reach thousands of farmers" />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
-          <div 
+          <div
             onClick={() => document.getElementById("harvester-photo")?.click()}
             className="border-2 border-dashed border-[#172263] rounded-2xl bg-blue-50 py-10 text-center cursor-pointer hover:bg-blue-100 transition-colors relative overflow-hidden h-44 flex flex-col items-center justify-center"
           >
-            <input 
-              type="file" 
-              id="harvester-photo" 
-              accept="image/*" 
-              className="hidden" 
+            <input
+              type="file"
+              id="harvester-photo"
+              accept="image/*"
+              className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -1577,14 +2024,14 @@ export function AddHarvester() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm text-[#57585A] block mb-1.5">Manufacturer Company</label>
-              <select 
-                value={company} 
+              <select
+                value={company}
                 onChange={(e) => {
                   setCompany(e.target.value);
                   setModel("");
                   setCustomCompany("");
                   setCustomModel("");
-                }} 
+                }}
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
               >
                 <option value="">Select Company</option>
@@ -1594,8 +2041,8 @@ export function AddHarvester() {
 
             <div>
               <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model</label>
-              <select 
-                value={model} 
+              <select
+                value={model}
                 onChange={(e) => {
                   setModel(e.target.value);
                   setCustomModel("");
@@ -1614,12 +2061,12 @@ export function AddHarvester() {
           {company === "Other" && (
             <div>
               <label className="text-sm text-[#57585A] block mb-1.5">Custom Company Name *</label>
-              <input 
-                value={customCompany} 
-                onChange={(e) => setCustomCompany(e.target.value)} 
-                placeholder="Enter manufacturer name (e.g. John Deere)" 
-                required 
-                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" 
+              <input
+                value={customCompany}
+                onChange={(e) => setCustomCompany(e.target.value)}
+                placeholder="Enter manufacturer name (e.g. John Deere)"
+                required
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
             </div>
           )}
@@ -1627,12 +2074,12 @@ export function AddHarvester() {
           {(company === "Other" || model === "Other / Custom Model") && company !== "" && (
             <div>
               <label className="text-sm text-[#57585A] block mb-1.5">Custom Model Name *</label>
-              <input 
-                value={customModel} 
-                onChange={(e) => setCustomModel(e.target.value)} 
-                placeholder="Enter harvester model name (e.g. S660)" 
-                required 
-                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" 
+              <input
+                value={customModel}
+                onChange={(e) => setCustomModel(e.target.value)}
+                placeholder="Enter harvester model name (e.g. S660)"
+                required
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
             </div>
           )}
@@ -1669,16 +2116,16 @@ export function AddHarvester() {
                 <MapPin size={12} className="text-[#172263]" /> Auto-detect Location
               </button>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-[#57585A] block mb-1">State *</label>
-                <select 
-                  value={state} 
+                <select
+                  value={state}
                   onChange={(e) => {
                     setState(e.target.value);
                     setLocation("");
-                  }} 
+                  }}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                 >
                   <option value="">Select State</option>
@@ -1687,9 +2134,9 @@ export function AddHarvester() {
               </div>
               <div>
                 <label className="text-xs text-[#57585A] block mb-1">District / City *</label>
-                <select 
-                  value={location} 
-                  onChange={(e) => setLocation(e.target.value)} 
+                <select
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
                   disabled={!state}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
                 >
@@ -1767,7 +2214,7 @@ export function EditHarvester() {
           const isStandardCompany = HARVESTER_COMPANIES.includes(data.company);
           setCompany(isStandardCompany ? data.company : "Other");
           if (!isStandardCompany) setCustomCompany(data.company);
-          
+
           const isStandardModel = HARVESTER_MODELS[data.company]?.includes(data.model);
           setModel(isStandardModel ? data.model : "Other / Custom Model");
           if (!isStandardModel) setCustomModel(data.model);
@@ -1815,7 +2262,7 @@ export function EditHarvester() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const finalCompany = company === "Other" ? customCompany.trim() : company;
     const finalModel = model === "Other / Custom Model" ? customModel.trim() : model;
 
@@ -1827,7 +2274,7 @@ export function EditHarvester() {
       toast.error("Please specify a harvester model");
       return;
     }
-    
+
     const machineName = `${finalCompany} ${finalModel}`;
 
     if (year && (isNaN(Number(year)) || parseInt(year) < 1900 || parseInt(year) > new Date().getFullYear() + 1)) {
@@ -1916,15 +2363,15 @@ export function EditHarvester() {
         <PageHeader title="Edit Harvester" subtitle="Update your machine details" />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
-          <div 
+          <div
             onClick={() => document.getElementById("harvester-photo")?.click()}
             className="border-2 border-dashed border-[#172263] rounded-2xl bg-blue-50 py-10 text-center cursor-pointer hover:bg-blue-100 transition-colors relative overflow-hidden h-44 flex flex-col items-center justify-center"
           >
-            <input 
-              type="file" 
-              id="harvester-photo" 
-              accept="image/*" 
-              className="hidden" 
+            <input
+              type="file"
+              id="harvester-photo"
+              accept="image/*"
+              className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -1947,14 +2394,14 @@ export function EditHarvester() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm text-[#57585A] block mb-1.5">Manufacturer Company</label>
-              <select 
-                value={company} 
+              <select
+                value={company}
                 onChange={(e) => {
                   setCompany(e.target.value);
                   setModel("");
                   setCustomCompany("");
                   setCustomModel("");
-                }} 
+                }}
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
               >
                 <option value="">Select Company</option>
@@ -1964,8 +2411,8 @@ export function EditHarvester() {
 
             <div>
               <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model</label>
-              <select 
-                value={model} 
+              <select
+                value={model}
                 onChange={(e) => {
                   setModel(e.target.value);
                   setCustomModel("");
@@ -1984,12 +2431,12 @@ export function EditHarvester() {
           {company === "Other" && (
             <div>
               <label className="text-sm text-[#57585A] block mb-1.5">Custom Company Name *</label>
-              <input 
-                value={customCompany} 
-                onChange={(e) => setCustomCompany(e.target.value)} 
-                placeholder="Enter manufacturer name (e.g. John Deere)" 
-                required 
-                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" 
+              <input
+                value={customCompany}
+                onChange={(e) => setCustomCompany(e.target.value)}
+                placeholder="Enter manufacturer name (e.g. John Deere)"
+                required
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
             </div>
           )}
@@ -1997,12 +2444,12 @@ export function EditHarvester() {
           {(company === "Other" || model === "Other / Custom Model") && company !== "" && (
             <div>
               <label className="text-sm text-[#57585A] block mb-1.5">Custom Model Name *</label>
-              <input 
-                value={customModel} 
-                onChange={(e) => setCustomModel(e.target.value)} 
-                placeholder="Enter harvester model name (e.g. S660)" 
-                required 
-                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" 
+              <input
+                value={customModel}
+                onChange={(e) => setCustomModel(e.target.value)}
+                placeholder="Enter harvester model name (e.g. S660)"
+                required
+                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
             </div>
           )}
@@ -2039,16 +2486,16 @@ export function EditHarvester() {
                 <MapPin size={12} className="text-[#172263]" /> Auto-detect Location
               </button>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-[#57585A] block mb-1">State *</label>
-                <select 
-                  value={state} 
+                <select
+                  value={state}
                   onChange={(e) => {
                     setState(e.target.value);
                     setLocation("");
-                  }} 
+                  }}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                 >
                   <option value="">Select State</option>
@@ -2057,9 +2504,9 @@ export function EditHarvester() {
               </div>
               <div>
                 <label className="text-xs text-[#57585A] block mb-1">District / City *</label>
-                <select 
-                  value={location} 
-                  onChange={(e) => setLocation(e.target.value)} 
+                <select
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
                   disabled={!state}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
                 >
@@ -2319,9 +2766,8 @@ export function Requests() {
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${
-                  tab === t ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
-                }`}
+                className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${tab === t ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
+                  }`}
               >
                 {t === "operator" ? "Need Operator" : "Need Harvester"}
               </button>
@@ -2358,11 +2804,11 @@ export function Requests() {
                   ))}
             </select>
             {(selectedState || selectedDistrict) && (
-              <button 
-                onClick={() => { 
-                  setSelectedState(""); 
-                  setSelectedDistrict(""); 
-                }} 
+              <button
+                onClick={() => {
+                  setSelectedState("");
+                  setSelectedDistrict("");
+                }}
                 className="text-[#172263] text-xs px-2 hover:underline"
               >
                 Clear Location
@@ -2431,8 +2877,8 @@ export function Requests() {
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>Post a Requirement</h3>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={handleDialogDetectLocation}
                 className="text-xs px-3 py-1.5 bg-blue-50 border border-blue-200 text-[#172263] rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
               >
@@ -2734,7 +3180,7 @@ export function RequestDetail() {
 // ===========================
 // BLOGS
 // ===========================
-const CATEGORIES = ["All","Harvesting Tips","Machine Maintenance","Success Stories","Agri News","Weather & Season"];
+const CATEGORIES = ["All", "Harvesting Tips", "Machine Maintenance", "Success Stories", "Agri News", "Weather & Season"];
 
 export function Blogs() {
   const [blogs, setBlogs] = useState<any[]>([]);
@@ -2770,7 +3216,7 @@ export function Blogs() {
         if (token) {
           headers["Authorization"] = `Bearer ${token}`;
         }
-        
+
         const catParam = category === "All" ? "" : `category=${encodeURIComponent(category)}`;
         const searchParam = search ? `search=${encodeURIComponent(search)}` : "";
         const params = [catParam, searchParam].filter(Boolean).join("&");
@@ -3018,9 +3464,8 @@ export function Blogs() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-[calc(100vh-64px)] w-full relative">
         {/* Left Sidebar - Filters & Search (Desktop Only) */}
         <aside
-          className={`hidden md:flex flex-col shrink-0 border-r border-[#E2E8F0] bg-white p-6 justify-between transition-all duration-300 relative ${
-            isSidebarOpen ? "w-80" : "w-0 p-0 border-r-0 overflow-hidden"
-          }`}
+          className={`hidden md:flex flex-col shrink-0 border-r border-[#E2E8F0] bg-white p-6 justify-between transition-all duration-300 relative ${isSidebarOpen ? "w-80" : "w-0 p-0 border-r-0 overflow-hidden"
+            }`}
         >
           {isSidebarOpen && (
             <div className="space-y-6">
@@ -3063,11 +3508,10 @@ export function Blogs() {
                     <button
                       key={c}
                       onClick={() => setCategory(c)}
-                      className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
-                        category === c
+                      className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${category === c
                           ? "bg-[#172263] text-white border-[#172263]"
                           : "bg-white border-[#E2E8F0] text-[#57585A] hover:bg-slate-50 hover:border-slate-300"
-                      }`}
+                        }`}
                     >
                       {c}
                     </button>
@@ -3115,11 +3559,10 @@ export function Blogs() {
               <button
                 key={c}
                 onClick={() => setCategory(c)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                  category === c
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${category === c
                     ? "bg-[#172263] text-white border-[#172263]"
                     : "bg-white border-[#E2E8F0] text-[#57585A]"
-                }`}
+                  }`}
               >
                 {c}
               </button>
@@ -3172,15 +3615,14 @@ export function Blogs() {
                             className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700"
                           />
                         ) : (
-                          <div className={`w-full h-full bg-gradient-to-br ${
-                            [
+                          <div className={`w-full h-full bg-gradient-to-br ${[
                               "from-[#172263] to-[#D97706]",
                               "from-[#15803D] to-[#172263]",
                               "from-[#B91C1C] to-[#D97706]",
                               "from-[#1E3A8A] to-[#3B82F6]",
                               "from-[#78350F] to-[#D97706]"
                             ][typeof blog.id === "number" ? blog.id % 5 : 0]
-                          } flex flex-col items-center justify-center p-6 text-white text-center w-full relative`}>
+                            } flex flex-col items-center justify-center p-6 text-white text-center w-full relative`}>
                             <Tractor size={40} className="text-white/20 mb-2 animate-pulse" />
                             <span className="text-[9px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full mb-1">
                               {blog.category}
@@ -3275,11 +3717,10 @@ export function Blogs() {
                           <motion.button
                             whileTap={{ scale: 1.3 }}
                             onClick={() => handleLike(blog.id)}
-                            className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-md border border-[#E2E8F0] backdrop-blur-md transition-all ${
-                              likedBlogs[blog.id]
+                            className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-md border border-[#E2E8F0] backdrop-blur-md transition-all ${likedBlogs[blog.id]
                                 ? "bg-red-50 text-red-500 border-red-200"
                                 : "bg-white/95 text-[#57585A] hover:text-[#172263]"
-                            }`}
+                              }`}
                           >
                             <Heart size={16} className={likedBlogs[blog.id] ? "fill-current" : ""} />
                           </motion.button>
@@ -3382,9 +3823,8 @@ export function Blogs() {
 
       {/* Slide-Over Drawer for Full Blog content */}
       <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
-          activeBlog ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
+        className={`fixed inset-0 z-50 transition-opacity duration-300 ${activeBlog ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
       >
         {/* Backdrop */}
         <div
@@ -3394,9 +3834,8 @@ export function Blogs() {
 
         {/* Drawer Container */}
         <div
-          className={`absolute inset-y-0 right-0 w-full max-w-2xl bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out ${
-            activeBlog ? "translate-x-0" : "translate-x-full"
-          }`}
+          className={`absolute inset-y-0 right-0 w-full max-w-2xl bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out ${activeBlog ? "translate-x-0" : "translate-x-full"
+            }`}
         >
           {activeBlog && (
             <>
@@ -3424,9 +3863,9 @@ export function Blogs() {
                       activeBlog.image_url ||
                       activeBlog.imageUrl ||
                       fallbackImages[
-                        typeof activeBlog.id === "number"
-                          ? activeBlog.id % fallbackImages.length
-                          : String(activeBlog.id).length % fallbackImages.length
+                      typeof activeBlog.id === "number"
+                        ? activeBlog.id % fallbackImages.length
+                        : String(activeBlog.id).length % fallbackImages.length
                       ]
                     }
                     onError={(e) => {
@@ -3544,7 +3983,7 @@ export function BlogDetail() {
           const data = await res.json();
           setBlog(data);
         }
-        
+
         const relRes = await fetch(`/api/blogs?limit=4`);
         if (relRes.ok) {
           const relData = await relRes.json();
@@ -3723,7 +4162,7 @@ export function Profile() {
               <h2 className="text-xl font-bold text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif" }}>
                 {user.name}
               </h2>
-              <button 
+              <button
                 onClick={() => navigate("/profile/edit")}
                 className="p-1.5 text-zinc-400 hover:text-[#172263] hover:bg-zinc-100 rounded-full transition-colors"
                 title="Edit Profile Settings"
@@ -3734,24 +4173,22 @@ export function Profile() {
 
             {/* Stats Metric Badges */}
             <div className="flex flex-wrap items-center gap-3 mb-5">
-              <button 
-                onClick={() => setActiveTab("listings")} 
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-sm font-semibold select-none transition-all duration-200 ${
-                  activeTab === "listings"
+              <button
+                onClick={() => setActiveTab("listings")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-sm font-semibold select-none transition-all duration-200 ${activeTab === "listings"
                     ? "bg-[#172263] border-[#172263] text-white shadow-sm"
                     : "bg-[#F4F6FA] border-zinc-200 text-[#57585A] hover:bg-zinc-200/50"
-                }`}
+                  }`}
               >
                 <Tractor size={15} className={activeTab === "listings" ? "text-white" : "text-[#E82326]"} />
                 <span><strong className={activeTab === "listings" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.harvesters || 0}</strong> Harvesters</span>
               </button>
-              <button 
-                onClick={() => setActiveTab("operator")} 
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-sm font-semibold select-none transition-all duration-200 ${
-                  activeTab === "operator"
+              <button
+                onClick={() => setActiveTab("operator")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-sm font-semibold select-none transition-all duration-200 ${activeTab === "operator"
                     ? "bg-[#172263] border-[#172263] text-white shadow-sm"
                     : "bg-[#F4F6FA] border-zinc-200 text-[#57585A] hover:bg-zinc-200/50"
-                }`}
+                  }`}
               >
                 <UserCheck size={15} className={activeTab === "operator" ? "text-white" : "text-[#172263]"} />
                 <span><strong className={activeTab === "operator" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.operators || 0}</strong> Operator Profile</span>
@@ -3761,7 +4198,7 @@ export function Profile() {
             {/* Bio / Details */}
             <div className="space-y-1.5 w-full text-center md:text-left">
               <p className="text-sm text-[#57585A] font-semibold uppercase tracking-wider">Tractor Seva Community Member</p>
-              
+
               <div className="flex flex-col gap-1 mt-2 text-sm text-[#57585A]">
                 <p className="flex items-center justify-center md:justify-start gap-1.5">
                   <MapPin size={15} className="text-[#E82326]" /> {user.state || "Maharashtra, India"}
@@ -3801,7 +4238,7 @@ export function Profile() {
               Edit Profile
             </button>
           </Link>
-          
+
           <div className="flex-1 min-w-[140px] relative group">
             <button className="w-full bg-[#172263] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-1">
               Add Listing <ChevronDown size={14} />
@@ -3863,22 +4300,20 @@ export function Profile() {
           <div className="bg-[#F4F6FA] p-1.5 rounded-xl border border-zinc-200/80 flex gap-1 select-none">
             <button
               onClick={() => setActiveTab("listings")}
-              className={`flex items-center gap-2 px-8 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                activeTab === "listings"
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "listings"
                   ? "bg-white text-[#172263] shadow-sm"
                   : "text-zinc-555 hover:text-[#1A1A1A]"
-              }`}
+                }`}
             >
               <LayoutGrid size={15} />
               <span>Listings</span>
             </button>
             <button
               onClick={() => setActiveTab("operator")}
-              className={`flex items-center gap-2 px-8 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                activeTab === "operator"
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "operator"
                   ? "bg-white text-[#172263] shadow-sm"
                   : "text-zinc-555 hover:text-[#1A1A1A]"
-              }`}
+                }`}
             >
               <UserCheck size={15} />
               <span>Operator Profile</span>
@@ -3911,7 +4346,7 @@ export function Profile() {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="p-4 flex-1 flex flex-col justify-between">
                       <div>
                         <h4 className="text-sm font-bold text-[#1A1A1A] line-clamp-1 group-hover:text-[#172263] transition-colors">
@@ -4158,7 +4593,7 @@ export function Messages() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{m.name}</p>
-                      <span className="text-xs text-[#57585A]">{m.lastMessageTime ? new Date(m.lastMessageTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
+                      <span className="text-xs text-[#57585A]">{m.lastMessageTime ? new Date(m.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</span>
                     </div>
                     <p className="text-xs text-[#57585A] truncate">{m.lastMessage || "No messages yet"}</p>
                   </div>
@@ -4319,7 +4754,7 @@ export function EditProfile() {
         body.description = description;
         body.whatsapp = whatsapp;
       }
-      
+
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
@@ -4365,9 +4800,9 @@ export function EditProfile() {
               )}
               <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
                 <Camera className="text-white" size={20} />
-                <input 
-                  type="file" 
-                  accept="image/*" 
+                <input
+                  type="file"
+                  accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
@@ -4376,7 +4811,7 @@ export function EditProfile() {
                     }
                     e.target.value = "";
                   }}
-                  className="hidden" 
+                  className="hidden"
                 />
               </label>
             </div>
@@ -4410,12 +4845,12 @@ export function EditProfile() {
           </div>
           <div>
             <label className="text-sm text-[#57585A] block mb-1.5">Bio / Description</label>
-            <textarea 
-              value={bio} 
-              onChange={(e) => setBio(e.target.value)} 
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
               placeholder="Tell us about yourself..."
               rows={3}
-              className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" 
+              className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none"
             />
           </div>
 
@@ -4443,7 +4878,7 @@ export function EditProfile() {
             <>
               <div className="h-px bg-[#E2E8F0] my-6" />
               <h3 className="text-[#1A1A1A] text-base font-semibold" style={{ fontFamily: "'Sora', sans-serif" }}>Operator Profile Details</h3>
-              
+
               <div>
                 <label className="text-sm text-[#57585A] block mb-1.5">WhatsApp Number</label>
                 <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} required className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
@@ -4473,9 +4908,8 @@ export function EditProfile() {
                   {MACHINE_TYPES.map((m) => {
                     const isChecked = selectedMachines.includes(m);
                     return (
-                      <label key={m} className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-colors text-xs ${
-                        isChecked ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] bg-white text-[#57585A] hover:border-blue-200"
-                      }`}>
+                      <label key={m} className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-colors text-xs ${isChecked ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] bg-white text-[#57585A] hover:border-blue-200"
+                        }`}>
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -4528,8 +4962,9 @@ export function EditProfile() {
 export function AdminPortal() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>({ totalUsers: 0, totalOperators: 0, totalHarvesters: 0, totalRequests: 0, blockedUsers: 0 });
+  const [stats, setStats] = useState<any>({ totalUsers: 0, totalOperators: 0, totalHarvesters: 0, totalRequests: 0, blockedUsers: 0, loginHistory: [], performers: [] });
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [performerFilter, setPerformerFilter] = useState("highest_machine");
   const navigate = useNavigate();
 
   // NL query states
@@ -4713,7 +5148,7 @@ export function AdminPortal() {
         if (res.ok) {
           toast.success("User blocked successfully!");
           refreshAllData();
-          if (nlQuery) handleNlSearch({ preventDefault: () => {} } as any);
+          if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
           toast.error("Failed to block user");
         }
@@ -4729,7 +5164,7 @@ export function AdminPortal() {
         if (res.ok) {
           toast.success("User unblocked successfully!");
           refreshAllData();
-          if (nlQuery) handleNlSearch({ preventDefault: () => {} } as any);
+          if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
           toast.error("Failed to unblock user");
         }
@@ -4741,7 +5176,7 @@ export function AdminPortal() {
         if (res.ok) {
           toast.success("Cleared entire user posts/data and blocked user successfully.");
           refreshAllData();
-          if (nlQuery) handleNlSearch({ preventDefault: () => {} } as any);
+          if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
           toast.error("Failed to wipe user data");
         }
@@ -4818,258 +5253,530 @@ export function AdminPortal() {
     setConfirmOpen(true);
   };
 
-  const filteredUsers = allUsers.filter(u => 
+  const filteredUsers = allUsers.filter(u =>
     u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
     u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
     (u.phone && u.phone.includes(userSearchTerm))
   );
 
+  const pendingEnquiriesCount = enquiries.filter((enq: any) => enq.status !== 'Resolved').length;
+
+  // Performers sorting
+  const sortedPerformers = [...(stats.performers || [])].sort((a: any, b: any) => {
+    if (performerFilter === "highest_machine") {
+      return b.harvesterCount - a.harvesterCount;
+    } else if (performerFilter === "rating") {
+      return parseFloat(b.avgRating || 0) - parseFloat(a.avgRating || 0);
+    } else if (performerFilter === "newest") {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    } else if (performerFilter === "oldest") {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }
+    return 0;
+  });
+
+  // Calculate login logs SVG coordinates
+  const maxLogins = Math.max(...(stats.loginHistory || []).map((h: any) => h.count), 1);
+  const chartWidth = 550;
+  const chartHeight = 180;
+  const paddingLeft = 40;
+  const paddingRight = 30;
+  const paddingTop = 20;
+  const paddingBottom = 30;
+  
+  const points = (stats.loginHistory || []).map((h: any, idx: number) => {
+    const x = paddingLeft + (idx * (chartWidth - paddingLeft - paddingRight)) / 6;
+    const y = chartHeight - paddingBottom - (h.count / maxLogins) * (chartHeight - paddingTop - paddingBottom);
+    return { x, y, displayDate: h.displayDate, count: h.count };
+  });
+  
+  const linePath = points.length > 0 
+    ? "M " + points.map(p => `${p.x} ${p.y}`).join(" L ")
+    : "";
+    
+  const areaPath = points.length > 0
+    ? linePath + ` L ${points[points.length - 1].x} ${chartHeight - paddingBottom} L ${points[0].x} ${chartHeight - paddingBottom} Z`
+    : "";
+
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-slate-200">
-      <Navbar variant="auth" />
-
-      {/* Admin Title Banner */}
-      <div className="bg-[#1E293B] border-b border-slate-700 py-6 px-4">
-        <div className="w-full mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-blue-500" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Admin Control Center ⚙️
-            </h1>
-            <p className="text-slate-400 text-sm mt-1">Manage system operators, harvesters, and listings parameters.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold bg-blue-500/10 border border-blue-500/30 text-orange-400 px-3 py-1 rounded-full">
-              System Admin Role
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full mx-auto px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-[#eed4c5] flex items-center justify-center p-4 md:p-8 font-sans">
+      <div className="w-full max-w-[1400px] bg-white rounded-[32px] shadow-2xl flex flex-col md:flex-row overflow-hidden border border-[#e8dfd2] min-h-[850px]">
         
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-700 mb-8 overflow-x-auto gap-1">
-          {[
-            { id: "dashboard", label: "Overview & Users" },
-            { id: "nlSearch", label: "NL English Search" },
-            { id: "csvImport", label: "CSV Bulk Import" },
-            { id: "harvesters", label: "Machines Moderation" },
-            { id: "requests", label: "Requests Moderation" },
-            { id: "enquiries", label: "Enquiries" }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "border-blue-500 text-orange-400 bg-slate-800/40"
-                  : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/10"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ================================== */}
-        {/* TAB 1: OVERVIEW & USERS LIST       */}
-        {/* ================================== */}
-        {activeTab === "dashboard" && (
+        {/* LEFT SIDEBAR */}
+        <div className="w-full md:w-[260px] bg-[#f5eee5] border-r border-[#e8dfd2] p-8 flex flex-col justify-between shrink-0">
           <div className="space-y-8">
-            {/* Stats Metrics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {[
-                { label: "Total Users", value: stats.totalUsers, color: "text-blue-400" },
-                { label: "Listed Operators", value: stats.totalOperators, color: "text-green-400" },
-                { label: "Listed Machines", value: stats.totalHarvesters, color: "text-orange-400" },
-                { label: "Crop Requirements", value: stats.totalRequests, color: "text-amber-400" },
-                { label: "Blocked Accounts", value: stats.blockedUsers, color: "text-red-400" }
-              ].map((card, i) => (
-                <div key={i} className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl">
-                  <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">{card.label}</p>
-                  <p className={`text-3xl font-bold mt-2 ${card.color}`} style={{ fontFamily: "'Sora', sans-serif" }}>
-                    {card.value}
-                  </p>
-                </div>
-              ))}
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#172263] rounded-xl text-white">
+                <Tractor size={24} />
+              </div>
+              <span className="text-xl font-black text-[#172263] tracking-tight font-sora">Tractor Seva</span>
             </div>
-
-            {/* Users list panel */}
-            <div className="bg-[#1E293B] border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
-              <div className="p-6 border-b border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <h3 className="text-lg font-semibold text-white">Registered Users Account Directory</h3>
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-3.5 text-slate-400" size={16} />
-                  <input
-                    type="text"
-                    value={userSearchTerm}
-                    onChange={(e) => setUserSearchTerm(e.target.value)}
-                    placeholder="Search users..."
-                    className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
-                  />
+            
+            {/* Profile info */}
+            <div className="flex flex-col items-center text-center py-4 border-b border-[#e8dfd2]/60">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] p-0.5 shadow-md mb-3 overflow-hidden">
+                {currentUser?.image_path ? (
+                  <img src={currentUser.image_path} alt={currentUser.name} className="w-full h-full object-cover rounded-full" />
+                ) : (
+                  <div className="w-full h-full bg-[#f5eee5] rounded-full flex items-center justify-center">
+                    <span className="text-xl font-bold text-[#172263]">{currentUser?.name?.charAt(0) || 'A'}</span>
+                  </div>
+                )}
+              </div>
+              <h4 className="text-[#1A1A1A] font-bold text-base font-sora">{currentUser?.name || "Om"}</h4>
+              <span className="text-xs text-[#57585A] font-semibold uppercase tracking-wider mt-0.5">Admin</span>
+            </div>
+            
+            {/* Navigation Menu */}
+            <nav className="flex flex-col gap-1.5">
+              {[
+                { id: "dashboard", label: "Dashboard", icon: <LayoutGrid size={18} /> },
+                { id: "directory", label: "User Directory", icon: <User size={18} /> },
+                { id: "nlSearch", label: "NL Search", icon: <Search size={18} /> },
+                { id: "csvImport", label: "CSV Import", icon: <Upload size={18} /> },
+                { id: "harvesters", label: "Machines", icon: <Tractor size={18} /> },
+                { id: "requests", label: "Requests", icon: <FileText size={18} /> },
+                { id: "enquiries", label: "Enquiries", icon: <MessageSquare size={18} /> }
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    activeTab === item.id 
+                      ? "bg-[#172263] text-white shadow-sm" 
+                      : "text-[#57585A] hover:bg-[#e8dfd2]/40 hover:text-[#172263]"
+                  }`}
+                >
+                  {item.icon}
+                  {item.label}
+                  {item.id === "dashboard" && (
+                    <span className="ml-auto w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
+          
+          {/* Logout */}
+          <button 
+            onClick={() => {
+              localStorage.removeItem("tractorsewa_token");
+              navigate("/login");
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 transition"
+          >
+            <LogOut size={18} />
+            Log Out
+          </button>
+        </div>
+        
+        {/* RIGHT CONTENT AREA */}
+        <div className="flex-1 bg-white p-6 md:p-10 overflow-y-auto">
+          
+          {/* ================================== */}
+          {/* TAB: DASHBOARD (MAIN OVERVIEW)     */}
+          {/* ================================== */}
+          {activeTab === "dashboard" && (
+            <div className="space-y-8">
+              {/* Header Row */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-extrabold text-[#1A1A1A] font-sora">Dashboard</h1>
+                  <p className="text-[#57585A] text-sm mt-1">Platform analytics and administrative directory highlights.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => setActiveTab("enquiries")}
+                    className="p-2.5 text-[#57585A] hover:text-[#172263] hover:bg-zinc-100 rounded-full transition relative"
+                    title="View Enquiries"
+                  >
+                    <Bell size={20} />
+                    {pendingEnquiriesCount > 0 && (
+                      <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-pulse">
+                        {pendingEnquiriesCount}
+                      </span>
+                    )}
+                  </button>
                 </div>
               </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-slate-300">
-                  <thead className="text-xs uppercase bg-slate-800 text-slate-400 border-b border-slate-700">
-                    <tr>
-                      <th className="px-6 py-3.5">Name</th>
-                      <th className="px-6 py-3.5">Email</th>
-                      <th className="px-6 py-3.5">Phone</th>
-                      <th className="px-6 py-3.5">State</th>
-                      <th className="px-6 py-3.5">Listings Count</th>
-                      <th className="px-6 py-3.5 text-center">Status</th>
-                      <th className="px-6 py-3.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700/50">
-                    {filteredUsers.length > 0 ? (
-                      filteredUsers.map((user) => (
-                        <tr key={user.id} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="px-6 py-4 font-medium text-white">{user.name}</td>
-                          <td className="px-6 py-4">{user.email}</td>
-                          <td className="px-6 py-4">{user.phone || "-"}</td>
-                          <td className="px-6 py-4">{user.state || "-"}</td>
-                          <td className="px-6 py-4">
-                            <span className="text-slate-400">
-                              Harvesters: {user.harvesterCount} | Requests: {user.requestCount}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            {user.is_blocked ? (
-                              <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-400">
-                                Blocked
-                              </span>
-                            ) : (
-                              <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-500/10 border border-green-500/30 text-green-400">
-                                Active
+              
+              {/* Metrics & Doughnut Card */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Left stats: 3 quick metric cards */}
+                <div className="lg:col-span-2 grid grid-cols-3 gap-4">
+                  {[
+                    { label: "Total Users", value: stats.totalUsers, desc: "Registered accounts", color: "text-[#172263]" },
+                    { label: "Total Posts", value: stats.totalHarvesters + stats.totalOperators + stats.totalRequests, desc: "System wide entries", color: "text-[#D97706]" },
+                    { label: "Active Enquiries", value: enquiries.length, desc: "Pending resolution", color: "text-green-600" }
+                  ].map((m, idx) => (
+                    <div key={idx} className="bg-white border border-[#E2E8F0] p-6 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+                      <span className="text-[#57585A] text-xs font-bold uppercase tracking-wider">{m.label}</span>
+                      <span className={`text-4xl font-extrabold my-3 font-sora ${m.color}`}>{m.value}</span>
+                      <span className="text-[11px] text-[#57585A] font-medium">{m.desc}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Right doughnut: Platform Distribution */}
+                <div className="bg-[#fcfbf9] border border-[#e8dfd2] rounded-3xl p-6 relative flex items-center justify-between shadow-sm overflow-hidden">
+                  <div className="space-y-4 z-10">
+                    <h4 className="text-sm font-extrabold text-[#1A1A1A] font-sora">Database Overview</h4>
+                    <div className="space-y-1.5 text-xs text-[#57585A] font-semibold">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#172263]" />
+                        Harvesters: {stats.totalHarvesters}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#D97706]" />
+                        Operators: {stats.totalOperators}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#64748B]" />
+                        Requests: {stats.totalRequests}
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setActiveTab("harvesters")}
+                      className="px-4 py-2 bg-[#172263] hover:bg-[#11194A] text-white text-xs font-bold rounded-xl shadow-sm transition"
+                    >
+                      View Listings
+                    </button>
+                  </div>
+                  
+                  {/* Concentric Circular Doughnut Graph */}
+                  <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle 
+                        cx="64" cy="64" r="48" 
+                        stroke="#E2E8F0" strokeWidth="6" fill="none"
+                      />
+                      <circle 
+                        cx="64" cy="64" r="48" 
+                        stroke="#172263" strokeWidth="6" fill="none"
+                        strokeDasharray={`${2 * Math.PI * 48}`}
+                        strokeDashoffset={`${2 * Math.PI * 48 * (1 - (stats.totalHarvesters / Math.max(stats.totalHarvesters + stats.totalOperators + stats.totalRequests, 1)))}`}
+                        strokeLinecap="round"
+                      />
+                      
+                      <circle 
+                        cx="64" cy="64" r="38" 
+                        stroke="#E2E8F0" strokeWidth="6" fill="none"
+                      />
+                      <circle 
+                        cx="64" cy="64" r="38" 
+                        stroke="#D97706" strokeWidth="6" fill="none"
+                        strokeDasharray={`${2 * Math.PI * 38}`}
+                        strokeDashoffset={`${2 * Math.PI * 38 * (1 - (stats.totalOperators / Math.max(stats.totalHarvesters + stats.totalOperators + stats.totalRequests, 1)))}`}
+                        strokeLinecap="round"
+                      />
+                      
+                      <circle 
+                        cx="64" cy="64" r="28" 
+                        stroke="#E2E8F0" strokeWidth="6" fill="none"
+                      />
+                      <circle 
+                        cx="64" cy="64" r="28" 
+                        stroke="#64748B" strokeWidth="6" fill="none"
+                        strokeDasharray={`${2 * Math.PI * 28}`}
+                        strokeDashoffset={`${2 * Math.PI * 28 * (1 - (stats.totalRequests / Math.max(stats.totalHarvesters + stats.totalOperators + stats.totalRequests, 1)))}`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] font-black text-[#57585A]">TOTAL</span>
+                      <span className="text-base font-black text-[#1A1A1A] font-sora">
+                        {stats.totalHarvesters + stats.totalOperators + stats.totalRequests}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Daily Logins Activity & Performers Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Left side: SVG Daily Logins Curved Line Chart */}
+                <div className="lg:col-span-2 bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-[#1A1A1A] font-bold text-lg font-sora">Activity</h3>
+                      <span className="text-xs text-[#57585A]">Daily active users logging in</span>
+                    </div>
+                    <div className="px-3 py-1.5 border border-[#E2E8F0] rounded-xl text-xs text-[#57585A] font-bold bg-[#fcfbf9]">
+                      Last 7 Days
+                    </div>
+                  </div>
+                  
+                  <div className="w-full overflow-x-auto">
+                    <div className="min-w-[550px] h-[200px] relative">
+                      <svg className="w-full h-full" viewBox="0 0 550 180">
+                        <defs>
+                          <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#D97706" stopOpacity="0.2" />
+                            <stop offset="100%" stopColor="#D97706" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        
+                        {/* Grid Lines */}
+                        {[0, 0.25, 0.5, 0.75, 1].map((r, i) => (
+                          <line 
+                            key={i} 
+                            x1="40" y1={20 + r * 140} x2="520" y2={20 + r * 140} 
+                            stroke="#F1F5F9" strokeWidth="1" 
+                            strokeDasharray="4"
+                          />
+                        ))}
+                        
+                        {/* Area Fill Under Path */}
+                        {areaPath && (
+                          <path d={areaPath} fill="url(#chart-grad)" />
+                        )}
+                        
+                        {/* Line Path */}
+                        {linePath && (
+                          <path 
+                            d={linePath} 
+                            fill="none" 
+                            stroke="#D97706" 
+                            strokeWidth="3.5" 
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        )}
+                        
+                        {/* Points & Labels */}
+                        {points.map((p, idx) => (
+                          <g key={idx} className="group cursor-pointer">
+                            <circle 
+                              cx={p.x} cy={p.y} r="5" 
+                              fill="#ffffff" 
+                              stroke="#D97706" 
+                              strokeWidth="3.5"
+                            />
+                            <circle 
+                              cx={p.x} cy={p.y} r="9" 
+                              fill="#D97706" 
+                              fillOpacity="0.15"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            />
+                            <rect 
+                              x={p.x - 24} y={p.y - 30} width="48" height="20" rx="6" 
+                              fill="#172263" 
+                              className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                            />
+                            <text 
+                              x={p.x} y={p.y - 17} 
+                              fill="#ffffff" 
+                              fontSize="10" 
+                              fontWeight="bold"
+                              textAnchor="middle" 
+                              className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-sora"
+                            >
+                              {p.count}
+                            </text>
+                            
+                            <text 
+                              x={p.x} y="172" 
+                              fill="#57585A" 
+                              fontSize="10" 
+                              fontWeight="bold"
+                              textAnchor="middle"
+                              className="font-sans"
+                            >
+                              {p.displayDate.split(" ")[0]}
+                            </text>
+                          </g>
+                        ))}
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Right side: Top Performers Widget */}
+                <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-[#1A1A1A] font-bold text-lg font-sora">Top Performers</h3>
+                      <select
+                        value={performerFilter}
+                        onChange={(e) => setPerformerFilter(e.target.value)}
+                        className="px-2.5 py-1 border border-[#E2E8F0] rounded-xl text-xs text-[#57585A] font-bold bg-[#fcfbf9] focus:outline-none"
+                      >
+                        <option value="highest_machine">Highest Machines</option>
+                        <option value="rating">Best Rating</option>
+                        <option value="newest">Newest Accounts</option>
+                        <option value="oldest">Oldest Accounts</option>
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {sortedPerformers.slice(0, 3).map((perf: any) => (
+                        <div key={perf.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#172263] to-amber-500 flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden shadow-sm">
+                              {perf.imagePath ? (
+                                <img src={perf.imagePath} alt={perf.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span>{perf.name.charAt(0).toUpperCase()}</span>
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-[#1A1A1A] font-sora line-clamp-1">{perf.name}</h4>
+                              <span className="text-[10px] text-[#57585A] font-medium line-clamp-1">@{perf.email.split('@')[0]}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right shrink-0">
+                            {performerFilter === "highest_machine" && (
+                              <span className="text-xs font-black text-[#172263] bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
+                                {perf.harvesterCount} Machine{perf.harvesterCount === 1 ? '' : 's'}
                               </span>
                             )}
-                          </td>
-                          <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
-                            <button
-                              onClick={() =>
-                                openConfirmModal(
-                                  user.is_blocked ? "unblock" : "block",
-                                  user.id,
-                                  user.name
-                                )
-                              }
-                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                                user.is_blocked
-                                  ? "bg-green-600/20 text-green-400 border border-green-600/30 hover:bg-green-600/30"
-                                  : "bg-amber-600/20 text-amber-400 border border-amber-600/30 hover:bg-amber-600/30"
-                              }`}
-                            >
-                              {user.is_blocked ? "Unblock" : "Block"}
-                            </button>
-                            <button
-                              onClick={() => openConfirmModal("wipe", user.id, user.name)}
-                              className="px-3 py-1.5 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-xs font-semibold hover:bg-red-600/30 transition"
-                            >
-                              Wipe Data & Block
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
-                          No users matching search criteria.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                            {performerFilter === "rating" && (
+                              <span className="text-xs font-black text-[#D97706] bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full flex items-center gap-0.5 justify-end">
+                                ★ {perf.avgRating}
+                              </span>
+                            )}
+                            {performerFilter === "newest" && (
+                              <span className="text-[10px] font-bold text-[#57585A]">
+                                Joined {new Date(perf.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                              </span>
+                            )}
+                            {performerFilter === "oldest" && (
+                              <span className="text-[10px] font-bold text-[#57585A]">
+                                Joined {new Date(perf.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {sortedPerformers.length === 0 && (
+                        <p className="text-xs text-[#57585A] text-center italic py-8">No user records available.</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setActiveTab("directory")}
+                    className="w-full text-center text-xs font-extrabold text-[#172263] hover:text-[#11194A] mt-4 pt-4 border-t border-slate-100 transition"
+                  >
+                    View More &gt;
+                  </button>
+                </div>
+                
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================================== */}
-        {/* TAB 2: NL ENGLISH SEARCH           */}
-        {/* ================================== */}
-        {activeTab === "nlSearch" && (
-          <div className="space-y-6">
-            <div className="bg-[#1E293B] border border-slate-700 p-6 rounded-2xl shadow-xl">
-              <h3 className="text-lg font-semibold text-white mb-2">English Query User Search</h3>
-              <p className="text-slate-400 text-sm mb-4">
-                Type search parameters in natural English. The system automatically extracts name patterns and locations. E.g. *"Show users from Punjab named Rajesh"* or *"Maharashtra Pune operators"*
-              </p>
               
-              <form onSubmit={handleNlSearch} className="flex gap-2">
-                <input
-                  type="text"
-                  value={nlQuery}
-                  onChange={(e) => setNlQuery(e.target.value)}
-                  placeholder="e.g. Find users in Maharashtra named Vikram"
-                  required
-                  className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
-                />
-                <button
-                  type="submit"
-                  disabled={searching}
-                  className="bg-orange-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2"
-                >
-                  {searching ? "Searching..." : "Parse & Search"}
-                </button>
-              </form>
-            </div>
-
-            {/* Parsed Output Details */}
-            {parsedFilter && (
-              <div className="bg-slate-800/50 border border-slate-700/60 p-4 rounded-xl flex gap-6 text-sm">
-                <div>
-                  <span className="text-slate-400 block text-xs uppercase tracking-wider font-semibold">Detected Name</span>
-                  <span className="text-white font-medium mt-0.5 block">{parsedFilter.name || "None"}</span>
+              {/* Operational Insights (Highlights) Cards */}
+              <div className="bg-[#f2f8f6] border border-emerald-100 rounded-3xl p-6 shadow-sm">
+                <div className="mb-4">
+                  <h3 className="text-[#172263] font-bold text-lg font-sora">Operational Highlights</h3>
+                  <p className="text-emerald-700 text-xs mt-0.5">Summary of platform engagement metrics across core categories.</p>
                 </div>
-                <div className="border-l border-slate-700 pl-6">
-                  <span className="text-slate-400 block text-xs uppercase tracking-wider font-semibold">Detected State</span>
-                  <span className="text-white font-medium mt-0.5 block">{parsedFilter.state || "None"}</span>
-                </div>
-                <div className="border-l border-slate-700 pl-6">
-                  <span className="text-slate-400 block text-xs uppercase tracking-wider font-semibold">Detected District</span>
-                  <span className="text-white font-medium mt-0.5 block">{parsedFilter.district || "None"}</span>
+                
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl border border-emerald-200/50 flex flex-col justify-between shadow-sm">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Harvesters listed</span>
+                      <h4 className="text-[#172263] font-extrabold text-2xl font-sora mt-1">+{stats.totalHarvesters}</h4>
+                    </div>
+                    <span className="text-[10px] text-emerald-600 font-semibold mt-3 flex items-center gap-1">
+                      Active on directory
+                    </span>
+                  </div>
+                  
+                  <div className="bg-white p-5 rounded-2xl border border-emerald-200/50 flex flex-col justify-between shadow-sm">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Operators listed</span>
+                      <h4 className="text-[#D97706] font-extrabold text-2xl font-sora mt-1">+{stats.totalOperators}</h4>
+                    </div>
+                    <span className="text-[10px] text-emerald-600 font-semibold mt-3 flex items-center gap-1">
+                      Verified profiles
+                    </span>
+                  </div>
+                  
+                  <div className="bg-white p-5 rounded-2xl border border-emerald-200/50 flex flex-col justify-between shadow-sm">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Crop requirements</span>
+                      <h4 className="text-green-600 font-extrabold text-2xl font-sora mt-1">+{stats.totalRequests}</h4>
+                    </div>
+                    <span className="text-[10px] text-emerald-600 font-semibold mt-3 flex items-center gap-1">
+                      Farmer listings live
+                    </span>
+                  </div>
+                  
+                  <div className="bg-white p-5 rounded-2xl border border-emerald-200/50 flex flex-col justify-between shadow-sm">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Total enquiries</span>
+                      <h4 className="text-indigo-600 font-extrabold text-2xl font-sora mt-1">+{enquiries.length}</h4>
+                    </div>
+                    <span className="text-[10px] text-emerald-600 font-semibold mt-3 flex items-center gap-1">
+                      Pending moderation
+                    </span>
+                  </div>
                 </div>
               </div>
-            )}
+              
+            </div>
+          )}
 
-            {/* Results Table */}
-            {nlQuery && (
-              <div className="bg-[#1E293B] border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
-                <div className="px-6 py-4 border-b border-slate-700">
-                  <h4 className="text-sm font-semibold text-white">Search Results ({searchResults.length})</h4>
+          {/* ================================== */}
+          {/* TAB: REGISTERED USERS DIRECTORY    */}
+          {/* ================================== */}
+          {activeTab === "directory" && (
+            <div className="space-y-6">
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Registered Users Account Directory</h3>
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-3 text-[#57585A]" size={16} />
+                    <input
+                      type="text"
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      placeholder="Search users..."
+                      className="w-full pl-9 pr-4 py-2 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-[#172263]"
+                    />
+                  </div>
                 </div>
+
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left text-slate-300">
-                    <thead className="text-xs uppercase bg-slate-800 text-slate-400 border-b border-slate-700">
+                  <table className="w-full text-sm text-left text-[#57585A]">
+                    <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
                       <tr>
                         <th className="px-6 py-3.5">Name</th>
                         <th className="px-6 py-3.5">Email</th>
                         <th className="px-6 py-3.5">Phone</th>
                         <th className="px-6 py-3.5">State</th>
+                        <th className="px-6 py-3.5">Listings Count</th>
                         <th className="px-6 py-3.5 text-center">Status</th>
                         <th className="px-6 py-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-700/50">
-                      {searchResults.length > 0 ? (
-                        searchResults.map((user) => (
-                          <tr key={user.id} className="hover:bg-slate-800/40 transition-colors">
-                            <td className="px-6 py-4 font-medium text-white">{user.name}</td>
+                    <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map((user) => (
+                          <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{user.name}</td>
                             <td className="px-6 py-4">{user.email}</td>
                             <td className="px-6 py-4">{user.phone || "-"}</td>
                             <td className="px-6 py-4">{user.state || "-"}</td>
+                            <td className="px-6 py-4">
+                              <span className="text-[#57585A]">
+                                Harvesters: {user.harvesterCount} | Requests: {user.requestCount}
+                              </span>
+                            </td>
                             <td className="px-6 py-4 text-center">
                               {user.is_blocked ? (
-                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-400">
+                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 border border-red-200 text-red-600">
                                   Blocked
                                 </span>
                               ) : (
-                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-500/10 border border-green-500/30 text-green-400">
+                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-50 border border-green-200 text-green-600">
                                   Active
                                 </span>
                               )}
@@ -5083,17 +5790,16 @@ export function AdminPortal() {
                                     user.name
                                   )
                                 }
-                                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                                  user.is_blocked
-                                    ? "bg-green-600/20 text-green-400 border border-green-600/30 hover:bg-green-600/30"
-                                    : "bg-amber-600/20 text-amber-400 border border-amber-600/30 hover:bg-amber-600/30"
-                                }`}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition border ${user.is_blocked
+                                    ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
+                                    : "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100"
+                                  }`}
                               >
                                 {user.is_blocked ? "Unblock" : "Block"}
                               </button>
                               <button
                                 onClick={() => openConfirmModal("wipe", user.id, user.name)}
-                                className="px-2.5 py-1.5 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-xs font-semibold hover:bg-red-600/30 transition"
+                                className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition"
                               >
                                 Wipe Data
                               </button>
@@ -5102,8 +5808,8 @@ export function AdminPortal() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                            No records found. Try simplifying your query tags.
+                          <td colSpan={7} className="px-6 py-12 text-center text-[#57585A]/70">
+                            No users matching search criteria.
                           </td>
                         </tr>
                       )}
@@ -5111,294 +5817,279 @@ export function AdminPortal() {
                   </table>
                 </div>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* ================================== */}
-        {/* TAB 3: CSV BULK IMPORT             */}
-        {/* ================================== */}
-        {activeTab === "csvImport" && (
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Upload form card */}
-            <div className="bg-[#1E293B] border border-slate-700 p-6 rounded-2xl shadow-xl space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-white">Bulk Import Users</h3>
-                <p className="text-slate-400 text-sm mt-1">
-                  Upload a standard CSV file to instantly register users on the network and auto-provision operator profiles.
+          {/* ================================== */}
+          {/* TAB: NL ENGLISH SEARCH             */}
+          {/* ================================== */}
+          {activeTab === "nlSearch" && (
+            <div className="space-y-6">
+              <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm space-y-4">
+                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">English Query User Search</h3>
+                <p className="text-[#57585A] text-sm">
+                  Type search parameters in natural English. The system automatically extracts name patterns and locations. E.g. <span className="italic">"Show users from Punjab named Rajesh"</span> or <span className="italic">"Maharashtra Pune operators"</span>
                 </p>
-              </div>
 
-              <form onSubmit={handleCsvUpload} className="space-y-4">
-                <div>
-                  <label className="text-xs text-slate-400 font-semibold block mb-1">CSV File Selection</label>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-                    required
-                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-300 focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-orange-400 hover:file:bg-blue-500/20"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs text-slate-400 font-semibold block mb-1">Assigned Default Password</label>
+                <form onSubmit={handleNlSearch} className="flex gap-2">
                   <input
                     type="text"
-                    value={defaultPassword}
-                    onChange={(e) => setDefaultPassword(e.target.value)}
+                    value={nlQuery}
+                    onChange={(e) => setNlQuery(e.target.value)}
+                    placeholder="e.g. Find users in Maharashtra named Vikram"
                     required
-                    minLength={6}
-                    placeholder="Welcome123"
-                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="flex-1 px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-[#172263]"
                   />
+                  <button
+                    type="submit"
+                    disabled={searching}
+                    className="bg-[#172263] hover:bg-[#11194A] text-white font-bold px-6 py-3 rounded-xl transition flex items-center gap-2"
+                  >
+                    {searching ? "Searching..." : "Parse & Search"}
+                  </button>
+                </form>
+              </div>
+
+              {parsedFilter && (
+                <div className="bg-[#fcfbf9] border border-[#e8dfd2] p-4 rounded-2xl flex gap-6 text-sm text-[#57585A]">
+                  <div>
+                    <span className="text-[#57585A]/70 block text-xs uppercase tracking-wider font-bold">Detected Name</span>
+                    <span className="text-[#1A1A1A] font-extrabold mt-0.5 block font-sora">{parsedFilter.name || "None"}</span>
+                  </div>
+                  <div className="border-l border-[#e8dfd2] pl-6">
+                    <span className="text-[#57585A]/70 block text-xs uppercase tracking-wider font-bold">Detected State</span>
+                    <span className="text-[#1A1A1A] font-extrabold mt-0.5 block font-sora">{parsedFilter.state || "None"}</span>
+                  </div>
+                  <div className="border-l border-[#e8dfd2] pl-6">
+                    <span className="text-[#57585A]/70 block text-xs uppercase tracking-wider font-bold">Detected District</span>
+                    <span className="text-[#1A1A1A] font-extrabold mt-0.5 block font-sora">{parsedFilter.district || "None"}</span>
+                  </div>
+                </div>
+              )}
+
+              {nlQuery && (
+                <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+                  <div className="px-6 py-4 border-b border-[#E2E8F0]">
+                    <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">Search Results ({searchResults.length})</h4>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left text-[#57585A]">
+                      <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                        <tr>
+                          <th className="px-6 py-3.5">Name</th>
+                          <th className="px-6 py-3.5">Email</th>
+                          <th className="px-6 py-3.5">Phone</th>
+                          <th className="px-6 py-3.5">State</th>
+                          <th className="px-6 py-3.5 text-center">Status</th>
+                          <th className="px-6 py-3.5 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                        {searchResults.length > 0 ? (
+                          searchResults.map((user) => (
+                            <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{user.name}</td>
+                              <td className="px-6 py-4">{user.email}</td>
+                              <td className="px-6 py-4">{user.phone || "-"}</td>
+                              <td className="px-6 py-4">{user.state || "-"}</td>
+                              <td className="px-6 py-4 text-center">
+                                {user.is_blocked ? (
+                                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 border border-red-200 text-red-600">
+                                    Blocked
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-50 border border-green-200 text-green-600">
+                                    Active
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                                <button
+                                  onClick={() =>
+                                    openConfirmModal(
+                                      user.is_blocked ? "unblock" : "block",
+                                      user.id,
+                                      user.name
+                                    )
+                                  }
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition border ${user.is_blocked
+                                      ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
+                                      : "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100"
+                                    }`}
+                                >
+                                  {user.is_blocked ? "Unblock" : "Block"}
+                                </button>
+                                <button
+                                  onClick={() => openConfirmModal("wipe", user.id, user.name)}
+                                  className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition"
+                                >
+                                  Wipe Data
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-12 text-center text-[#57585A]/70">
+                              No records found. Try simplifying your query tags.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ================================== */}
+          {/* TAB: CSV BULK IMPORT               */}
+          {/* ================================== */}
+          {activeTab === "csvImport" && (
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Bulk Import Users</h3>
+                  <p className="text-[#57585A] text-sm mt-1">
+                    Upload a standard CSV file to instantly register users on the network and auto-provision operator profiles.
+                  </p>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={uploadingCsv}
-                  className="w-full bg-orange-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {uploadingCsv ? "Processing CSV..." : "Process Bulk Upload"}
-                </button>
-              </form>
+                <form onSubmit={handleCsvUpload} className="space-y-4">
+                  <div>
+                    <label className="text-xs text-[#57585A] font-bold block mb-1">CSV File Selection</label>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                      required
+                      className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-[#172263] hover:file:bg-blue-100"
+                    />
+                  </div>
 
-              <div className="pt-4 border-t border-slate-700 flex justify-between items-center text-xs">
-                <span className="text-slate-400">Format Verification Checklist</span>
-                <a
-                  href="/sample_users.csv"
-                  download="sample_users.csv"
-                  className="text-orange-400 hover:underline inline-flex items-center gap-1 font-semibold"
-                >
-                  Download Sample CSV 📥
-                </a>
+                  <div>
+                    <label className="text-xs text-[#57585A] font-bold block mb-1">Assigned Default Password</label>
+                    <input
+                      type="text"
+                      value={defaultPassword}
+                      onChange={(e) => setDefaultPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      placeholder="Welcome123"
+                      className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-[#172263]"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={uploadingCsv}
+                    className="w-full bg-[#172263] hover:bg-[#11194A] text-white font-bold py-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {uploadingCsv ? "Processing CSV..." : "Process Bulk Upload"}
+                  </button>
+                </form>
+
+                <div className="pt-4 border-t border-[#E2E8F0] flex justify-between items-center text-xs">
+                  <span className="text-[#57585A]">Format Verification Checklist</span>
+                  <a
+                    href="/sample_users.csv"
+                    download="sample_users.csv"
+                    className="text-[#D97706] hover:underline inline-flex items-center gap-1 font-bold"
+                  >
+                    Download Sample CSV 📥
+                  </a>
+                </div>
               </div>
-            </div>
 
-            {/* Results Report card */}
-            <div className="bg-[#1E293B] border border-slate-700 p-6 rounded-2xl shadow-xl flex flex-col justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Bulk Import Operations Report</h3>
-                
-                {csvReport ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-xl text-center">
-                        <span className="text-slate-400 text-xs block">Success Count</span>
-                        <span className="text-2xl font-bold text-green-400 mt-1 block">{csvReport.successCount}</span>
-                      </div>
-                      <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl text-center">
-                        <span className="text-slate-400 text-xs block">Failed Count</span>
-                        <span className="text-2xl font-bold text-red-400 mt-1 block">{csvReport.failedCount}</span>
-                      </div>
-                    </div>
+              <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora mb-4">Bulk Import Operations Report</h3>
 
-                    {csvReport.errors && csvReport.errors.length > 0 && (
-                      <div>
-                        <span className="text-xs text-red-400 font-semibold block mb-2">Row-by-Row Upload Failures:</span>
-                        <div className="bg-slate-900 border border-slate-700/80 p-3 rounded-xl max-h-48 overflow-y-auto text-xs font-mono space-y-1.5 text-slate-400">
-                          {csvReport.errors.map((err: string, i: number) => (
-                            <div key={i} className="text-red-300">⚠️ {err}</div>
-                          ))}
+                  {csvReport ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-green-50 border border-green-200 p-4 rounded-2xl text-center">
+                          <span className="text-[#57585A] text-xs block font-semibold">Success Count</span>
+                          <span className="text-2xl font-black text-green-600 mt-1 block font-sora">{csvReport.successCount}</span>
+                        </div>
+                        <div className="bg-red-50 border border-red-200 p-4 rounded-2xl text-center">
+                          <span className="text-[#57585A] text-xs block font-semibold">Failed Count</span>
+                          <span className="text-2xl font-black text-red-600 mt-1 block font-sora">{csvReport.failedCount}</span>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-slate-500 text-sm text-center py-12 border-2 border-dashed border-slate-700/60 rounded-2xl">
-                    Upload a CSV file and run parser to generate imports report here.
-                  </div>
-                )}
-              </div>
-              
-              <div className="bg-slate-800/40 p-4 rounded-xl text-xs text-slate-400 border border-slate-700/40 mt-4">
-                <strong>CSV Template Structure:</strong><br />
-                Columns must be named exactly: <code className="text-orange-400 font-mono">name,email,phone,state</code>.<br />
-                All imported users can later list themselves as operators or add harvesters from the portal.
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* ================================== */}
-        {/* TAB 4: MACHINES MODERATION         */}
-        {/* ================================== */}
-        {activeTab === "harvesters" && (
-          <div className="bg-[#1E293B] border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-6 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white">Active Machine Listings ({harvesters.length})</h3>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-slate-300">
-                <thead className="text-xs uppercase bg-slate-800 text-slate-400 border-b border-slate-700">
-                  <tr>
-                    <th className="px-6 py-3.5">Machine Details</th>
-                    <th className="px-6 py-3.5">Manufacturer</th>
-                    <th className="px-6 py-3.5">Model</th>
-                    <th className="px-6 py-3.5">Location</th>
-                    <th className="px-6 py-3.5">Listed Owner</th>
-                    <th className="px-6 py-3.5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/50">
-                  {harvesters.length > 0 ? (
-                    harvesters.map((h) => (
-                      <tr key={h.id} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="px-6 py-4 font-medium text-white">{h.machineName}</td>
-                        <td className="px-6 py-4">{h.company}</td>
-                        <td className="px-6 py-4">{h.model}</td>
-                        <td className="px-6 py-4">{h.location}, {h.state}</td>
-                        <td className="px-6 py-4">{h.ownerName}</td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => openConfirmModal("deleteHarv", h.id, h.machineName)}
-                            className="px-3 py-1.5 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-xs font-semibold hover:bg-red-600/30 transition"
-                          >
-                            Remove Listing
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                      {csvReport.errors && csvReport.errors.length > 0 && (
+                        <div>
+                          <span className="text-xs text-red-600 font-bold block mb-2">Row-by-Row Upload Failures:</span>
+                          <div className="bg-red-50/30 border border-red-100 p-3 rounded-2xl max-h-48 overflow-y-auto text-xs font-mono space-y-1.5 text-red-800">
+                            {csvReport.errors.map((err: string, i: number) => (
+                              <div key={i}>⚠️ {err}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                        No active machine listings in the database.
-                      </td>
-                    </tr>
+                    <div className="text-[#57585A]/70 text-sm text-center py-12 border-2 border-dashed border-[#E2E8F0] rounded-2xl">
+                      Upload a CSV file and run parser to generate imports report here.
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+                </div>
 
-        {/* ================================== */}
-        {/* TAB 5: REQUESTS MODERATION         */}
-        {/* ================================== */}
-        {activeTab === "requests" && (
-          <div className="bg-[#1E293B] border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-6 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white">Posted Crop Requirements ({requests.length})</h3>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-slate-300">
-                <thead className="text-xs uppercase bg-slate-800 text-slate-400 border-b border-slate-700">
-                  <tr>
-                    <th className="px-6 py-3.5">Crop Type</th>
-                    <th className="px-6 py-3.5">Listing Category</th>
-                    <th className="px-6 py-3.5">Location</th>
-                    <th className="px-6 py-3.5">Duration</th>
-                    <th className="px-6 py-3.5">Date Added</th>
-                    <th className="px-6 py-3.5">Requester</th>
-                    <th className="px-6 py-3.5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/50">
-                  {requests.length > 0 ? (
-                    requests.map((r) => (
-                      <tr key={r.id} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="px-6 py-4 font-medium text-white">{r.machineType}</td>
-                        <td className="px-6 py-4 capitalize">{r.type}</td>
-                        <td className="px-6 py-4">{r.location}, {r.state}</td>
-                        <td className="px-6 py-4">{r.duration || "Not specified"}</td>
-                        <td className="px-6 py-4">
-                          {r.startDate ? new Date(r.startDate).toLocaleDateString() : "-"}
-                        </td>
-                        <td className="px-6 py-4">{r.requesterName}</td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => openConfirmModal("deleteReq", r.id, `${r.machineType} requirement`)}
-                            className="px-3 py-1.5 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-xs font-semibold hover:bg-red-600/30 transition"
-                          >
-                            Delete Request
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                        No posted crop requirements in the database.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ================================== */}
-        {/* TAB 6: ENQUIRIES MODERATION        */}
-        {/* ================================== */}
-        {activeTab === "enquiries" && (
-          <div className="space-y-6">
-            <div className="bg-[#1E293B] border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
-              <div className="p-6 border-b border-slate-700">
-                <h3 className="text-lg font-semibold text-white">General Enquiries</h3>
+                <div className="bg-[#fcfbf9] p-4 rounded-2xl text-xs text-[#57585A] border border-[#e8dfd2] mt-4">
+                  <strong>CSV Template Structure:</strong><br />
+                  Columns must be named exactly: <code className="text-[#D97706] font-mono">name,email,phone,state</code>.<br />
+                  All imported users can later list themselves as operators or add harvesters from the portal.
+                </div>
               </div>
+            </div>
+          )}
+
+          {/* ================================== */}
+          {/* TAB: MACHINES MODERATION           */}
+          {/* ================================== */}
+          {activeTab === "harvesters" && (
+            <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-[#E2E8F0]">
+                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Active Machine Listings ({harvesters.length})</h3>
+              </div>
+
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-slate-300">
-                  <thead className="text-xs uppercase bg-slate-800 text-slate-400 border-b border-slate-700">
+                <table className="w-full text-sm text-left text-[#57585A]">
+                  <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
                     <tr>
-                      <th className="px-6 py-3.5">Name</th>
-                      <th className="px-6 py-3.5">Phone</th>
+                      <th className="px-6 py-3.5">Machine Details</th>
+                      <th className="px-6 py-3.5">Manufacturer</th>
+                      <th className="px-6 py-3.5">Model</th>
                       <th className="px-6 py-3.5">Location</th>
-                      <th className="px-6 py-3.5">Requirement</th>
-                      <th className="px-6 py-3.5">Date Needed</th>
-                      <th className="px-6 py-3.5">Status</th>
+                      <th className="px-6 py-3.5">Listed Owner</th>
                       <th className="px-6 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/50">
-                    {enquiries.length > 0 ? (
-                      enquiries.map((enq) => (
-                        <tr key={enq.id} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="px-6 py-4 font-medium text-white">{enq.name}</td>
-                          <td className="px-6 py-4">{enq.phone}</td>
-                          <td className="px-6 py-4">{enq.location}</td>
-                          <td className="px-6 py-4">{enq.requirement}</td>
-                          <td className="px-6 py-4">{enq.date_needed ? new Date(enq.date_needed).toLocaleDateString() : "-"}</td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                              enq.status === 'Resolved' ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                            }`}>
-                              {enq.status || "Pending"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                  <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                    {harvesters.length > 0 ? (
+                      harvesters.map((h) => (
+                        <tr key={h.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{h.machineName}</td>
+                          <td className="px-6 py-4">{h.company}</td>
+                          <td className="px-6 py-4">{h.model}</td>
+                          <td className="px-6 py-4">{h.location}, {h.state}</td>
+                          <td className="px-6 py-4">{h.ownerName}</td>
+                          <td className="px-6 py-4 text-right">
                             <button
-                              onClick={async () => {
-                                const newStatus = enq.status === 'Resolved' ? 'Pending' : 'Resolved';
-                                const res = await fetch(`/api/admin/enquiries/${enq.id}/status`, {
-                                  method: 'PUT',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${token}`
-                                  },
-                                  body: JSON.stringify({ status: newStatus })
-                                });
-                                if (res.ok) {
-                                  refreshAllData();
-                                }
-                              }}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                                enq.status === 'Resolved'
-                                  ? "bg-amber-600/20 text-amber-400 border border-amber-600/30 hover:bg-amber-600/30"
-                                  : "bg-green-600/20 text-green-400 border border-green-600/30 hover:bg-green-600/30"
-                              }`}
+                              onClick={() => openConfirmModal("deleteHarv", h.id, h.machineName)}
+                              className="px-3 py-1.5 bg-red-55 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition"
                             >
-                              Mark {enq.status === 'Resolved' ? 'Pending' : 'Resolved'}
+                              Remove Listing
                             </button>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                          No enquiries found.
+                        <td colSpan={6} className="px-6 py-12 text-center text-[#57585A]/70">
+                          No active machine listings in the database.
                         </td>
                       </tr>
                     )}
@@ -5406,22 +6097,159 @@ export function AdminPortal() {
                 </table>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
+          {/* ================================== */}
+          {/* TAB: REQUESTS MODERATION           */}
+          {/* ================================== */}
+          {activeTab === "requests" && (
+            <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-[#E2E8F0]">
+                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Posted Crop Requirements ({requests.length})</h3>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-[#57585A]">
+                  <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                    <tr>
+                      <th className="px-6 py-3.5">Crop Type</th>
+                      <th className="px-6 py-3.5">Listing Category</th>
+                      <th className="px-6 py-3.5">Location</th>
+                      <th className="px-6 py-3.5">Duration</th>
+                      <th className="px-6 py-3.5">Date Added</th>
+                      <th className="px-6 py-3.5">Requester</th>
+                      <th className="px-6 py-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                    {requests.length > 0 ? (
+                      requests.map((r) => (
+                        <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{r.machineType}</td>
+                          <td className="px-6 py-4 capitalize">{r.type}</td>
+                          <td className="px-6 py-4">{r.location}, {r.state}</td>
+                          <td className="px-6 py-4">{r.duration || "Not specified"}</td>
+                          <td className="px-6 py-4">
+                            {r.startDate ? new Date(r.startDate).toLocaleDateString() : "-"}
+                          </td>
+                          <td className="px-6 py-4">{r.requesterName}</td>
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              onClick={() => openConfirmModal("deleteReq", r.id, `${r.machineType} requirement`)}
+                              className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition"
+                            >
+                              Delete Request
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-12 text-center text-[#57585A]/70">
+                          No posted crop requirements in the database.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ================================== */}
+          {/* TAB: ENQUIRIES                     */}
+          {/* ================================== */}
+          {activeTab === "enquiries" && (
+            <div className="space-y-6">
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-[#E2E8F0]">
+                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">General Enquiries</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-[#57585A]">
+                    <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                      <tr>
+                        <th className="px-6 py-3.5">Name</th>
+                        <th className="px-6 py-3.5">Phone</th>
+                        <th className="px-6 py-3.5">Location</th>
+                        <th className="px-6 py-3.5">Requirement</th>
+                        <th className="px-6 py-3.5">Date Needed</th>
+                        <th className="px-6 py-3.5">Status</th>
+                        <th className="px-6 py-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                      {enquiries.length > 0 ? (
+                        enquiries.map((enq) => (
+                          <tr key={enq.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{enq.name}</td>
+                            <td className="px-6 py-4">{enq.phone}</td>
+                            <td className="px-6 py-4">{enq.location}</td>
+                            <td className="px-6 py-4">{enq.requirement}</td>
+                            <td className="px-6 py-4">{enq.date_needed ? new Date(enq.date_needed).toLocaleDateString() : "-"}</td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                                enq.status === 'Resolved' 
+                                  ? "bg-green-50 border-green-200 text-green-600" 
+                                  : "bg-amber-50 border-amber-200 text-amber-600"
+                                }`}>
+                                {enq.status || "Pending"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                              <button
+                                onClick={async () => {
+                                  const newStatus = enq.status === 'Resolved' ? 'Pending' : 'Resolved';
+                                  const res = await fetch(`/api/admin/enquiries/${enq.id}/status`, {
+                                    method: 'PUT',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'Authorization': `Bearer ${token}`
+                                    },
+                                    body: JSON.stringify({ status: newStatus })
+                                  });
+                                  if (res.ok) {
+                                    refreshAllData();
+                                  }
+                                }}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition border ${enq.status === 'Resolved'
+                                    ? "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100"
+                                    : "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
+                                  }`}
+                              >
+                                Mark {enq.status === 'Resolved' ? 'Pending' : 'Resolved'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-12 text-center text-[#57585A]/70">
+                            No enquiries found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
 
       {/* Confirmation Modal */}
       {confirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#1E293B] border border-slate-700 max-w-md w-full rounded-2xl p-6 space-y-6 shadow-2xl">
+          <div className="bg-white border border-[#E2E8F0] max-w-md w-full rounded-[24px] p-6 space-y-6 shadow-2xl">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-red-500/10 text-red-400 rounded-xl">
+              <div className="p-3 bg-red-50 text-red-600 rounded-xl">
                 <Trash2 size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Administrative Action Confirmation</h3>
-                <p className="text-slate-400 text-sm mt-1">
+                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Administrative Action Confirmation</h3>
+                <p className="text-[#57585A] text-sm mt-1">
                   Are you absolutely sure you want to proceed?
                   {confirmType === 'block' && ` This will prevent "${confirmTargetName}" from logging into the website.`}
                   {confirmType === 'unblock' && ` This will restore account access privileges for "${confirmTargetName}".`}
@@ -5435,13 +6263,13 @@ export function AdminPortal() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setConfirmOpen(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-sm transition"
+                className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-[#57585A] font-bold rounded-xl text-sm transition"
               >
                 Cancel
               </button>
               <button
                 onClick={executeAction}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-sm transition"
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition"
               >
                 Confirm Action
               </button>

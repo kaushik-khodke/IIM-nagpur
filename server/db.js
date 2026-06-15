@@ -279,6 +279,33 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create Ratings Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS ratings (
+        id VARCHAR(36) PRIMARY KEY,
+        rater_id VARCHAR(36) NOT NULL,
+        target_type VARCHAR(50) NOT NULL,
+        target_id VARCHAR(36) NOT NULL,
+        rating INT NOT NULL,
+        review TEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (rater_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_rater_target (rater_id, target_type, target_id)
+      )
+    `);
+
+    // Create Login Logs Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS login_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        login_date DATE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_user_date (user_id, login_date)
+      )
+    `);
+
     try {
       await activePool.query('ALTER TABLE blogs ADD COLUMN image_url VARCHAR(255) DEFAULT NULL AFTER date');
       console.log('Successfully added image_url column to blogs table.');
@@ -316,6 +343,31 @@ async function initializeDatabase() {
 async function seedData(activePool) {
   // Database user/listing seeding disabled to allow a completely clean database.
   console.log('Skipping mock data seeding (disabled).');
+
+  // Seed login logs if empty
+  try {
+    const [logCount] = await activePool.query('SELECT COUNT(*) as count FROM login_logs');
+    if (logCount[0].count === 0) {
+      const [users] = await activePool.query('SELECT id FROM users');
+      if (users.length > 0) {
+        for (let i = 0; i < 7; i++) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().slice(0, 10);
+          
+          for (const u of users) {
+            // Seed a log with 70% probability for each user each day
+            if (Math.random() > 0.3) {
+              await activePool.query('INSERT IGNORE INTO login_logs (user_id, login_date) VALUES (?, ?)', [u.id, dateStr]);
+            }
+          }
+        }
+        console.log('Seeded initial login logs for existing users.');
+      }
+    }
+  } catch (err) {
+    console.error('Error seeding login logs:', err.message);
+  }
 
   // Check Blogs Count
   const [blogs] = await activePool.query('SELECT COUNT(*) as count FROM blogs');
