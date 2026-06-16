@@ -43,7 +43,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 // ---- Availability Badge ----
 export function AvailabilityBadge({ status }: { status: string }) {
@@ -866,12 +866,13 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="w-9 h-9 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white font-bold hover:opacity-90 transition-opacity overflow-hidden border border-[#E2E8F0]">
-                    {userImage ? (
-                      <img src={userImage} alt={userName} className="w-full h-full object-cover" />
-                    ) : (
-                      userName.charAt(0)
-                    )}
+                  <button className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold hover:opacity-90 transition-opacity overflow-hidden border border-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#172263] focus:ring-offset-2">
+                    <Avatar className="w-full h-full rounded-full">
+                      {userImage ? <AvatarImage src={userImage} alt={userName} /> : null}
+                      <AvatarFallback className="bg-gradient-to-br from-[#172263] to-[#D97706] text-white">
+                        {userName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-white border border-[#E2E8F0] rounded-xl">

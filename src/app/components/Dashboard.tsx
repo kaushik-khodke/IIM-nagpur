@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "motion/react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tractor,
   Users,
@@ -210,9 +211,12 @@ export function Dashboard() {
         {showGreeting && (
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white text-base font-bold shadow-sm ring-2 ring-blue-100">
-                {currentUser?.name ? currentUser.name.charAt(0) : "U"}
-              </div>
+              <Avatar className="w-12 h-12 rounded-full shadow-sm ring-2 ring-blue-100">
+                {currentUser?.image_path ? <AvatarImage src={currentUser.image_path} alt={currentUser.name} /> : null}
+                <AvatarFallback className="bg-gradient-to-br from-[#172263] to-[#D97706] text-white font-bold text-base">
+                  {currentUser?.name ? currentUser.name.charAt(0) : "U"}
+                </AvatarFallback>
+              </Avatar>
               <div>
                 <h1 className="text-xl font-bold text-[#1A1A1A] font-sora">
                   Hello, {currentUser?.name || "Farmer Bob"}!

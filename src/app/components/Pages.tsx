@@ -36,6 +36,7 @@ import {
   Loader2,
   Star,
   Send,
+  Menu,
 } from "lucide-react";
 import {
   Navbar,
@@ -55,6 +56,7 @@ import { toast } from "sonner";
 import districtsData from "./districts.json";
 import { detectUserLocation, matchLocationWithDistricts } from "./locationHelper";
 import { ImageCropperDialog } from "./ImageCropperDialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const INDIAN_STATES = districtsData.states.map(s => s.state);
 
@@ -5019,11 +5021,12 @@ export function EditProfile() {
           {/* Profile Picture Upload preview */}
           <div className="flex flex-col items-center gap-4 p-4 bg-[#F4F6FA] border border-zinc-200/60 rounded-2xl mb-6">
             <div className="relative w-24 h-24 rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden flex items-center justify-center group select-none">
-              {imagePreview ? (
-                <img src={imagePreview} alt="Profile Preview" className="w-full h-full object-cover" />
-              ) : (
-                <User size={36} className="text-zinc-400" />
-              )}
+              <Avatar className="w-full h-full rounded-2xl">
+                {imagePreview ? <AvatarImage src={imagePreview} alt="Profile Preview" className="object-cover" /> : null}
+                <AvatarFallback className="bg-white">
+                  <User size={36} className="text-zinc-400" />
+                </AvatarFallback>
+              </Avatar>
               <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
                 <Camera className="text-white" size={20} />
                 <input
@@ -5188,6 +5191,7 @@ export function EditProfile() {
 export function AdminPortal() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [stats, setStats] = useState<any>({ totalUsers: 0, totalOperators: 0, totalHarvesters: 0, totalRequests: 0, blockedUsers: 0, loginHistory: [], performers: [] });
   const [activeTab, setActiveTab] = useState("dashboard");
   const [performerFilter, setPerformerFilter] = useState("highest_machine");
@@ -5527,33 +5531,46 @@ export function AdminPortal() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-[#eed4c5] flex items-center justify-center p-4 md:p-8 font-sans">
-      <div className="w-full max-w-[1400px] bg-white rounded-[32px] shadow-2xl flex flex-col md:flex-row overflow-hidden border border-[#e8dfd2] min-h-[850px]">
-        
+    <div className="h-screen w-full bg-white font-sans overflow-hidden">
+      <div className="w-full h-full flex flex-col md:flex-row">
         {/* LEFT SIDEBAR */}
-        <div className="w-full md:w-[260px] bg-[#f5eee5] border-r border-[#e8dfd2] p-8 flex flex-col justify-between shrink-0">
-          <div className="space-y-8">
+        <div className={`bg-[#f5eee5] border-r border-[#e8dfd2] flex flex-col justify-between shrink-0 transition-all duration-300 ${isSidebarOpen ? 'w-full md:w-[280px] p-5 lg:p-6' : 'w-0 md:w-[88px] p-4 md:py-6 md:px-4'}`}>
+          <div className="space-y-8 overflow-hidden">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#172263] rounded-xl text-white">
-                <Tractor size={24} />
-              </div>
-              <span className="text-xl font-black text-[#172263] tracking-tight font-sora">Tractor Seva</span>
+            <div className={`flex items-center ${isSidebarOpen ? 'justify-between gap-3' : 'justify-center'} w-full`}>
+              {isSidebarOpen && (
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="p-2 bg-[#172263] rounded-xl text-white flex items-center justify-center shrink-0">
+                    <Tractor size={24} />
+                  </div>
+                  <span className="text-lg lg:text-xl font-black text-[#172263] tracking-tight font-sora whitespace-nowrap">Tractor Seva</span>
+                </div>
+              )}
+              <button 
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="p-1.5 lg:p-2 text-[#172263] hover:bg-[#e8dfd2] rounded-xl transition flex items-center justify-center shrink-0"
+                title="Toggle Sidebar"
+              >
+                <Menu size={22} />
+              </button>
             </div>
             
             {/* Profile info */}
             <div className="flex flex-col items-center text-center py-4 border-b border-[#e8dfd2]/60">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] p-0.5 shadow-md mb-3 overflow-hidden">
-                {currentUser?.image_path ? (
-                  <img src={currentUser.image_path} alt={currentUser.name} className="w-full h-full object-cover rounded-full" />
-                ) : (
-                  <div className="w-full h-full bg-[#f5eee5] rounded-full flex items-center justify-center">
-                    <span className="text-xl font-bold text-[#172263]">{currentUser?.name?.charAt(0) || 'A'}</span>
-                  </div>
-                )}
+              <div className={`${isSidebarOpen ? 'w-20 h-20' : 'w-12 h-12'} rounded-full p-0.5 shadow-md mb-3 transition-all duration-300 shrink-0`}>
+                <Avatar className="w-full h-full rounded-full border-2 border-transparent bg-gradient-to-br from-[#172263] to-[#D97706] bg-clip-border">
+                  {currentUser?.image_path ? <AvatarImage src={currentUser.image_path} alt={currentUser.name} /> : null}
+                  <AvatarFallback className="bg-[#f5eee5] text-[#172263] font-bold h-full w-full flex items-center justify-center">
+                    <span className={`${isSidebarOpen ? 'text-xl' : 'text-sm'} transition-all`}>{currentUser?.name?.charAt(0) || 'A'}</span>
+                  </AvatarFallback>
+                </Avatar>
               </div>
-              <h4 className="text-[#1A1A1A] font-bold text-base font-sora">{currentUser?.name || "Om"}</h4>
-              <span className="text-xs text-[#57585A] font-semibold uppercase tracking-wider mt-0.5">Admin</span>
+              {isSidebarOpen && (
+                <div className="transition-all animate-in fade-in duration-300">
+                  <h4 className="text-[#1A1A1A] font-bold text-base font-sora whitespace-nowrap">{currentUser?.name || "Om"}</h4>
+                  <span className="text-xs text-[#57585A] font-semibold uppercase tracking-wider mt-0.5 whitespace-nowrap">Admin</span>
+                </div>
+              )}
             </div>
             
             {/* Navigation Menu */}
@@ -5570,16 +5587,20 @@ export function AdminPortal() {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  title={!isSidebarOpen ? item.label : undefined}
+                  className={`w-full flex items-center ${isSidebarOpen ? 'gap-3 px-4' : 'justify-center px-0 relative'} py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     activeTab === item.id 
                       ? "bg-[#172263] text-white shadow-sm" 
                       : "text-[#57585A] hover:bg-[#e8dfd2]/40 hover:text-[#172263]"
                   }`}
                 >
-                  {item.icon}
-                  {item.label}
-                  {item.id === "dashboard" && (
-                    <span className="ml-auto w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                  <span className="shrink-0">{item.icon}</span>
+                  {isSidebarOpen && <span className="whitespace-nowrap">{item.label}</span>}
+                  {item.id === "dashboard" && isSidebarOpen && (
+                    <span className="ml-auto w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
+                  )}
+                  {item.id === "dashboard" && !isSidebarOpen && (
+                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
                   )}
                 </button>
               ))}
@@ -5592,10 +5613,11 @@ export function AdminPortal() {
               localStorage.removeItem("tractorsewa_token");
               navigate("/login");
             }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 transition"
+            title={!isSidebarOpen ? "Log Out" : undefined}
+            className={`w-full flex items-center ${isSidebarOpen ? 'gap-3 px-4' : 'justify-center px-0'} py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 transition mt-4`}
           >
-            <LogOut size={18} />
-            Log Out
+            <span className="shrink-0"><LogOut size={18} /></span>
+            {isSidebarOpen && <span className="whitespace-nowrap">Log Out</span>}
           </button>
         </div>
         
