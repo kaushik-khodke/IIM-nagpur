@@ -901,6 +901,9 @@ app.get('/api/blogs/:id', async (req, res) => {
   const blogId = req.params.id;
 
   try {
+    // Increment view count
+    await db.query('UPDATE blogs SET views = views + 1 WHERE id = ?', [blogId]);
+
     const [rows] = await db.query(`
       SELECT b.*,
         (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id) AS likes_count,
@@ -1691,6 +1694,135 @@ app.get('/api/ratings', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching ratings:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 9. Admin Blog Management Routes
+app.post('/api/admin/blogs', authenticateToken, isAdmin, async (req, res) => {
+  const { title, category, short_description, content, date, image_url } = req.body;
+  if (!title || !category || !short_description || !content) {
+    return res.status(400).json({ error: 'Please fill in all required fields' });
+  }
+
+  // Format date if not provided (e.g. "Jun 16, 2026")
+  const blogDate = date || new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  try {
+    const [result] = await db.query(
+      'INSERT INTO blogs (title, category, short_description, content, date, image_url, views) VALUES (?, ?, ?, ?, ?, ?, 0)',
+      [title, category, short_description, content, blogDate, image_url || null]
+    );
+
+    res.status(201).json({
+      success: true,
+      blog: {
+        id: result.insertId,
+        title,
+        category,
+        short_description,
+        content,
+        date: blogDate,
+        image_url,
+        views: 0
+      }
+    });
+  } catch (error) {
+    console.error('Error creating blog:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/admin/blogs/:id', authenticateToken, isAdmin, async (req, res) => {
+  const blogId = req.params.id;
+  const { title, category, short_description, content, date, image_url } = req.body;
+
+  if (!title || !category || !short_description || !content) {
+    return res.status(400).json({ error: 'Please fill in all required fields' });
+  }
+
+  try {
+    const [existing] = await db.query('SELECT * FROM blogs WHERE id = ?', [blogId]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Blog not found' });
+    }
+
+    const blogDate = date || existing[0].date;
+
+    await db.query(
+      'UPDATE blogs SET title = ?, category = ?, short_description = ?, content = ?, date = ?, image_url = ? WHERE id = ?',
+      [title, category, short_description, content, blogDate, image_url || null, blogId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Blog updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating blog:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/admin/blogs/:id', authenticateToken, isAdmin, async (req, res) => {
+  const blogId = req.params.id;
+
+  try {
+    const [existing] = await db.query('SELECT * FROM blogs WHERE id = ?', [blogId]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Blog not found' });
+    }
+
+    // Delete associated comments and likes first
+    await db.query('DELETE FROM blog_likes WHERE blog_id = ?', [blogId]);
+    await db.query('DELETE FROM blog_comments WHERE blog_id = ?', [blogId]);
+
+    // Delete the blog
+    await db.query('DELETE FROM blogs WHERE id = ?', [blogId]);
+
+    res.json({
+      success: true,
+      message: 'Blog deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting blog:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 10. Admin Operator & Blog Comments Deletion Routes
+app.delete('/api/admin/operators/:id', authenticateToken, isAdmin, async (req, res) => {
+  const operatorId = req.params.id;
+  try {
+    const [existing] = await db.query('SELECT * FROM operators WHERE id = ?', [operatorId]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Operator listing not found' });
+    }
+
+    await db.query('DELETE FROM operators WHERE id = ?', [operatorId]);
+    res.json({ success: true, message: 'Operator profile deleted successfully by administrator.' });
+  } catch (err) {
+    console.error('Error deleting operator:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/admin/blogs/comments/:commentId', authenticateToken, isAdmin, async (req, res) => {
+  const commentId = req.params.commentId;
+  try {
+    const [existing] = await db.query('SELECT * FROM blog_comments WHERE id = ?', [commentId]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+
+    await db.query('DELETE FROM blog_comments WHERE id = ?', [commentId]);
+    res.json({ success: true, message: 'Comment deleted successfully by administrator.' });
+  } catch (err) {
+    console.error('Error deleting comment:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

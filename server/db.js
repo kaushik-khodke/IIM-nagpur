@@ -267,6 +267,7 @@ async function initializeDatabase() {
         content TEXT NOT NULL,
         date VARCHAR(50) DEFAULT NULL,
         image_url VARCHAR(255) DEFAULT NULL,
+        views INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -338,6 +339,13 @@ async function initializeDatabase() {
     try {
       await activePool.query('ALTER TABLE blogs ADD COLUMN image_url VARCHAR(255) DEFAULT NULL AFTER date');
       console.log('Successfully added image_url column to blogs table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
+    }
+
+    try {
+      await activePool.query('ALTER TABLE blogs ADD COLUMN views INT DEFAULT 0');
+      console.log('Successfully added views column to blogs table.');
     } catch (err) {
       // Column might already exist, safe to ignore
     }
