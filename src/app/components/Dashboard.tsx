@@ -63,9 +63,17 @@ export function Dashboard() {
 
   // Preview / Chooser State
   const [chooserOpen, setChooserOpen] = useState(false);
-  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+  const token = localStorage.getItem("tractorsewa_token");
+  const role = localStorage.getItem("tractorsewa_user_role");
+  const isPreview = !token && localStorage.getItem("tractorsewa_preview_mode") === "true";
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (token && role === "admin") {
+      navigate('/admin', { replace: true });
+    }
+  }, [token, role, navigate]);
 
   useEffect(() => {
     if (authRequired) {
@@ -82,8 +90,15 @@ export function Dashboard() {
     }
   }, [authRequired, redirectPath, searchParams, setSearchParams]);
 
+  if (token && role === "admin") {
+    return (
+      <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-blue-200 border-t-[#172263] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   useEffect(() => {
-    const token = localStorage.getItem("tractorsewa_token");
     const fetchData = async () => {
       try {
         let userProfile: any = null;

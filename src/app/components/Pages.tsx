@@ -5217,10 +5217,44 @@ export function AdminPortal() {
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [adminBlogs, setAdminBlogs] = useState<any[]>([]);
+  const [adminOperators, setAdminOperators] = useState<any[]>([]);
+
+  // Detailed Listing Viewer States
+  const [selectedListingDetail, setSelectedListingDetail] = useState<any | null>(null);
+  const [selectedListingType, setSelectedListingType] = useState<'harvester' | 'operator' | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // Blog Comments Moderation States
+  const [activeBlogForComments, setActiveBlogForComments] = useState<any | null>(null);
+  const [selectedBlogComments, setSelectedBlogComments] = useState<any[]>([]);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
+
+  // Blog Article Preview States
+  const [activeBlogPreview, setActiveBlogPreview] = useState<any | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  // Selected Chart Point State
+  const [selectedChartPoint, setSelectedChartPoint] = useState<any | null>(null);
+
+  // Admin blogs editing states
+  const [editingBlog, setEditingBlog] = useState<any | null>(null);
+  const [showBlogForm, setShowBlogForm] = useState(false);
+  const [blogTitle, setBlogTitle] = useState("");
+  const [blogCategory, setBlogCategory] = useState("Machine Maintenance");
+  const [blogShortDesc, setBlogShortDesc] = useState("");
+  const [blogContent, setBlogContent] = useState("");
+  const [blogDate, setBlogDate] = useState("");
+  const [blogImageUrl, setBlogImageUrl] = useState("");
+  const [blogImageFile, setBlogImageFile] = useState<File | null>(null);
+  const [blogImagePreview, setBlogImagePreview] = useState("");
+  const [savingBlog, setSavingBlog] = useState(false);
+  const [adminBlogsSearch, setAdminBlogsSearch] = useState("");
 
   // Confirmation modal states
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmType, setConfirmType] = useState<'block' | 'unblock' | 'wipe' | 'deleteHarv' | 'deleteReq'>('block');
+  const [confirmType, setConfirmType] = useState<'block' | 'unblock' | 'wipe' | 'deleteHarv' | 'deleteReq' | 'deleteBlog' | 'deleteOp'>('block');
   const [confirmTargetId, setConfirmTargetId] = useState("");
   const [confirmTargetName, setConfirmTargetName] = useState("");
 
@@ -5267,6 +5301,8 @@ export function AdminPortal() {
     fetchHarvesters();
     fetchRequests();
     fetchEnquiries();
+    fetchAdminBlogs();
+    fetchAdminOperators();
   };
 
   const fetchStats = async () => {
@@ -5334,6 +5370,175 @@ export function AdminPortal() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const fetchAdminBlogs = async () => {
+    try {
+      const res = await fetch("/api/blogs");
+      if (res.ok) {
+        const data = await res.json();
+        setAdminBlogs(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchAdminOperators = async () => {
+    try {
+      const res = await fetch("/api/operators");
+      if (res.ok) {
+        const data = await res.json();
+        setAdminOperators(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const openListingDetail = (type: 'harvester' | 'operator', listing: any) => {
+    setSelectedListingType(type);
+    setSelectedListingDetail(listing);
+    setShowDetailModal(true);
+  };
+
+  const openBlogComments = async (blog: any) => {
+    setActiveBlogForComments(blog);
+    setShowCommentsModal(true);
+    setLoadingComments(true);
+    try {
+      const res = await fetch(`/api/blogs/${blog.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedBlogComments(data.comments || []);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load comments.");
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const deleteBlogComment = async (commentId: number) => {
+    try {
+      const res = await fetch(`/api/admin/blogs/comments/${commentId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        toast.success("Comment deleted successfully.");
+        setSelectedBlogComments(prev => prev.filter(c => c.id !== commentId));
+        fetchAdminBlogs();
+      } else {
+        toast.error("Failed to delete comment");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error deleting comment");
+    }
+  };
+
+  const openBlogPreview = (blog: any) => {
+    setActiveBlogPreview(blog);
+    setShowPreviewModal(true);
+  };
+
+  const startEditBlog = (blog: any) => {
+    setEditingBlog(blog);
+    setBlogTitle(blog.title || "");
+    setBlogCategory(blog.category || "Machine Maintenance");
+    setBlogShortDesc(blog.short_description || "");
+    setBlogContent(blog.content || "");
+    setBlogDate(blog.date || "");
+    setBlogImageUrl(blog.image_url || "");
+    setBlogImageFile(null);
+    setBlogImagePreview(blog.image_url || "");
+    setShowBlogForm(true);
+  };
+
+  const startCreateBlog = () => {
+    setEditingBlog(null);
+    setBlogTitle("");
+    setBlogCategory("Machine Maintenance");
+    setBlogShortDesc("");
+    setBlogContent("");
+    setBlogDate("");
+    setBlogImageUrl("");
+    setBlogImageFile(null);
+    setBlogImagePreview("");
+    setShowBlogForm(true);
+  };
+
+  const handleBlogSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!blogTitle.trim() || !blogCategory.trim() || !blogShortDesc.trim() || !blogContent.trim()) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    setSavingBlog(true);
+    try {
+      let uploadedUrl = blogImageUrl;
+      if (blogImageFile) {
+        const formData = new FormData();
+        formData.append("image", blogImageFile);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          uploadedUrl = uploadData.url;
+        } else {
+          toast.error("Failed to upload blog image. Using default image.");
+        }
+      }
+
+      const blogData = {
+        title: blogTitle.trim(),
+        category: blogCategory.trim(),
+        short_description: blogShortDesc.trim(),
+        content: blogContent.trim(),
+        date: blogDate.trim() || undefined,
+        image_url: uploadedUrl
+      };
+
+      const url = editingBlog ? `/api/admin/blogs/${editingBlog.id}` : "/api/admin/blogs";
+      const method = editingBlog ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(blogData)
+      });
+
+      if (res.ok) {
+        toast.success(editingBlog ? "Blog updated successfully!" : "Blog created successfully!");
+        setShowBlogForm(false);
+        setEditingBlog(null);
+        setBlogTitle("");
+        setBlogCategory("Machine Maintenance");
+        setBlogShortDesc("");
+        setBlogContent("");
+        setBlogDate("");
+        setBlogImageUrl("");
+        setBlogImageFile(null);
+        setBlogImagePreview("");
+        refreshAllData();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to save blog post");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error saving blog post");
+    } finally {
+      setSavingBlog(false);
     }
   };
 
@@ -5432,6 +5637,28 @@ export function AdminPortal() {
         } else {
           toast.error("Failed to delete crop request");
         }
+      } else if (confirmType === 'deleteBlog') {
+        const res = await fetch(`/api/admin/blogs/${confirmTargetId}`, {
+          method: 'DELETE',
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          toast.success("Blog post deleted successfully.");
+          refreshAllData();
+        } else {
+          toast.error("Failed to delete blog post");
+        }
+      } else if (confirmType === 'deleteOp') {
+        const res = await fetch(`/api/admin/operators/${confirmTargetId}`, {
+          method: 'DELETE',
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          toast.success("Operator listing deleted successfully.");
+          refreshAllData();
+        } else {
+          toast.error("Failed to delete operator profile");
+        }
       }
     } catch (err) {
       console.error(err);
@@ -5476,7 +5703,7 @@ export function AdminPortal() {
     }
   };
 
-  const openConfirmModal = (type: 'block' | 'unblock' | 'wipe' | 'deleteHarv' | 'deleteReq', id: string, name: string) => {
+  const openConfirmModal = (type: 'block' | 'unblock' | 'wipe' | 'deleteHarv' | 'deleteReq' | 'deleteBlog', id: string, name: string) => {
     setConfirmType(type);
     setConfirmTargetId(id);
     setConfirmTargetName(name);
@@ -5581,8 +5808,10 @@ export function AdminPortal() {
                 { id: "nlSearch", label: "NL Search", icon: <Search size={18} /> },
                 { id: "csvImport", label: "CSV Import", icon: <Upload size={18} /> },
                 { id: "harvesters", label: "Machines", icon: <Tractor size={18} /> },
+                { id: "operators", label: "Operators", icon: <UserCheck size={18} /> },
                 { id: "requests", label: "Requests", icon: <FileText size={18} /> },
-                { id: "enquiries", label: "Enquiries", icon: <MessageSquare size={18} /> }
+                { id: "enquiries", label: "Enquiries", icon: <MessageSquare size={18} /> },
+                { id: "blogs", label: "Blogs Management", icon: <BookOpen size={18} /> }
               ].map(item => (
                 <button
                   key={item.id}
@@ -5611,6 +5840,8 @@ export function AdminPortal() {
           <button 
             onClick={() => {
               localStorage.removeItem("tractorsewa_token");
+              localStorage.removeItem("tractorsewa_user_role");
+              localStorage.removeItem("tractorsewa_preview_mode");
               navigate("/login");
             }}
             title={!isSidebarOpen ? "Log Out" : undefined}
@@ -5758,6 +5989,27 @@ export function AdminPortal() {
                       Last 7 Days
                     </div>
                   </div>
+
+                  {selectedChartPoint ? (
+                    <div className="p-3 bg-blue-50 border border-blue-200 text-[#172263] text-xs font-bold rounded-2xl flex items-center justify-between animate-fadeIn">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">📊</span>
+                        <span>
+                          Active Users on <strong>{selectedChartPoint.displayDate}</strong>: <strong>{selectedChartPoint.count} users</strong>
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => setSelectedChartPoint(null)} 
+                        className="text-[#172263]/60 hover:text-[#172263] text-[10px] uppercase font-bold cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-[#57585A]/70 font-semibold italic">
+                      💡 Click on any point/dot in the graph to view detailed active user metrics.
+                    </div>
+                  )}
                   
                   <div className="w-full overflow-x-auto">
                     <div className="min-w-[550px] h-[200px] relative">
@@ -5798,10 +6050,17 @@ export function AdminPortal() {
                         
                         {/* Points & Labels */}
                         {points.map((p, idx) => (
-                          <g key={idx} className="group cursor-pointer">
+                          <g 
+                            key={idx} 
+                            className="group cursor-pointer"
+                            onClick={() => {
+                              setSelectedChartPoint(p);
+                              toast(`Active Users: ${p.count} on ${p.displayDate}`, { icon: "📊" });
+                            }}
+                          >
                             <circle 
                               cx={p.x} cy={p.y} r="5" 
-                              fill="#ffffff" 
+                              fill={selectedChartPoint?.displayDate === p.displayDate ? "#172263" : "#ffffff"} 
                               stroke="#D97706" 
                               strokeWidth="3.5"
                             />
@@ -5809,7 +6068,7 @@ export function AdminPortal() {
                               cx={p.x} cy={p.y} r="9" 
                               fill="#D97706" 
                               fillOpacity="0.15"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              className={`group-hover:opacity-100 transition-opacity ${selectedChartPoint?.displayDate === p.displayDate ? "opacity-100" : "opacity-0"}`}
                             />
                             <rect 
                               x={p.x - 24} y={p.y - 30} width="48" height="20" rx="6" 
@@ -6324,10 +6583,16 @@ export function AdminPortal() {
                           <td className="px-6 py-4">{h.model}</td>
                           <td className="px-6 py-4">{h.location}, {h.state}</td>
                           <td className="px-6 py-4">{h.ownerName}</td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-6 py-4 text-right space-x-2">
+                            <button
+                              onClick={() => openListingDetail("harvester", h)}
+                              className="px-3 py-1.5 bg-[#f5eee5] text-[#172263] border border-[#e8dfd2] rounded-xl text-xs font-bold hover:bg-[#e8dfd2] transition cursor-pointer"
+                            >
+                              View Details
+                            </button>
                             <button
                               onClick={() => openConfirmModal("deleteHarv", h.id, h.machineName)}
-                              className="px-3 py-1.5 bg-red-55 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition"
+                              className="px-3 py-1.5 bg-red-55 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition cursor-pointer"
                             >
                               Remove Listing
                             </button>
@@ -6338,6 +6603,88 @@ export function AdminPortal() {
                       <tr>
                         <td colSpan={6} className="px-6 py-12 text-center text-[#57585A]/70">
                           No active machine listings in the database.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ================================== */}
+          {/* TAB: OPERATORS MODERATION          */}
+          {/* ================================== */}
+          {activeTab === "operators" && (
+            <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-[#E2E8F0]">
+                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Active Operator Listings ({adminOperators.length})</h3>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-[#57585A]">
+                  <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                    <tr>
+                      <th className="px-6 py-3.5">Operator</th>
+                      <th className="px-6 py-3.5">Experience</th>
+                      <th className="px-6 py-3.5">Availability</th>
+                      <th className="px-6 py-3.5">Location</th>
+                      <th className="px-6 py-3.5">Contact Details</th>
+                      <th className="px-6 py-3.5 text-right font-bold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                    {adminOperators.length > 0 ? (
+                      adminOperators.map((op) => (
+                        <tr key={op.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora flex items-center gap-3">
+                            <img
+                              src={op.image_path || "/avatar-placeholder.png"}
+                              alt={op.name}
+                              className="w-8 h-8 rounded-full object-cover border border-[#E2E8F0]"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=80";
+                              }}
+                            />
+                            {op.name}
+                          </td>
+                          <td className="px-6 py-4">{op.experience} Years</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                              op.availability === 'Available' 
+                                ? "bg-emerald-50 border-emerald-200 text-emerald-600" 
+                                : "bg-zinc-50 border-zinc-200 text-zinc-600"
+                            }`}>
+                              {op.availability}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">{op.location}, {op.state}</td>
+                          <td className="px-6 py-4">
+                            <div className="text-xs text-[#57585A]">
+                              <div>P: {op.phone || "N/A"}</div>
+                              <div>W: {op.whatsapp || "N/A"}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                            <button
+                              onClick={() => openListingDetail("operator", op)}
+                              className="px-3 py-1.5 bg-[#f5eee5] text-[#172263] border border-[#e8dfd2] rounded-xl text-xs font-bold hover:bg-[#e8dfd2] transition cursor-pointer"
+                            >
+                              View Details
+                            </button>
+                            <button
+                              onClick={() => openConfirmModal("deleteOp", op.id, op.name)}
+                              className="px-3 py-1.5 bg-red-55 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition cursor-pointer"
+                            >
+                              Remove Listing
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-[#57585A]/70">
+                          No active operator listings in the database.
                         </td>
                       </tr>
                     )}
@@ -6523,6 +6870,278 @@ export function AdminPortal() {
             </div>
           )}
 
+          {/* ================================== */}
+          {/* TAB: BLOGS                        */}
+          {/* ================================== */}
+          {activeTab === "blogs" && (
+            <div className="space-y-6">
+              
+              {/* Cumulative Analytics Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                {[
+                  { label: "Total Blogs", value: adminBlogs.length, desc: "Published posts", color: "text-[#172263]" },
+                  { label: "Total Views", value: adminBlogs.reduce((sum, b) => sum + (b.views || 0), 0), desc: "Cumulative reader views", color: "text-blue-600" },
+                  { label: "Total Likes", value: adminBlogs.reduce((sum, b) => sum + (b.likes_count || 0), 0), desc: "Cumulative likes", color: "text-rose-600" },
+                  { label: "Total Comments", value: adminBlogs.reduce((sum, b) => sum + (b.comments_count || 0), 0), desc: "User feedback count", color: "text-[#D97706]" }
+                ].map((card, idx) => (
+                  <div key={idx} className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.01)] flex flex-col justify-between">
+                    <span className="text-[#57585A] text-xs font-bold uppercase tracking-wider">{card.label}</span>
+                    <span className={`text-3xl font-extrabold my-2 font-sora ${card.color}`}>{card.value}</span>
+                    <span className="text-[10px] text-[#57585A] font-medium">{card.desc}</span>
+                  </div>
+                ))}
+              </div>
+
+              {showBlogForm ? (
+                /* Inline Add/Edit Blog Form */
+                <div className="bg-white border border-[#E2E8F0] rounded-3xl p-8 shadow-sm space-y-6">
+                  <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
+                    <h3 className="text-xl font-bold text-[#1A1A1A] font-sora">
+                      {editingBlog ? "Edit Blog Post" : "Create New Blog Post"}
+                    </h3>
+                    <button 
+                      onClick={() => setShowBlogForm(false)}
+                      className="px-4 py-2 border border-[#E2E8F0] hover:bg-zinc-50 text-xs font-bold rounded-xl transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleBlogSubmit} className="space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="text-sm text-[#57585A] block mb-1.5 font-bold">Blog Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={blogTitle}
+                          onChange={(e) => setBlogTitle(e.target.value)}
+                          placeholder="e.g. 5 Tips to Maintain Your Combine Harvester Before Rabi Season"
+                          className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-[#57585A] block mb-1.5 font-bold">Category *</label>
+                        <select
+                          value={blogCategory}
+                          onChange={(e) => setBlogCategory(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
+                        >
+                          <option value="Machine Maintenance">Machine Maintenance</option>
+                          <option value="Success Stories">Success Stories</option>
+                          <option value="Harvesting Tips">Harvesting Tips</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="text-sm text-[#57585A] block mb-1.5 font-bold">Publication Date (Optional)</label>
+                        <input
+                          type="text"
+                          value={blogDate}
+                          onChange={(e) => setBlogDate(e.target.value)}
+                          placeholder="e.g. Jun 16, 2026 (defaults to current date)"
+                          className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-[#57585A] block mb-1.5 font-bold">Blog Cover Image</label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setBlogImageFile(file);
+                                setBlogImagePreview(URL.createObjectURL(file));
+                              }
+                            }}
+                            className="hidden"
+                            id="blog-image-picker"
+                          />
+                          <label
+                            htmlFor="blog-image-picker"
+                            className="px-4 py-2.5 border border-[#E2E8F0] hover:bg-zinc-50 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-2"
+                          >
+                            <Camera size={14} /> Upload Image
+                          </label>
+                          {blogImagePreview && (
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-[#E2E8F0]">
+                              <img src={blogImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setBlogImageFile(null);
+                                  setBlogImagePreview("");
+                                  setBlogImageUrl("");
+                                }}
+                                className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-[#57585A] block mb-1.5 font-bold">Short Description *</label>
+                      <textarea
+                        required
+                        rows={2}
+                        value={blogShortDesc}
+                        onChange={(e) => setBlogShortDesc(e.target.value)}
+                        placeholder="Provide a brief summary card overview..."
+                        className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-[#57585A] block mb-1.5 font-bold">Full Article Content *</label>
+                      <textarea
+                        required
+                        rows={8}
+                        value={blogContent}
+                        onChange={(e) => setBlogContent(e.target.value)}
+                        placeholder="Write the full body content here..."
+                        className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={savingBlog}
+                      className="w-full py-3.5 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition disabled:opacity-60 flex items-center justify-center gap-2 font-bold font-sora cursor-pointer"
+                    >
+                      {savingBlog ? (
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        "Save Blog Post"
+                      )}
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                /* Blogs Listing Table & Directory */
+                <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+                  <div className="p-6 border-b border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Blogs Directory</h3>
+                      <p className="text-xs text-[#57585A] mt-0.5">Manage and track views analytics for all articles.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
+                        <input
+                          type="text"
+                          value={adminBlogsSearch}
+                          onChange={(e) => setAdminBlogsSearch(e.target.value)}
+                          placeholder="Search articles..."
+                          className="pl-9 pr-4 py-2 bg-white border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263]"
+                        />
+                      </div>
+                      <button
+                        onClick={startCreateBlog}
+                        className="px-4 py-2 bg-[#172263] hover:bg-[#11194A] text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus size={14} /> Add Blog Post
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left text-[#57585A]">
+                      <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                        <tr>
+                          <th className="px-6 py-3.5 w-16">Cover</th>
+                          <th className="px-6 py-3.5">Title</th>
+                          <th className="px-6 py-3.5">Category</th>
+                          <th className="px-6 py-3.5">Published Date</th>
+                          <th className="px-6 py-3.5 text-center">Views</th>
+                          <th className="px-6 py-3.5 text-center">Likes</th>
+                          <th className="px-6 py-3.5 text-center">Comments</th>
+                          <th className="px-6 py-3.5 text-right font-bold">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                        {adminBlogs.filter(b => b.title?.toLowerCase().includes(adminBlogsSearch.toLowerCase()) || b.category?.toLowerCase().includes(adminBlogsSearch.toLowerCase())).length > 0 ? (
+                          adminBlogs
+                            .filter(b => b.title?.toLowerCase().includes(adminBlogsSearch.toLowerCase()) || b.category?.toLowerCase().includes(adminBlogsSearch.toLowerCase()))
+                            .map((blog) => (
+                              <tr key={blog.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="px-6 py-4">
+                                  <img
+                                    src={blog.image_url || "/blog-placeholder.png"}
+                                    alt="cover"
+                                    className="w-10 h-10 object-cover rounded-lg border border-[#E2E8F0]"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=80";
+                                    }}
+                                  />
+                                </td>
+                                <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora max-w-xs truncate">{blog.title}</td>
+                                <td className="px-6 py-4">
+                                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
+                                    {blog.category}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">{blog.date || "N/A"}</td>
+                                <td className="px-6 py-4 text-center font-bold text-slate-800">{blog.views || 0}</td>
+                                <td className="px-6 py-4 text-center text-rose-600 font-bold">{blog.likes_count || 0}</td>
+                                <td className="px-6 py-4 text-center">
+                                  <button
+                                    onClick={() => openBlogComments(blog)}
+                                    className="px-2.5 py-1 rounded-lg border border-[#e8dfd2] bg-[#fcfbf9] text-[#D97706] font-bold hover:bg-[#e8dfd2]/40 transition text-xs flex items-center gap-1.5 mx-auto cursor-pointer"
+                                    title="Moderate Comments"
+                                  >
+                                    <MessageCircle size={13} />
+                                    {blog.comments_count || 0}
+                                  </button>
+                                </td>
+                                <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                                  <button
+                                    onClick={() => openBlogPreview(blog)}
+                                    className="p-1.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 transition inline-flex items-center justify-center cursor-pointer"
+                                    title="Preview Article"
+                                  >
+                                    <BookOpen size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => startEditBlog(blog)}
+                                    className="p-1.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 transition inline-flex items-center justify-center cursor-pointer"
+                                    title="Edit Blog"
+                                  >
+                                    <Pencil size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => openConfirmModal("deleteBlog", String(blog.id), blog.title)}
+                                    className="p-1.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 transition inline-flex items-center justify-center cursor-pointer"
+                                    title="Delete Blog"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                        ) : (
+                          <tr>
+                            <td colSpan={8} className="px-6 py-12 text-center text-[#57585A]/70">
+                              No blog posts found.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -6543,6 +7162,8 @@ export function AdminPortal() {
                   {confirmType === 'wipe' && ` This will permanently delete all machine listings, requests, and profiles owned by "${confirmTargetName}", and block the user.`}
                   {confirmType === 'deleteHarv' && ` This will permanently delete listing "${confirmTargetName}".`}
                   {confirmType === 'deleteReq' && ` This will permanently remove request "${confirmTargetName}".`}
+                  {confirmType === 'deleteBlog' && ` This will permanently delete the blog post "${confirmTargetName}".`}
+                  {confirmType === 'deleteOp' && ` This will permanently delete operator profile "${confirmTargetName}".`}
                 </p>
               </div>
             </div>
@@ -6561,6 +7182,353 @@ export function AdminPortal() {
                 Confirm Action
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detailed Listing Viewer Modal */}
+      {showDetailModal && selectedListingDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white border border-[#E2E8F0] max-w-2xl w-full rounded-[28px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
+            {/* Banner/Header Cover Image */}
+            <div className="h-56 bg-slate-100 relative shrink-0">
+              {selectedListingType === 'harvester' ? (
+                selectedListingDetail.imagePath ? (
+                  <img
+                    src={selectedListingDetail.imagePath}
+                    alt={selectedListingDetail.machineName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-50 to-amber-50 flex items-center justify-center">
+                    <TractorIllustration size={160} />
+                  </div>
+                )
+              ) : (
+                selectedListingDetail.image_path ? (
+                  <img
+                    src={selectedListingDetail.image_path}
+                    alt={selectedListingDetail.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-[#172263]/10 to-[#E82326]/10 flex items-center justify-center">
+                    <UserCheck size={80} className="text-[#172263]/60" />
+                  </div>
+                )
+              )}
+              
+              {/* Category Badge */}
+              <span className="absolute top-4 left-4 text-xs font-bold px-3 py-1 bg-[#172263] text-white rounded-full shadow-md uppercase tracking-wider">
+                {selectedListingType === 'harvester' ? 'Harvester' : 'Operator Profile'}
+              </span>
+
+              {/* Close button */}
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white text-zinc-800 rounded-full shadow-md backdrop-blur-sm transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Content Scroll Area */}
+            <div className="p-6 md:p-8 overflow-y-auto space-y-6 flex-1">
+              
+              {/* Title Header */}
+              <div>
+                <h3 className="text-2xl font-extrabold text-[#1A1A1A] font-sora">
+                  {selectedListingType === 'harvester' ? selectedListingDetail.machineName : selectedListingDetail.name}
+                </h3>
+                <p className="text-sm text-[#57585A] mt-1 font-medium flex items-center gap-1">
+                  <MapPin size={14} className="text-red-500" />
+                  {selectedListingDetail.location}, {selectedListingDetail.state}
+                </p>
+              </div>
+
+              {/* Specs Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-[#fcfbf9] p-4 border border-[#e8dfd2]/60 rounded-2xl">
+                {selectedListingType === 'harvester' ? (
+                  <>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Company</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.company}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Model</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.model}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Model Year</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.year || 'N/A'}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Experience</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.experience} Years</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Availability</span>
+                      <span className="mt-1 block">
+                        <AvailabilityBadge status={selectedListingDetail.availability} />
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Machine Expertise if Operator */}
+              {selectedListingType === 'operator' && selectedListingDetail.machineExpertise && selectedListingDetail.machineExpertise.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#57585A]">Machine Expertise</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedListingDetail.machineExpertise.map((m: string, i: number) => (
+                      <span
+                        key={i}
+                        className="text-xs px-3 py-1 bg-blue-50 text-[#172263] border border-[#172263]/10 rounded-full font-semibold"
+                      >
+                        {m}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Owner / Contact Details */}
+              <div className="border-t border-[#E2E8F0]/80 pt-5 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#57585A]">Contact Information</h4>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#fcfbf9] p-4 border border-[#e8dfd2]/60 rounded-2xl">
+                  <div>
+                    <span className="text-[10px] text-[#57585A] uppercase block">Owner Name</span>
+                    <span className="text-sm font-bold text-[#1A1A1A]">{selectedListingDetail.ownerName || selectedListingDetail.name || 'N/A'}</span>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    {selectedListingDetail.phone && (
+                      <a
+                        href={`tel:${selectedListingDetail.phone}`}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 border border-blue-200 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-100 transition"
+                      >
+                        <Phone size={14} /> Call {selectedListingDetail.phone}
+                      </a>
+                    )}
+                    {selectedListingDetail.whatsapp && (
+                      <a
+                        href={`https://wa.me/91${selectedListingDetail.whatsapp}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-xl text-xs font-bold hover:bg-emerald-100 transition"
+                      >
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="border-t border-[#E2E8F0]/80 pt-5 space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#57585A]">Description</h4>
+                <p className="text-sm text-[#57585A] leading-relaxed whitespace-pre-line bg-[#fcfbf9] p-4 border border-[#e8dfd2]/30 rounded-2xl font-semibold">
+                  {selectedListingDetail.description || 'No description provided.'}
+                </p>
+              </div>
+
+            </div>
+
+            {/* Footer buttons */}
+            <div className="p-4 bg-[#fcfbf9] border-t border-[#E2E8F0] flex justify-between gap-3 shrink-0">
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  if (selectedListingType === 'harvester') {
+                    openConfirmModal("deleteHarv", selectedListingDetail.id, selectedListingDetail.machineName);
+                  } else {
+                    openConfirmModal("deleteOp", selectedListingDetail.id, selectedListingDetail.name);
+                  }
+                }}
+                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+              >
+                <Trash2 size={13} /> Remove Listing
+              </button>
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="px-5 py-2 bg-zinc-200 hover:bg-zinc-300 text-zinc-800 rounded-xl text-xs font-bold transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+            
+          </div>
+        </div>
+      )}
+
+      {/* Blog Comments Modal */}
+      {showCommentsModal && activeBlogForComments && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white border border-[#E2E8F0] max-w-xl w-full rounded-[28px] overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+            
+            {/* Header */}
+            <div className="p-6 border-b border-[#E2E8F0] flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Moderate Blog Comments</h3>
+                <p className="text-xs text-[#57585A] mt-0.5 line-clamp-1">Article: {activeBlogForComments.title}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCommentsModal(false);
+                  setActiveBlogForComments(null);
+                  setSelectedBlogComments([]);
+                }}
+                className="p-1.5 hover:bg-zinc-100 text-zinc-500 rounded-full transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Comment List */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1 min-h-[300px]">
+              {loadingComments ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 text-[#172263] animate-spin" />
+                  <span className="text-xs text-[#57585A] mt-2 font-bold">Loading comments...</span>
+                </div>
+              ) : selectedBlogComments.length > 0 ? (
+                selectedBlogComments.map((comment) => (
+                  <div key={comment.id} className="p-4 bg-[#fcfbf9] border border-[#e8dfd2]/50 rounded-2xl flex items-start gap-4 hover:border-[#e8dfd2] transition">
+                    <div className="w-8 h-8 rounded-full bg-[#172263] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {comment.user_name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-bold text-[#1A1A1A] truncate">{comment.user_name}</span>
+                        <span className="text-[10px] text-[#57585A]">
+                          {comment.created_at ? new Date(comment.created_at).toLocaleDateString() : 'N/A'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#57585A] mt-1 whitespace-pre-line leading-relaxed">
+                        {comment.content}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => deleteBlogComment(comment.id)}
+                      className="p-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl hover:bg-rose-100 transition shrink-0 cursor-pointer"
+                      title="Delete Comment"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <MessageSquare size={36} className="text-[#57585A]/40 mb-2" />
+                  <p className="text-sm text-[#57585A]/70 font-semibold">No comments posted on this article.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-[#fcfbf9] border-t border-[#E2E8F0] flex justify-end shrink-0">
+              <button
+                onClick={() => {
+                  setShowCommentsModal(false);
+                  setActiveBlogForComments(null);
+                  setSelectedBlogComments([]);
+                }}
+                className="px-5 py-2 bg-zinc-200 hover:bg-zinc-300 text-zinc-800 rounded-xl text-xs font-bold transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+            
+          </div>
+        </div>
+      )}
+
+      {/* Blog Article Preview Modal */}
+      {showPreviewModal && activeBlogPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white border border-[#E2E8F0] max-w-3xl w-full rounded-[28px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
+            {/* Image Banner header */}
+            <div className="h-64 bg-zinc-100 relative shrink-0">
+              <img
+                src={activeBlogPreview.image_url || "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800"}
+                alt={activeBlogPreview.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800";
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] px-2.5 py-0.5 bg-[#D97706] text-white rounded-full font-bold uppercase tracking-wider">
+                    {activeBlogPreview.category}
+                  </span>
+                  <span className="text-xs text-white/70">{activeBlogPreview.date || 'N/A'}</span>
+                </div>
+                <h3 className="text-xl md:text-2xl font-extrabold text-white font-sora line-clamp-2">
+                  {activeBlogPreview.title}
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPreviewModal(false);
+                  setActiveBlogPreview(null);
+                }}
+                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="p-6 md:p-8 overflow-y-auto space-y-6 flex-1 font-medium font-sora text-[#1A1A1A]">
+              {/* Short Summary Card */}
+              <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">Executive Summary</h4>
+                <p className="text-sm font-semibold text-[#57585A] leading-relaxed italic">
+                  "{activeBlogPreview.short_description || activeBlogPreview.shortDescription}"
+                </p>
+              </div>
+
+              {/* Full body markdown/text */}
+              <div className="text-sm text-[#1A1A1A] leading-relaxed space-y-4 whitespace-pre-line font-medium font-sora">
+                {activeBlogPreview.content}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-[#fcfbf9] border-t border-[#E2E8F0] flex justify-between items-center shrink-0">
+              <div className="flex gap-4 text-xs text-[#57585A] font-bold">
+                <span>Views: {activeBlogPreview.views || 0}</span>
+                <span>Likes: {activeBlogPreview.likes_count || 0}</span>
+                <span>Comments: {activeBlogPreview.comments_count || 0}</span>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowPreviewModal(false);
+                    startEditBlog(activeBlogPreview);
+                  }}
+                  className="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Pencil size={13} /> Edit Article
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPreviewModal(false);
+                    setActiveBlogPreview(null);
+                  }}
+                  className="px-5 py-2 bg-zinc-200 hover:bg-zinc-300 text-zinc-800 rounded-xl text-xs font-bold transition cursor-pointer"
+                >
+                  Close Preview
+                </button>
+              </div>
+            </div>
+            
           </div>
         </div>
       )}

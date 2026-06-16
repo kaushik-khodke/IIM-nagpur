@@ -43,9 +43,13 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || "Login failed"); return; }
       localStorage.setItem("tractorsewa_token", data.token);
+      localStorage.setItem("tractorsewa_user_role", data.user.role || "user");
       localStorage.removeItem("tractorsewa_preview_mode");
       toast.success("Welcome back to Tractor Seva!");
-      const redirectPath = localStorage.getItem("tractorsewa_redirect_after_auth") || "/dashboard";
+      let redirectPath = localStorage.getItem("tractorsewa_redirect_after_auth");
+      if (!redirectPath) {
+        redirectPath = data.user.role === "admin" ? "/admin" : "/dashboard";
+      }
       localStorage.removeItem("tractorsewa_redirect_after_auth");
       navigate(redirectPath);
     } catch {
@@ -184,9 +188,13 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || "Registration failed"); return; }
       localStorage.setItem("tractorsewa_token", data.token);
+      localStorage.setItem("tractorsewa_user_role", data.user.role || "user");
       localStorage.removeItem("tractorsewa_preview_mode");
       toast.success("Account created! Welcome to Tractor Seva");
-      const redirectPath = localStorage.getItem("tractorsewa_redirect_after_auth") || "/dashboard";
+      let redirectPath = localStorage.getItem("tractorsewa_redirect_after_auth");
+      if (!redirectPath) {
+        redirectPath = data.user.role === "admin" ? "/admin" : "/dashboard";
+      }
       navigate(redirectPath);
     } catch {
       toast.error("Registration failed. Please try again.");
