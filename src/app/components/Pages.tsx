@@ -1173,7 +1173,7 @@ export function OperatorProfile() {
         <div className="h-48 bg-gradient-to-r from-[#172263] via-[#D97706] to-[#15803D] rounded-b-3xl overflow-hidden">
           <WheatWatermark className="right-10 top-0 opacity-[0.06]" />
         </div>
-        <div className="w-full mx-auto px-4 sm:px-6 -mt-16">
+        <div className="w-full mx-auto px-4 sm:px-6 -mt-16 pb-24">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden shrink-0">
               {operator.image_path || operator.ownerProfilePic ? (
@@ -1198,8 +1198,8 @@ export function OperatorProfile() {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-2 space-y-5">
+          <div className="flex flex-col lg:flex-row gap-6 mb-8">
+            <div className="w-full lg:w-2/3 space-y-5">
               {/* Stats */}
               <div className="grid grid-cols-3 gap-3">
                 {[
@@ -1234,17 +1234,6 @@ export function OperatorProfile() {
                 </div>
               </div>
 
-              {/* Listed Machines */}
-              {harvesters.length > 0 && (
-                <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                  <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Listed Harvesters</h3>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {harvesters.map((h) => (
-                      <HarvesterCard key={h.id} {...h} />
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Ratings & Reviews Section */}
               <div id="ratings-section" className="bg-white rounded-2xl border border-[#E2E8F0] p-6 space-y-6">
@@ -1279,9 +1268,9 @@ export function OperatorProfile() {
                   </div>
 
                   {/* Right side: Submit Review form (if not owner) */}
-                  <div className="md:col-span-8">
+                  <div className="md:col-span-8 flex flex-col">
                     {currentUser && (operator.user_id === currentUser.id) ? (
-                      <div className="h-full flex items-center justify-center p-4 border border-dashed border-[#E2E8F0] rounded-2xl bg-slate-50/50">
+                      <div className="flex-1 flex flex-col items-center justify-center p-4 border border-dashed border-[#E2E8F0] rounded-2xl bg-slate-50/50">
                         <p className="text-xs text-[#57585A] text-center font-medium">You cannot rate your own operator profile.</p>
                       </div>
                     ) : currentUser ? (
@@ -1327,7 +1316,7 @@ export function OperatorProfile() {
                         </button>
                       </form>
                     ) : (
-                      <div className="h-full flex flex-col items-center justify-center p-4 border border-[#E2E8F0] rounded-2xl bg-amber-50/40 text-center">
+                      <div className="flex-1 flex flex-col items-center justify-center p-4 border border-[#E2E8F0] rounded-2xl bg-amber-50/40 text-center">
                         <p className="text-xs text-[#57585A] font-semibold mb-1.5">You must be logged in to submit a review.</p>
                         <button
                           onClick={() => navigate('/login')}
@@ -1376,8 +1365,8 @@ export function OperatorProfile() {
             </div>
 
             {/* Contact card */}
-            <div>
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)]">
+            <div className="w-full lg:w-1/3">
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)] sticky top-24">
                 <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Contact Operator</h3>
                 <p className="text-sm text-[#57585A] mb-2 flex items-center gap-2">
                   <Phone size={14} /> +91-{operator.phone || 'XXXXXXXXXX'}
@@ -2071,66 +2060,95 @@ export function AddHarvester() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Manufacturer Company</label>
-              <select
-                value={company}
-                onChange={(e) => {
-                  setCompany(e.target.value);
-                  setModel("");
-                  setCustomCompany("");
-                  setCustomModel("");
-                }}
-                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
-              >
-                <option value="">Select Company</option>
-                {HARVESTER_COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <label className="text-sm text-[#57585A] block mb-1.5">Manufacturer Company *</label>
+              {company === "Other" ? (
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={customCompany}
+                    onChange={(e) => setCustomCompany(e.target.value)}
+                    placeholder="Enter custom manufacturer name"
+                    autoFocus
+                    required
+                    className="w-full px-4 py-3 pr-10 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCompany("");
+                      setCustomCompany("");
+                      setModel("");
+                      setCustomModel("");
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={company}
+                  onChange={(e) => {
+                    setCompany(e.target.value);
+                    setModel("");
+                    setCustomCompany("");
+                    setCustomModel("");
+                  }}
+                  required
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
+                >
+                  <option value="">Select Company</option>
+                  {HARVESTER_COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
             </div>
 
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model</label>
-              <select
-                value={model}
-                onChange={(e) => {
-                  setModel(e.target.value);
-                  setCustomModel("");
-                }}
-                disabled={!company}
-                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
-              >
-                <option value="">Select Model</option>
-                {company && HARVESTER_MODELS[company]?.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
+              <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model *</label>
+              {company === "Other" || model === "Other / Custom Model" ? (
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={customModel}
+                    onChange={(e) => setCustomModel(e.target.value)}
+                    placeholder="Enter custom model name"
+                    autoFocus={model === "Other / Custom Model"}
+                    required
+                    className="w-full px-4 py-3 pr-10 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                  />
+                  {company !== "Other" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModel("");
+                        setCustomModel("");
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <select
+                  value={model}
+                  onChange={(e) => {
+                    setModel(e.target.value);
+                    setCustomModel("");
+                  }}
+                  disabled={!company}
+                  required
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
+                >
+                  <option value="">Select Model</option>
+                  {company && HARVESTER_MODELS[company]?.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                  {company && <option value="Other / Custom Model">Other / Custom Model</option>}
+                </select>
+              )}
             </div>
           </div>
-
-          {company === "Other" && (
-            <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Custom Company Name *</label>
-              <input
-                value={customCompany}
-                onChange={(e) => setCustomCompany(e.target.value)}
-                placeholder="Enter manufacturer name (e.g. John Deere)"
-                required
-                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
-              />
-            </div>
-          )}
-
-          {(company === "Other" || model === "Other / Custom Model") && company !== "" && (
-            <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Custom Model Name *</label>
-              <input
-                value={customModel}
-                onChange={(e) => setCustomModel(e.target.value)}
-                placeholder="Enter harvester model name (e.g. S660)"
-                required
-                className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
-              />
-            </div>
-          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -3583,7 +3601,7 @@ export function Blogs() {
 
               {/* Categories */}
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold tracking-wider text-[#57585A]">
+                <label className="text-xs uppercase font-bold tracking-wider text-[#57585A]">
                   Categories
                 </label>
                 <div className="flex flex-col gap-1">
@@ -3591,7 +3609,7 @@ export function Blogs() {
                     <button
                       key={c}
                       onClick={() => setCategory(c)}
-                      className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${category === c
+                      className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all ${category === c
                           ? "bg-[#172263] text-white border-[#172263]"
                           : "bg-white border-[#E2E8F0] text-[#57585A] hover:bg-slate-50 hover:border-slate-300"
                         }`}
@@ -3642,7 +3660,7 @@ export function Blogs() {
               <button
                 key={c}
                 onClick={() => setCategory(c)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${category === c
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm font-semibold border transition-all ${category === c
                     ? "bg-[#172263] text-white border-[#172263]"
                     : "bg-white border-[#E2E8F0] text-[#57585A]"
                   }`}
