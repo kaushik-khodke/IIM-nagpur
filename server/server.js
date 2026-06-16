@@ -193,7 +193,7 @@ app.post('/api/auth/register', async (req, res) => {
     } catch (err) {
       console.error('Failed to log signup activity:', err);
     }
-    res.status(201).json({ token, user: { id: userId, name, email } });
+    res.status(201).json({ token, user: { id: userId, name, email, role: 'user' } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -229,7 +229,7 @@ app.post('/api/auth/login', async (req, res) => {
     } catch (err) {
       console.error('Failed to log login activity:', err);
     }
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });

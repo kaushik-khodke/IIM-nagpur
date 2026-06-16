@@ -279,7 +279,7 @@ export function OperatorCard({
   imagePath?: string;
   isOwner?: boolean;
 }) {
-  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+  const isPreview = !localStorage.getItem("tractorsewa_token") && localStorage.getItem("tractorsewa_preview_mode") === "true";
 
   const handleClick = (e: React.MouseEvent) => {
     if (isPreview) {
@@ -386,7 +386,7 @@ export function HarvesterCard({
   imagePath?: string;
   isOwner?: boolean;
 }) {
-  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+  const isPreview = !localStorage.getItem("tractorsewa_token") && localStorage.getItem("tractorsewa_preview_mode") === "true";
 
   const handleClick = (e: React.MouseEvent) => {
     if (isPreview) {
@@ -664,7 +664,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const { t } = useTranslation("common");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userName, setUserName] = useState("User");
-  const [userRole, setUserRole] = useState("user");
+  const [userRole, setUserRole] = useState(() => localStorage.getItem("tractorsewa_user_role") || "user");
   const [userImage, setUserImage] = useState<string | null>(null);
 
   // Dialog state
@@ -679,12 +679,19 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const logout = () => {
     localStorage.removeItem("tractorsewa_token");
     localStorage.removeItem("tractorsewa_preview_mode");
+    localStorage.removeItem("tractorsewa_user_role");
     navigate("/");
   };
 
   const token = localStorage.getItem("tractorsewa_token");
   const isAuthenticated = !!token;
-  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+  const isPreview = !token && localStorage.getItem("tractorsewa_preview_mode") === "true";
+
+  useEffect(() => {
+    if (token) {
+      localStorage.removeItem("tractorsewa_preview_mode");
+    }
+  }, [token]);
 
   const actualVariant = isAuthenticated ? "auth" : variant;
 
@@ -704,6 +711,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
           if (data && data.name) {
             setUserName(data.name);
             setUserRole(data.role || "user");
+            localStorage.setItem("tractorsewa_user_role", data.role || "user");
             setUserImage(data.imagePath || data.image || null);
           } else {
             logout();
@@ -1040,7 +1048,10 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 // ---- Protected Route ----
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem("tractorsewa_token");
-  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+  if (token) {
+    localStorage.removeItem("tractorsewa_preview_mode");
+  }
+  const isPreview = !token && localStorage.getItem("tractorsewa_preview_mode") === "true";
   const location = useLocation();
 
   if (!token) {

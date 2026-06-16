@@ -5819,6 +5819,8 @@ export function AdminPortal() {
           <button 
             onClick={() => {
               localStorage.removeItem("tractorsewa_token");
+              localStorage.removeItem("tractorsewa_user_role");
+              localStorage.removeItem("tractorsewa_preview_mode");
               navigate("/login");
             }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 transition"

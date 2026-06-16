@@ -1,29 +1,31 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router";
 import { Toaster, toast } from "sonner";
-import { useEffect } from "react";
-import { Landing } from "./components/Landing";
-import { AuthPage } from "./components/Auth";
-import { Dashboard } from "./components/Dashboard";
-import {
-  ExploreHarvesters,
-  HarvesterDetail,
-  ExploreOperators,
-  OperatorProfile,
-  AddOperator,
-  AddHarvester,
-  Requests,
-  RequestDetail,
-  Blogs,
-  BlogDetail,
-  Profile,
-  Messages,
-  EditProfile,
-  AdminPortal,
-  EditHarvester,
-} from "./components/Pages";
-import { Settings } from "./components/Settings";
-import { EnquiryPage } from "./components/Enquiry";
+import { useEffect, lazy, Suspense } from "react";
 import { ProtectedRoute } from "./components/shared";
+
+// Lazy-loaded page components
+const Landing = lazy(() => import("./components/Landing").then(m => ({ default: m.Landing })));
+const AuthPage = lazy(() => import("./components/Auth").then(m => ({ default: m.AuthPage })));
+const Dashboard = lazy(() => import("./components/Dashboard").then(m => ({ default: m.Dashboard })));
+const Settings = lazy(() => import("./components/Settings").then(m => ({ default: m.Settings })));
+const EnquiryPage = lazy(() => import("./components/Enquiry").then(m => ({ default: m.EnquiryPage })));
+
+// Lazy-loaded components from Pages.tsx
+const ExploreHarvesters = lazy(() => import("./components/Pages").then(m => ({ default: m.ExploreHarvesters })));
+const HarvesterDetail = lazy(() => import("./components/Pages").then(m => ({ default: m.HarvesterDetail })));
+const ExploreOperators = lazy(() => import("./components/Pages").then(m => ({ default: m.ExploreOperators })));
+const OperatorProfile = lazy(() => import("./components/Pages").then(m => ({ default: m.OperatorProfile })));
+const AddOperator = lazy(() => import("./components/Pages").then(m => ({ default: m.AddOperator })));
+const AddHarvester = lazy(() => import("./components/Pages").then(m => ({ default: m.AddHarvester })));
+const Requests = lazy(() => import("./components/Pages").then(m => ({ default: m.Requests })));
+const RequestDetail = lazy(() => import("./components/Pages").then(m => ({ default: m.RequestDetail })));
+const Blogs = lazy(() => import("./components/Pages").then(m => ({ default: m.Blogs })));
+const BlogDetail = lazy(() => import("./components/Pages").then(m => ({ default: m.BlogDetail })));
+const Profile = lazy(() => import("./components/Pages").then(m => ({ default: m.Profile })));
+const Messages = lazy(() => import("./components/Pages").then(m => ({ default: m.Messages })));
+const EditProfile = lazy(() => import("./components/Pages").then(m => ({ default: m.EditProfile })));
+const AdminPortal = lazy(() => import("./components/Pages").then(m => ({ default: m.AdminPortal })));
+const EditHarvester = lazy(() => import("./components/Pages").then(m => ({ default: m.EditHarvester })));
 
 function ProtectedPage({ children }: { children: React.ReactNode }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
@@ -96,137 +98,143 @@ export default function App() {
           },
         }}
       />
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<AuthPage />} />
-        <Route path="/register" element={<AuthPage />} />
-        <Route path="/blogs" element={<Blogs />} />
-        <Route path="/blogs/:id" element={<BlogDetail />} />
-        <Route path="/enquiry" element={<EnquiryPage />} />
+      <Suspense fallback={
+        <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-blue-200 border-t-[#172263] rounded-full animate-spin" />
+        </div>
+      }>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/register" element={<AuthPage />} />
+          <Route path="/blogs" element={<Blogs />} />
+          <Route path="/blogs/:id" element={<BlogDetail />} />
+          <Route path="/enquiry" element={<EnquiryPage />} />
 
-        {/* Protected */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedPage>
-              <Dashboard />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/harvesters"
-          element={
-            <ProtectedPage>
-              <ExploreHarvesters />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/harvesters/:id"
-          element={
-            <ProtectedPage>
-              <HarvesterDetail />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/harvesters/:id/edit"
-          element={
-            <ProtectedPage>
-              <EditHarvester />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/operators"
-          element={
-            <ProtectedPage>
-              <ExploreOperators />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/operators/:id"
-          element={
-            <ProtectedPage>
-              <OperatorProfile />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/add-operator"
-          element={
-            <ProtectedPage>
-              <AddOperator />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/add-harvester"
-          element={
-            <ProtectedPage>
-              <AddHarvester />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/requests"
-          element={
-            <ProtectedPage>
-              <Requests />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/requests/:id"
-          element={
-            <ProtectedPage>
-              <RequestDetail />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedPage>
-              <Profile />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/profile/edit"
-          element={
-            <ProtectedPage>
-              <EditProfile />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedPage>
-              <AdminPortal />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/messages"
-          element={
-            <ProtectedPage>
-              <Messages />
-            </ProtectedPage>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedPage>
-              <Settings />
-            </ProtectedPage>
-          }
-        />
-      </Routes>
+          {/* Protected */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedPage>
+                <Dashboard />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/harvesters"
+            element={
+              <ProtectedPage>
+                <ExploreHarvesters />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/harvesters/:id"
+            element={
+              <ProtectedPage>
+                <HarvesterDetail />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/harvesters/:id/edit"
+            element={
+              <ProtectedPage>
+                <EditHarvester />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/operators"
+            element={
+              <ProtectedPage>
+                <ExploreOperators />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/operators/:id"
+            element={
+              <ProtectedPage>
+                <OperatorProfile />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/add-operator"
+            element={
+              <ProtectedPage>
+                <AddOperator />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/add-harvester"
+            element={
+              <ProtectedPage>
+                <AddHarvester />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/requests"
+            element={
+              <ProtectedPage>
+                <Requests />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/requests/:id"
+            element={
+              <ProtectedPage>
+                <RequestDetail />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedPage>
+                <Profile />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/profile/edit"
+            element={
+              <ProtectedPage>
+                <EditProfile />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedPage>
+                <AdminPortal />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedPage>
+                <Messages />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedPage>
+                <Settings />
+              </ProtectedPage>
+            }
+          />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
