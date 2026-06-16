@@ -598,21 +598,19 @@ export function HarvesterDetail() {
                   >
                     <MessageSquare size={18} /> {isOwner ? "WhatsApp" : "WhatsApp Owner"}
                   </a>
-                  {(!currentUser || harvester.userId !== currentUser.id) && (
-                    <button
-                      onClick={() => {
-                        if (!currentUser) {
-                          toast.error("Please log in to send a message");
-                          navigate("/login");
-                        } else {
-                          navigate(`/messages?userId=${harvester.userId}`);
-                        }
-                      }}
-                      className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors font-medium"
-                    >
-                      Message Owner
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      if (!currentUser) {
+                        toast.error("Please log in to send a message");
+                        navigate("/login");
+                      } else {
+                        navigate(`/messages?userId=${harvester.userId}`);
+                      }
+                    }}
+                    className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors font-medium"
+                  >
+                    Message Owner
+                  </button>
                   {!isOwner && (
                     <button
                       onClick={() => {
