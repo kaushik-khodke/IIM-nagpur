@@ -141,7 +141,7 @@ async function initializeDatabase() {
         location VARCHAR(255) NOT NULL,
         requirement VARCHAR(50) NOT NULL,
         date_needed DATE DEFAULT NULL,
-        status VARCHAR(50) DEFAULT 'Pending',
+        status VARCHAR(50) DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -152,6 +152,34 @@ async function initializeDatabase() {
       console.log('Successfully added state column to requests table.');
     } catch (err) {
       // Column might already exist, safe to ignore
+    }
+
+    try {
+      await activePool.query('ALTER TABLE enquiries ADD COLUMN phone VARCHAR(20) DEFAULT NULL AFTER name');
+      console.log('Successfully added phone column to enquiries table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
+    }
+
+    try {
+      await activePool.query('ALTER TABLE enquiries ADD COLUMN requirement TEXT DEFAULT NULL AFTER location');
+      console.log('Successfully added requirement column to enquiries table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
+    }
+
+    try {
+      await activePool.query('ALTER TABLE enquiries ADD COLUMN date_needed DATE DEFAULT NULL AFTER requirement');
+      console.log('Successfully added date_needed column to enquiries table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
+    }
+
+    try {
+      await activePool.query("UPDATE enquiries SET status = 'Active' WHERE status = 'Pending' OR status IS NULL");
+      console.log("Successfully migrated Pending or NULL enquiries to Active.");
+    } catch (err) {
+      // safe to ignore
     }
 
     try {
@@ -222,6 +250,7 @@ async function initializeDatabase() {
         sender_id VARCHAR(36) NOT NULL,
         receiver_id VARCHAR(36) NOT NULL,
         content TEXT NOT NULL,
+        is_read TINYINT(1) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
@@ -274,7 +303,7 @@ async function initializeDatabase() {
         location VARCHAR(255) NOT NULL,
         requirement TEXT NOT NULL,
         date_needed DATE DEFAULT NULL,
-        status VARCHAR(50) DEFAULT 'Pending',
+        status VARCHAR(50) DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -316,6 +345,13 @@ async function initializeDatabase() {
     try {
       await activePool.query('ALTER TABLE harvesters ADD COLUMN whatsapp VARCHAR(20) DEFAULT NULL AFTER phone');
       console.log('Successfully added whatsapp column to harvesters table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
+    }
+
+    try {
+      await activePool.query('ALTER TABLE messages ADD COLUMN is_read TINYINT(1) DEFAULT 0 AFTER content');
+      console.log('Successfully added is_read column to messages table.');
     } catch (err) {
       // Column might already exist, safe to ignore
     }

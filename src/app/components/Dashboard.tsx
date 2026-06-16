@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   MessageSquare,
   MapPin,
-  Heart,
   LayoutGrid,
   User,
   Activity,
@@ -315,9 +314,6 @@ export function Dashboard() {
                         ) : (
                           <Tractor size={48} className="text-blue-300" />
                         )}
-                        <button onClick={() => toast.success("Added to favorites! ❤️")} className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/95 text-[#57585A] hover:text-red-500 rounded-full flex items-center justify-center border border-[#E2E8F0] shadow-sm z-10">
-                          <Heart size={13} />
-                        </button>
                       </div>
                       {/* Info area */}
                       <div className="p-4 space-y-2">

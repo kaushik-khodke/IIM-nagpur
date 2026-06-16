@@ -160,12 +160,26 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
     if (!name || !email || !password || !phone) { toast.error("Please fill in all required fields"); return; }
     if (!agreed) { toast.error("Please agree to the Terms of Service"); return; }
     if (password !== confirmPass) { toast.error("Passwords do not match"); return; }
+
+    const cleanedPhone = phone.replace(/\D/g, "");
+    let finalPhone = cleanedPhone;
+    if (cleanedPhone.length === 12 && cleanedPhone.startsWith("91")) {
+      finalPhone = cleanedPhone.substring(2);
+    } else if (cleanedPhone.length === 11 && cleanedPhone.startsWith("0")) {
+      finalPhone = cleanedPhone.substring(1);
+    }
+
+    if (!/^\d{10}$/.test(finalPhone)) {
+      toast.error("Please enter a valid 10-digit mobile number");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, state, phone })
+        body: JSON.stringify({ name, email, password, state, phone: finalPhone })
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || "Registration failed"); return; }

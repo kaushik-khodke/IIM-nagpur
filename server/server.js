@@ -86,6 +86,26 @@ const getOptionalUser = (req) => {
   }
 };
 
+const cleanPhone = (phone) => {
+  if (!phone) return null;
+  const cleaned = phone.toString().replace(/\D/g, '');
+  let finalPhone = cleaned;
+  if (cleaned.length === 12 && cleaned.startsWith('91')) {
+    finalPhone = cleaned.substring(2);
+  } else if (cleaned.length === 11 && cleaned.startsWith('0')) {
+    finalPhone = cleaned.substring(1);
+  }
+  return /^\d{10}$/.test(finalPhone) ? finalPhone : null;
+};
+
+const validateYear = (year) => {
+  if (!year) return true; // year is optional in harvester table schema
+  const parsed = parseInt(year, 10);
+  if (isNaN(parsed)) return false;
+  const currentYear = new Date().getFullYear();
+  return /^\d{4}$/.test(year.toString().trim()) && parsed >= 1900 && parsed <= currentYear + 1;
+};
+
 // --- API ROUTES ---
 
 // 1. Image Upload Endpoint
@@ -148,6 +168,11 @@ app.post('/api/auth/register', async (req, res) => {
     return res.status(400).json({ error: 'Please provide name, email, password and phone number' });
   }
 
+  const cleanedPhone = cleanPhone(phone);
+  if (!cleanedPhone) {
+    return res.status(400).json({ error: 'Invalid phone number. Must be exactly 10 digits.' });
+  }
+
   try {
     const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
@@ -158,7 +183,7 @@ app.post('/api/auth/register', async (req, res) => {
     const userId = require('crypto').randomUUID();
     await db.query(
       'INSERT INTO users (id, name, email, password, role, state, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [userId, name, email, hashedPassword, 'user', state || null, phone]
+      [userId, name, email, hashedPassword, 'user', state || null, cleanedPhone]
     );
 
     const token = jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
@@ -257,13 +282,31 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Name and phone are required' });
   }
 
+  const cleanedPhone = cleanPhone(phone);
+  if (!cleanedPhone) {
+    return res.status(400).json({ error: 'Invalid phone number. Must be exactly 10 digits.' });
+  }
+
   try {
     await db.query(
       'UPDATE users SET name = ?, state = ?, phone = ?, bio = ?, image_path = ? WHERE id = ?',
-      [name, state || null, phone, bio || null, imagePath || null, req.user.id]
+      [name, state || null, cleanedPhone, bio || null, imagePath || null, req.user.id]
     );
 
     res.json({ message: 'Profile updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const [users] = await db.query('SELECT id, name, role, image_path as imagePath FROM users WHERE id = ?', [req.params.id]);
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(users[0]);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -348,6 +391,16 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Please provide all required fields' });
   }
 
+  const cleanedPhone = phone ? cleanPhone(phone) : null;
+  if (phone && !cleanedPhone) {
+    return res.status(400).json({ error: 'Invalid phone number. Must be exactly 10 digits.' });
+  }
+
+  const cleanedWhatsapp = whatsapp ? cleanPhone(whatsapp) : null;
+  if (whatsapp && !cleanedWhatsapp) {
+    return res.status(400).json({ error: 'Invalid WhatsApp number. Must be exactly 10 digits.' });
+  }
+
   try {
     // Check if operator listing already exists for this user, if so update it, otherwise create new
     const [existing] = await db.query('SELECT id FROM operators WHERE user_id = ?', [req.user.id]);
@@ -358,12 +411,12 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
     if (existing.length > 0) {
       result = await db.query(
         'UPDATE operators SET name = ?, experience = ?, location = ?, state = ?, machine_expertise = ?, availability = ?, description = ?, phone = ?, whatsapp = ?, image_path = ? WHERE user_id = ?',
-        [name, experience, location, state, expertiseStr, availability || 'Available', description || null, phone || null, whatsapp || null, imagePath || null, req.user.id]
+        [name, experience, location, state, expertiseStr, availability || 'Available', description || null, cleanedPhone, cleanedWhatsapp, imagePath || null, req.user.id]
       );
     } else {
       result = await db.query(
         'INSERT INTO operators (id, user_id, name, experience, location, state, machine_expertise, availability, description, phone, whatsapp, image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [require('crypto').randomUUID(), req.user.id, name, experience, location, state, expertiseStr, availability || 'Available', description || null, phone || null, whatsapp || null, imagePath || null]
+        [require('crypto').randomUUID(), req.user.id, name, experience, location, state, expertiseStr, availability || 'Available', description || null, cleanedPhone, cleanedWhatsapp, imagePath || null]
       );
     }
 
@@ -473,10 +526,24 @@ app.post('/api/harvesters', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Please provide all required fields' });
   }
 
+  const cleanedPhone = phone ? cleanPhone(phone) : null;
+  if (phone && !cleanedPhone) {
+    return res.status(400).json({ error: 'Invalid phone number. Must be exactly 10 digits.' });
+  }
+
+  const cleanedWhatsapp = whatsapp ? cleanPhone(whatsapp) : null;
+  if (whatsapp && !cleanedWhatsapp) {
+    return res.status(400).json({ error: 'Invalid WhatsApp number. Must be exactly 10 digits.' });
+  }
+
+  if (year && !validateYear(year)) {
+    return res.status(400).json({ error: 'Invalid year. Must be a 4-digit number between 1900 and ' + (new Date().getFullYear() + 1) + '.' });
+  }
+
   try {
     await db.query(
       'INSERT INTO harvesters (id, user_id, machine_name, company, model, year, location, state, phone, whatsapp, description, image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [require('crypto').randomUUID(), req.user.id, machineName, company, model, year ? parseInt(year) : null, location, state, phone || null, whatsapp || null, description || null, imagePath || null]
+      [require('crypto').randomUUID(), req.user.id, machineName, company, model, year ? parseInt(year) : null, location, state, cleanedPhone, cleanedWhatsapp, description || null, imagePath || null]
     );
     res.status(201).json({ message: 'Harvester listed successfully' });
   } catch (error) {
@@ -489,6 +556,20 @@ app.put('/api/harvesters/:id', authenticateToken, async (req, res) => {
   const { machineName, company, model, year, location, state, phone, whatsapp, description, imagePath } = req.body;
   if (!machineName || !company || !model || !location || !state) {
     return res.status(400).json({ error: 'Please provide all required fields' });
+  }
+
+  const cleanedPhone = phone ? cleanPhone(phone) : null;
+  if (phone && !cleanedPhone) {
+    return res.status(400).json({ error: 'Invalid phone number. Must be exactly 10 digits.' });
+  }
+
+  const cleanedWhatsapp = whatsapp ? cleanPhone(whatsapp) : null;
+  if (whatsapp && !cleanedWhatsapp) {
+    return res.status(400).json({ error: 'Invalid WhatsApp number. Must be exactly 10 digits.' });
+  }
+
+  if (year && !validateYear(year)) {
+    return res.status(400).json({ error: 'Invalid year. Must be a 4-digit number between 1900 and ' + (new Date().getFullYear() + 1) + '.' });
   }
 
   try {
@@ -504,7 +585,7 @@ app.put('/api/harvesters/:id', authenticateToken, async (req, res) => {
 
     await db.query(
       'UPDATE harvesters SET machine_name = ?, company = ?, model = ?, year = ?, location = ?, state = ?, phone = ?, whatsapp = ?, description = ?, image_path = ? WHERE id = ?',
-      [machineName, company, model, year ? parseInt(year) : null, location, state, phone || null, whatsapp || null, description || null, imagePath !== undefined ? imagePath : harvester.image_path, req.params.id]
+      [machineName, company, model, year ? parseInt(year) : null, location, state, cleanedPhone, cleanedWhatsapp, description || null, imagePath !== undefined ? imagePath : harvester.image_path, req.params.id]
     );
     res.json({ message: 'Harvester updated successfully' });
   } catch (error) {
@@ -676,6 +757,13 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
 
   try {
     if (chatPartnerId) {
+      // Mark messages from partner to current user as read
+      try {
+        await db.query('UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0', [chatPartnerId, currentUserId]);
+      } catch (err) {
+        console.error('Failed to mark messages as read:', err);
+      }
+
       // Fetch conversation messages between current user and partner
       const [messages] = await db.query(`
         SELECT m.*, 
@@ -694,7 +782,7 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
 
     // Default: Get list of users the current user has chatted with
     const [chatPartners] = await db.query(`
-      SELECT DISTINCT u.id, u.name, u.role,
+      SELECT DISTINCT u.id, u.name, u.role, u.image_path as imagePath,
              (SELECT content FROM messages 
               WHERE (sender_id = u.id AND receiver_id = ?) 
                  OR (sender_id = ? AND receiver_id = u.id) 
@@ -736,6 +824,37 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
     res.status(201).json(newMessage[0]);
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// New Routes for Unread Message Notifications
+app.get('/api/messages/unread', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT m.*, u.name as senderName 
+      FROM messages m 
+      JOIN users u ON m.sender_id = u.id 
+      WHERE m.receiver_id = ? AND m.is_read = 0
+      ORDER BY m.created_at ASC
+    `, [req.user.id]);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/messages/unread/mark-read', authenticateToken, async (req, res) => {
+  const { messageIds } = req.body;
+  if (!Array.isArray(messageIds) || messageIds.length === 0) {
+    return res.status(400).json({ error: 'messageIds must be a non-empty array' });
+  }
+  try {
+    await db.query('UPDATE messages SET is_read = 1 WHERE receiver_id = ? AND id IN (?)', [req.user.id, messageIds]);
+    res.json({ message: 'Messages marked as read' });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -875,6 +994,11 @@ app.post('/api/enquiries', async (req, res) => {
     return res.status(400).json({ error: 'Please provide all required fields' });
   }
 
+  const cleanedPhone = cleanPhone(phone);
+  if (!cleanedPhone) {
+    return res.status(400).json({ error: 'Invalid phone number. Must be exactly 10 digits.' });
+  }
+
   try {
     const enquiryId = require('crypto').randomUUID();
     let formattedDate = dateNeeded || null;
@@ -890,7 +1014,7 @@ app.post('/api/enquiries', async (req, res) => {
 
     await db.query(
       'INSERT INTO enquiries (id, name, phone, location, requirement, date_needed, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [enquiryId, name, phone, location, requirement, formattedDate, 'Pending']
+      [enquiryId, name, cleanedPhone, location, requirement, formattedDate, 'Active']
     );
     res.status(201).json({ message: 'Enquiry submitted successfully' });
   } catch (error) {

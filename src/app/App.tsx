@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router";
-import { Toaster } from "sonner";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router";
+import { Toaster, toast } from "sonner";
+import { useEffect } from "react";
 import { Landing } from "./components/Landing";
 import { AuthPage } from "./components/Auth";
 import { Dashboard } from "./components/Dashboard";
@@ -28,9 +29,63 @@ function ProtectedPage({ children }: { children: React.ReactNode }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
 }
 
+function MessageNotifier() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const token = localStorage.getItem("tractorsewa_token");
+    if (!token) return;
+
+    const checkUnread = async () => {
+      if (location.pathname === "/messages") return;
+
+      try {
+        const res = await fetch("/api/messages/unread", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const unreadMsgs = await res.json();
+          if (unreadMsgs.length > 0) {
+            unreadMsgs.forEach((msg: any) => {
+              toast(`Message from ${msg.senderName}`, {
+                description: msg.content.length > 60 ? `${msg.content.substring(0, 60)}...` : msg.content,
+                action: {
+                  label: "Reply",
+                  onClick: () => {
+                    window.location.href = `/messages?userId=${msg.sender_id}`;
+                  }
+                }
+              });
+            });
+
+            const ids = unreadMsgs.map((m: any) => m.id);
+            await fetch("/api/messages/unread/mark-read", {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ messageIds: ids })
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error checking unread messages:", err);
+      }
+    };
+
+    checkUnread();
+    const interval = setInterval(checkUnread, 5000);
+    return () => clearInterval(interval);
+  }, [location.pathname]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <MessageNotifier />
       <Toaster
         position="top-right"
         toastOptions={{

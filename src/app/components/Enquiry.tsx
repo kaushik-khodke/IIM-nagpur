@@ -15,8 +15,16 @@ export function EnquiryPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !phone || !location || !requirement || !dateNeeded) {
-      toast.error("Please fill all required fields");
+    const cleanedPhone = phone.replace(/\D/g, "");
+    let finalPhone = cleanedPhone;
+    if (cleanedPhone.length === 12 && cleanedPhone.startsWith("91")) {
+      finalPhone = cleanedPhone.substring(2);
+    } else if (cleanedPhone.length === 11 && cleanedPhone.startsWith("0")) {
+      finalPhone = cleanedPhone.substring(1);
+    }
+
+    if (!/^\d{10}$/.test(finalPhone)) {
+      toast.error("Please enter a valid 10-digit mobile number");
       return;
     }
 
@@ -25,7 +33,7 @@ export function EnquiryPage() {
       const res = await fetch("/api/enquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, location, requirement, dateNeeded }),
+        body: JSON.stringify({ name, phone: finalPhone, location, requirement, dateNeeded }),
       });
 
       if (res.ok) {
