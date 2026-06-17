@@ -26,14 +26,18 @@ let pool = null;
 async function getPool() {
   if (pool) return pool;
 
+  const dbName = process.env.DB_NAME || 'tractorsewa';
+
   try {
-    // 1. Connect to MySQL Server without specifying database to ensure it exists
-    const connection = await mysql.createConnection(dbConfig);
-    const dbName = process.env.DB_NAME || 'tractorsewa';
-    
-    // Create database if not exists
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
-    await connection.end();
+    // Try to connect without specifying database to create it if it doesn't exist
+    try {
+      const connection = await mysql.createConnection(dbConfig);
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+      await connection.end();
+      console.log(`Database "${dbName}" ensured (created or already exists).`);
+    } catch (dbCreateError) {
+      console.warn('Warning: Could not create database automatically. Proceeding to connect directly:', dbCreateError.message);
+    }
 
     // 2. Create Connection Pool targeting the database
     pool = mysql.createPool({
@@ -44,11 +48,14 @@ async function getPool() {
       queueLimit: 0
     });
 
+    // Verify pool connection
+    const conn = await pool.getConnection();
     console.log(`Connected to MySQL database: ${dbName}`);
+    conn.release();
     return pool;
   } catch (error) {
     console.error('MySQL Connection Error:', error.message);
-    console.error('Please make sure your MySQL server is running and port 3306 is open.');
+    console.error('Please make sure your MySQL server is running and the credentials/database exist.');
     throw error;
   }
 }
