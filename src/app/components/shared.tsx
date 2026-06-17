@@ -270,6 +270,7 @@ export function OperatorCard({
   machineExpertise,
   availability,
   imagePath,
+  image_path,
   isOwner,
 }: {
   id: string | number;
@@ -279,9 +280,11 @@ export function OperatorCard({
   machineExpertise: string[];
   availability: string;
   imagePath?: string;
+  image_path?: string;
   isOwner?: boolean;
 }) {
   const { t } = useTranslation(["pages", "static", "shared"]);
+  const finalImage = imagePath || image_path;
   const isPreview = !localStorage.getItem("tractorsewa_token") && localStorage.getItem("tractorsewa_preview_mode") === "true";
 
   const handleClick = (e: React.MouseEvent) => {
@@ -313,8 +316,8 @@ export function OperatorCard({
             <div className="w-14 h-14 rounded-xl bg-gradient-to-tr from-[#172263] via-[#E82326] to-amber-500 p-[2px] ring-2 ring-white mb-2 overflow-hidden shadow-md shrink-0">
               <div className="w-full h-full rounded-lg bg-white p-[1px]">
                 <div className="w-full h-full rounded-md bg-[#F4F6FA] flex items-center justify-center overflow-hidden">
-                  {imagePath ? (
-                    <img src={imagePath} alt={name} className="w-full h-full object-cover" />
+                  {finalImage ? (
+                    <img src={finalImage} alt={name} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-[#172263] text-lg font-bold">{name.charAt(0).toUpperCase()}</span>
                   )}

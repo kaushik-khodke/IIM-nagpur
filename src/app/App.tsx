@@ -90,6 +90,8 @@ export default function App() {
       <MessageNotifier />
       <Toaster
         position="top-right"
+        richColors
+        closeButton
         toastOptions={{
           style: {
             fontFamily: "'Inter', sans-serif",

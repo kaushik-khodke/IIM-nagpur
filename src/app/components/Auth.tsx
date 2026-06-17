@@ -126,7 +126,7 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
 
       <div className="relative my-4">
         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#E2E8F0]" /></div>
-        <div className="relative flex justify-center text-[10px] text-[#57585A] bg-white px-2">or continue with</div>
+        <div className="relative flex justify-center text-xs text-[#57585A] bg-white px-2">or continue with</div>
       </div>
       <button className="w-full py-2.5 border border-[#E2E8F0] rounded-xl text-xs text-[#57585A] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 cursor-pointer">
         <svg width="15" height="15" viewBox="0 0 24 24">

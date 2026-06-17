@@ -6,24 +6,90 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const db = require('./db');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
+const winston = require('winston');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkeyforsecurity_12345';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// 1. Environment Variables Check
+const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECRET'];
+requiredEnvVars.forEach(envVar => {
+  if (!process.env[envVar]) {
+    console.error(`FATAL: Environment variable ${envVar} is not set`);
+    process.exit(1);
+  }
+});
+if (JWT_SECRET.length < 32) {
+  console.error('FATAL: JWT_SECRET must be at least 32 characters long');
+  process.exit(1);
+}
 
 // Middlewares
-app.use(cors());
+
+// 2. Helmet Security Headers
+app.use(helmet());
+
+// 3. CORS Restrictions
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL || 'https://tractorsewa.com'
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 4. Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: 'Too many requests, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 login attempts per 15 minutes
+  skipSuccessfulRequests: true,
+  message: 'Too many login attempts, please try again later',
+});
+app.use('/api/', apiLimiter);
+
+// 5. Structured Logging with Winston
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  defaultMeta: { service: 'tractor-seva-api' },
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+    new winston.transports.Console({ format: winston.format.simple() })
+  ],
+});
+
 // Request Logger Middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  logger.info(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   if (req.body && Object.keys(req.body).length > 0) {
     const bodyCopy = { ...req.body };
     if (bodyCopy.password) bodyCopy.password = '[REDACTED]';
-    console.log('  Body:', bodyCopy);
+    logger.info('Body', bodyCopy);
   }
   next();
 });
@@ -50,13 +116,15 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     const filetypes = /jpeg|jpg|png|gif|webp/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
-    if (extname && mimetype) {
+    
+    // Strict MIME type check
+    if (extname && allowedMimes.includes(file.mimetype)) {
       return cb(null, true);
     } else {
-      cb(new Error('Only images are allowed!'));
+      cb(new Error('Only images (JPEG, PNG, GIF, WEBP) are allowed!'));
     }
   }
 });
@@ -162,11 +230,30 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
 });
 
 // 2. Auth Routes
-app.post('/api/auth/register', async (req, res) => {
-  const { name, email, password, state, phone } = req.body;
-  if (!name || !email || !password || !phone) {
-    return res.status(400).json({ error: 'Please provide name, email, password and phone number' });
+const validateRegister = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().normalizeEmail().withMessage('Invalid email format'),
+  body('password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
+    .matches(/[a-z]/).withMessage('Password must contain at least one lowercase letter')
+    .matches(/\d/).withMessage('Password must contain at least one number')
+    .matches(/[!@#$%^&*]/).withMessage('Password must contain at least one special character'),
+  body('phone').trim().notEmpty().withMessage('Phone number is required')
+];
+
+const validateLogin = [
+  body('email').isEmail().normalizeEmail().withMessage('Invalid email format'),
+  body('password').notEmpty().withMessage('Password is required')
+];
+
+app.post('/api/auth/register', authLimiter, validateRegister, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() });
   }
+
+  const { name, email, password, state, phone } = req.body;
 
   const cleanedPhone = cleanPhone(phone);
   if (!cleanedPhone) {
@@ -200,11 +287,13 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Please provide email and password' });
+app.post('/api/auth/login', authLimiter, validateLogin, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg, errors: errors.array() });
   }
+
+  const { email, password } = req.body;
 
   try {
     const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);

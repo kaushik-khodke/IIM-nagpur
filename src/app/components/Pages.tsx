@@ -1183,7 +1183,7 @@ export function OperatorProfile() {
         <div className="h-48 bg-gradient-to-r from-[#172263] via-[#D97706] to-[#15803D] rounded-b-3xl overflow-hidden">
           <WheatWatermark className="right-10 top-0 opacity-[0.06]" />
         </div>
-        <div className="w-full mx-auto px-4 sm:px-6 -mt-16">
+        <div className="w-full mx-auto px-4 sm:px-6 -mt-16 pb-24">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden shrink-0">
               {operator.image_path || operator.ownerProfilePic ? (
@@ -1208,8 +1208,8 @@ export function OperatorProfile() {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-2 space-y-5">
+          <div className="flex flex-col lg:flex-row gap-6 mb-8">
+            <div className="w-full lg:w-2/3 space-y-5">
               {/* Stats */}
               <div className="grid grid-cols-3 gap-3">
                 {[
@@ -1289,7 +1289,7 @@ export function OperatorProfile() {
                   </div>
 
                   {/* Right side: Submit Review form (if not owner) */}
-                  <div className="md:col-span-8">
+                  <div className="md:col-span-8 flex flex-col">
                     {currentUser && (operator.user_id === currentUser.id) ? (
                       <div className="h-full flex items-center justify-center p-4 border border-dashed border-[#E2E8F0] rounded-2xl bg-slate-50/50">
                         <p className="text-xs text-[#57585A] text-center font-medium">{t("operatorProfile.cannotRateOwn", { defaultValue: "You cannot rate your own operator profile." })}</p>
@@ -3713,7 +3713,7 @@ export function Blogs() {
                     <button
                       key={c}
                       onClick={() => setCategory(c)}
-                      className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${category === c
+                      className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all ${category === c
                           ? "bg-[#172263] text-white border-[#172263]"
                           : "bg-white border-[#E2E8F0] text-[#57585A] hover:bg-slate-50 hover:border-slate-300"
                         }`}
@@ -3764,7 +3764,7 @@ export function Blogs() {
               <button
                 key={c}
                 onClick={() => setCategory(c)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${category === c
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm font-semibold border transition-all ${category === c
                     ? "bg-[#172263] text-white border-[#172263]"
                     : "bg-white border-[#E2E8F0] text-[#57585A]"
                   }`}
