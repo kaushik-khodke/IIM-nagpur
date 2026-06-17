@@ -269,10 +269,10 @@ export function Landing() {
             <WheatWatermark className="right-10 top-10 z-0" />
             <WheatWatermark className="left-5 bottom-10 z-0" />
 
-            <div className="relative z-10 w-full mx-auto px-4 sm:px-6 grid md:grid-cols-5 gap-12 items-center">
+            <div className="relative z-10 w-full mx-auto px-4 sm:px-6 grid md:grid-cols-5 gap-12 items-center pointer-events-none -mt-10">
               {/* Left */}
               <motion.div
-                className="md:col-span-3"
+                className="md:col-span-3 pointer-events-auto"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7 }}
