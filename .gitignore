@@ -43,3 +43,11 @@ coverage/
 
 # Misc
 *.tsbuildinfo
+
+# Server logs
+server/logs/
+
+# Media recordings
+*.mp4
+*.webm
+*.mov

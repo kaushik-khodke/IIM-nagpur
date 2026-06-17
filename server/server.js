@@ -37,17 +37,26 @@ app.use(helmet());
 // 3. CORS Restrictions
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
-  process.env.FRONTEND_URL || 'https://tractorsewa.com'
-];
+  'http://127.0.0.1:5173',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    if (ALLOWED_ORIGINS.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+    
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    
+    // Dynamic matching for Vercel preview or production deployments
+    if (origin.endsWith('.vercel.app') || /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+    
+    const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+    return callback(new Error(msg), false);
   },
   credentials: true
 }));
@@ -1542,7 +1551,7 @@ app.get('/api/settings', authenticateToken, async (req, res) => {
       whatsappNumber: u.whatsapp_number,
       state: u.state,
       bio: u.bio,
-      imagePath: u.image_path ? `/uploads/${path.basename(u.image_path)}` : null,
+      imagePath: u.image_path ? (u.image_path.startsWith('http') ? u.image_path : `/uploads/${path.basename(u.image_path)}`) : null,
       createdAt: u.created_at,
       notificationsEmail: u.notifications_email === 1,
       notificationsSms: u.notifications_sms === 1,
