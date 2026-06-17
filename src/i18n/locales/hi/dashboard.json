@@ -31,5 +31,24 @@
     "noResults": "कोई कटाई मशीन नहीं मिली",
     "capacity": "क्षमता",
     "rentNow": "अभी किराए पर लें"
-  }
+  },
+  "previewModeMessage": "आप अतिथि पूर्वावलोकन मोड में डैशबोर्ड देख रहे हैं।",
+  "helloName": "नमस्कार, {{name}}!",
+  "farmerBob": "किसान भाई",
+  "welcomeSub": "अपने कृषि केंद्र में आपका स्वागत है",
+  "activeMachines": "सक्रिय मशीनें",
+  "myRating": "मेरी रेटिंग",
+  "rating": "रेटिंग",
+  "ratings": "रेटिंग",
+  "noScoreYet": "आपको अभी तक कोई स्कोर नहीं मिला है",
+  "verifiedOperators": "सत्यापित ऑपरेटर",
+  "messagesActivity": "संदेश/गतिविधि",
+  "availableListings": "उपलब्ध लिस्टिंग्स",
+  "recentRequests": "हाल के अनुरोध",
+  "noRecentRequests": "कोई हालिया अनुरोध नहीं मिला।",
+  "pleaseLogIn": "अनुरोध देखने के लिए कृपया लॉग इन करें।",
+  "noRecentActivity": "कोई हालिया गतिविधि नहीं",
+  "activityHarvesterLive": "आपकी मशीन \"{{name}}\" की लिस्टिंग लाइव है",
+  "activityRequirementLive": "{{location}} में आपकी {{type}} की आवश्यकता लाइव है",
+  "activityNewChat": "{{name}} के साथ नई चैट"
 }

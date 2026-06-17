@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router";
+import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
+import { useTranslation } from "react-i18next";
 import {
   Search,
   MapPin,
@@ -130,6 +132,7 @@ export const HARVESTER_COMPANIES = Object.keys(HARVESTER_MODELS);
 // EXPLORE HARVESTERS
 // ===========================
 export function ExploreHarvesters() {
+  const { t } = useTranslation(["pages", "common", "static", "dashboard"]);
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [selectedState, setSelectedState] = useState("");
@@ -254,17 +257,17 @@ export function ExploreHarvesters() {
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-4 hover:text-[#172263] transition-colors group"
         >
-          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> {t("exploreHarvesters.back", { defaultValue: "Back" })}
         </button>
         <PageHeader
-          title="Browse Harvesters"
-          subtitle={`${filtered.length} machines available`}
+          title={t("exploreHarvesters.title", { defaultValue: "Browse Harvesters" })}
+          subtitle={t("exploreHarvesters.machinesAvailable", { count: filtered.length, defaultValue: `${filtered.length} machines available` })}
           action={
             <Link
               to="/add-harvester"
               className="flex items-center gap-2 px-4 py-2 bg-[#15803D] text-white rounded-xl text-sm hover:bg-green-700 transition-colors"
             >
-              <Plus size={16} /> List Your Machine
+              <Plus size={16} /> {t("exploreHarvesters.listYourMachine", { defaultValue: "List Your Machine" })}
             </Link>
           }
         />
@@ -276,7 +279,7 @@ export function ExploreHarvesters() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by machine name or owner..."
+                placeholder={t("exploreHarvesters.searchPlaceholder", { defaultValue: "Search by harvester name or model..." })}
                 className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
             </div>
@@ -289,9 +292,9 @@ export function ExploreHarvesters() {
               }}
               className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-48"
             >
-              <option value="">All States</option>
+              <option value="">{t("exploreHarvesters.allStates", { defaultValue: "All States" })}</option>
               {INDIAN_STATES.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>{t("states." + s, { ns: "static", defaultValue: s })}</option>
               ))}
             </select>
 
@@ -301,7 +304,7 @@ export function ExploreHarvesters() {
               disabled={!selectedState}
               className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-48 disabled:opacity-50"
             >
-              <option value="">All Districts</option>
+              <option value="">{t("exploreHarvesters.allDistricts", { defaultValue: "All Districts" })}</option>
               {selectedState &&
                 districtsData.states
                   .find((s) => s.state === selectedState)
@@ -315,8 +318,8 @@ export function ExploreHarvesters() {
               onChange={(e) => setCompany(e.target.value)}
               className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-44"
             >
-              <option value="">All Companies</option>
-              {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              <option value="">{t("exploreHarvesters.allCompanies", { defaultValue: "All Companies" })}</option>
+              {COMPANIES.map((c) => <option key={c} value={c}>{t("companies." + c, { ns: "static", defaultValue: c })}</option>)}
             </select>
             {(search || selectedState || selectedDistrict || company) && (
               <button
@@ -328,7 +331,7 @@ export function ExploreHarvesters() {
                 }}
                 className="text-[#172263] text-sm px-3 hover:underline"
               >
-                Clear All
+                {t("exploreHarvesters.clearAll", { defaultValue: "Clear All" })}
               </button>
             )}
           </div>
@@ -344,7 +347,7 @@ export function ExploreHarvesters() {
                 : "border-transparent text-[#57585A] hover:text-[#172263]"
               }`}
           >
-            All Machines
+            {t("exploreHarvesters.allMachines", { defaultValue: "All Machines" })}
           </button>
           <button
             onClick={() => setTab("mine")}
@@ -353,7 +356,7 @@ export function ExploreHarvesters() {
                 : "border-transparent text-[#57585A] hover:text-[#172263]"
               }`}
           >
-            My Listings
+            {t("exploreHarvesters.myListings", { defaultValue: "My Listings" })}
           </button>
         </div>
 
@@ -363,9 +366,9 @@ export function ExploreHarvesters() {
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState
-            title={tab === "mine" ? "You haven't listed any machines yet" : "No harvesters found"}
-            description={tab === "mine" ? "List your harvester today to connect with farmers looking for services." : "Try adjusting your filters or be the first to list a machine in this area."}
-            actionLabel="List Your Machine"
+            title={tab === "mine" ? t("exploreHarvesters.noListings", { defaultValue: "You haven't listed any machines yet" }) : t("exploreHarvesters.noHarvesters", { defaultValue: "No harvesters found" })}
+            description={tab === "mine" ? t("exploreHarvesters.noListingsDesc", { defaultValue: "List your harvester today to connect with farmers looking for services." }) : t("exploreHarvesters.noHarvestersDesc", { defaultValue: "Try adjusting your filters or be the first to list a machine in this area." })}
+            actionLabel={t("exploreHarvesters.listYourMachine", { defaultValue: "List Your Machine" })}
             onAction={() => navigate("/add-harvester")}
           />
         ) : (
@@ -388,6 +391,7 @@ export function ExploreHarvesters() {
 // HARVESTER DETAIL
 // ===========================
 export function HarvesterDetail() {
+  const { t } = useTranslation(["pages", "common", "static", "dashboard"]);
   const { id } = useParams();
   const [harvester, setHarvester] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -534,7 +538,7 @@ export function HarvesterDetail() {
   };
 
   if (loading) return <LoadingSpinner />;
-  if (!harvester) return <EmptyState title="Harvester not found" />;
+  if (!harvester) return <EmptyState title={t("harvesterDetail.noRatingsYet", { defaultValue: "Harvester not found" })} />;
 
   const isOwner = currentUser && (harvester.userId === currentUser.id || harvester.ownerName === currentUser.name);
 
@@ -543,7 +547,7 @@ export function HarvesterDetail() {
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <Link to="/harvesters" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263]">
-          <ArrowLeft size={16} /> Back to Harvesters
+          <ArrowLeft size={16} /> {t("harvesterDetail.backToHarvesters", { defaultValue: "Back to Harvesters" })}
         </Link>
 
         <div className="flex flex-col lg:flex-row gap-6 mb-8">
@@ -561,7 +565,7 @@ export function HarvesterDetail() {
           <div className="w-full lg:w-1/3">
             <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)] h-full flex flex-col justify-center">
               <h3 className="text-[#1A1A1A] mb-4 text-lg" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
-                {isOwner ? "Machine Owner (You)" : "Machine Owner"}
+                {isOwner ? t("harvesterDetail.ownerYou", { defaultValue: "Machine Owner (You)" }) : t("harvesterDetail.ownerTitle", { defaultValue: "Machine Owner" })}
               </h3>
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-2 ring-blue-100 shadow-sm shrink-0 overflow-hidden">
@@ -587,7 +591,7 @@ export function HarvesterDetail() {
                       onClick={() => navigate(`/harvesters/${id}/edit`)}
                       className="w-full py-3 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 font-medium"
                     >
-                      <Pencil size={18} /> Edit Harvester
+                      <Pencil size={18} /> {t("harvesterDetail.editHarvester", { defaultValue: "Edit Harvester" })}
                     </button>
                   )}
                   <a
@@ -596,12 +600,12 @@ export function HarvesterDetail() {
                     rel="noopener noreferrer"
                     className="w-full py-3 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
                   >
-                    <MessageSquare size={18} /> {isOwner ? "WhatsApp" : "WhatsApp Owner"}
+                    <MessageSquare size={18} /> {isOwner ? t("harvesterDetail.whatsApp", { defaultValue: "WhatsApp" }) : t("harvesterDetail.whatsAppOwner", { defaultValue: "WhatsApp Owner" })}
                   </a>
                   <button
                     onClick={() => {
                       if (!currentUser) {
-                        toast.error("Please log in to send a message");
+                        toast.error(t("harvesterDetail.errorLoginRate", { defaultValue: "Please log in to send a message" }));
                         navigate("/login");
                       } else {
                         navigate(`/messages?userId=${harvester.userId}`);
@@ -609,7 +613,7 @@ export function HarvesterDetail() {
                     }}
                     className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors font-medium"
                   >
-                    Message Owner
+                    {t("harvesterDetail.messageOwner", { defaultValue: "Message Owner" })}
                   </button>
                   {!isOwner && (
                     <button
@@ -618,7 +622,7 @@ export function HarvesterDetail() {
                       }}
                       className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-semibold cursor-pointer"
                     >
-                      <Star size={18} fill="currentColor" /> Rate Machine
+                      <Star size={18} fill="currentColor" /> {t("harvesterDetail.rateMachine", { defaultValue: "Rate Machine" })}
                     </button>
                   )}
                 </div>
@@ -636,15 +640,17 @@ export function HarvesterDetail() {
               {harvester.machineName}
             </h1>
             <div className="flex flex-wrap gap-2 mb-8">
-              <span className="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200 font-medium">{harvester.company}</span>
+              <span className="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200 font-medium">
+                {t("companies." + harvester.company, { ns: "static", defaultValue: harvester.company })}
+              </span>
               <span className="px-4 py-1.5 bg-gray-50 text-gray-700 rounded-full text-sm border border-gray-200 font-medium">{harvester.model}</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
               {[
-                { icon: <MapPin size={20} className="text-[#172263]" />, label: "Location", value: harvester.location },
-                { icon: <Tractor size={20} className="text-[#172263]" />, label: "Company", value: harvester.company },
-                { icon: <Award size={20} className="text-[#172263]" />, label: "Model", value: harvester.model },
+                { icon: <MapPin size={20} className="text-[#172263]" />, label: t("exploreHarvesters.location", { defaultValue: "Location" }), value: harvester.location },
+                { icon: <Tractor size={20} className="text-[#172263]" />, label: t("addHarvester.company", { defaultValue: "Company" }), value: t("companies." + harvester.company, { ns: "static", defaultValue: harvester.company }) },
+                { icon: <Award size={20} className="text-[#172263]" />, label: t("exploreHarvesters.model", { defaultValue: "Model" }), value: harvester.model },
               ].map((item) => (
                 <div key={item.label} className="bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                   <div className="flex items-center gap-3 mb-2">
@@ -657,17 +663,17 @@ export function HarvesterDetail() {
             </div>
 
             <div className="bg-white rounded-2xl border border-[#E2E8F0] p-8 mb-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-              <h3 className="text-xl text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>About This Machine</h3>
+              <h3 className="text-xl text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("harvesterDetail.aboutThisMachine", { defaultValue: "About This Machine" })}</h3>
               <div className="w-12 h-1 bg-[#172263] rounded-full mb-6" />
               <p className="text-[#57585A] text-base leading-relaxed whitespace-pre-line">
-                {harvester.description || `This ${harvester.company} ${harvester.model} is well-maintained and suitable for harvesting wheat, rice, and other Rabi/Kharif crops. Available for seasonal hire with experienced operator on request.`}
+                {harvester.description || t("harvesterDetail.aboutDescription", { company: t("companies." + harvester.company, { ns: "static", defaultValue: harvester.company }), model: harvester.model, defaultValue: `This ${harvester.company} ${harvester.model} is well-maintained and suitable for harvesting wheat, rice, and other Rabi/Kharif crops. Available for seasonal hire with experienced operator on request.` })}
               </p>
             </div>
 
             {/* Ratings & Reviews Section */}
             <div id="ratings-section" className="bg-white rounded-2xl border border-[#E2E8F0] p-8 mb-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] space-y-8">
               <div>
-                <h3 className="text-xl text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Ratings & Reviews</h3>
+                <h3 className="text-xl text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("harvesterDetail.ratingsAndReviews", { defaultValue: "Ratings & Reviews" })}</h3>
                 <div className="w-12 h-1 bg-[#172263] rounded-full" />
               </div>
 
@@ -686,12 +692,14 @@ export function HarvesterDetail() {
                           />
                         ))}
                       </div>
-                      <span className="text-xs text-[#57585A] font-medium">Based on {ratingsData.count} {ratingsData.count === 1 ? 'rating' : 'ratings'}</span>
+                      <span className="text-xs text-[#57585A] font-medium">
+                        {t("harvesterDetail.basedOnRatings", { count: ratingsData.count, defaultValue: `Based on ${ratingsData.count} ratings` })}
+                      </span>
                     </>
                   ) : (
                     <>
-                      <span className="text-sm font-semibold text-[#57585A]">No ratings yet</span>
-                      <span className="text-xs text-[#57585A] mt-1">Be the first to rate this harvester!</span>
+                      <span className="text-sm font-semibold text-[#57585A]">{t("harvesterDetail.noRatingsYet", { defaultValue: "No ratings yet" })}</span>
+                      <span className="text-xs text-[#57585A] mt-1">{t("harvesterDetail.beTheFirst", { defaultValue: "Be the first to rate this harvester!" })}</span>
                     </>
                   )}
                 </div>
@@ -700,15 +708,15 @@ export function HarvesterDetail() {
                 <div className="md:col-span-8">
                   {isOwner ? (
                     <div className="h-full flex items-center justify-center p-6 border border-dashed border-[#E2E8F0] rounded-2xl bg-slate-50/50">
-                      <p className="text-xs text-[#57585A] text-center font-medium">You cannot rate your own harvester listing.</p>
+                      <p className="text-xs text-[#57585A] text-center font-medium">{t("harvesterDetail.cannotRateOwn", { defaultValue: "You cannot rate your own harvester listing." })}</p>
                     </div>
                   ) : currentUser ? (
                     <form onSubmit={handleRatingSubmit} className="space-y-4">
-                      <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">Submit Your Rating</h4>
+                      <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">{t("harvesterDetail.submitYourRating", { defaultValue: "Submit Your Rating" })}</h4>
 
                       {/* Interactive Stars */}
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-[#57585A] font-medium">Your Score:</span>
+                        <span className="text-xs text-[#57585A] font-medium">{t("harvesterDetail.yourScore", { defaultValue: "Your Score:" })}</span>
                         <div className="flex gap-1">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button
@@ -731,7 +739,7 @@ export function HarvesterDetail() {
                         <textarea
                           value={userReview}
                           onChange={(e) => setUserReview(e.target.value)}
-                          placeholder="Write a brief review about your experience with this harvester (optional)..."
+                          placeholder={t("harvesterDetail.writeReviewPlaceholder", { defaultValue: "Write a brief review about your experience with this harvester (optional)..." })}
                           className="w-full p-3 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] min-h-[80px]"
                         />
                       </div>
@@ -741,17 +749,17 @@ export function HarvesterDetail() {
                         disabled={submittingRating}
                         className="px-5 py-2.5 bg-[#172263] text-white hover:bg-[#11194A] transition-colors rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50"
                       >
-                        {submittingRating ? "Submitting..." : "Submit Review"}
+                        {submittingRating ? t("addHarvester.submitting", { defaultValue: "Submitting..." }) : t("harvesterDetail.submitReview", { defaultValue: "Submit Review" })}
                       </button>
                     </form>
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center p-6 border border-[#E2E8F0] rounded-2xl bg-amber-50/40 text-center">
-                      <p className="text-xs text-[#57585A] font-medium mb-2">You must be logged in to submit a review.</p>
+                      <p className="text-xs text-[#57585A] font-medium mb-2">{t("harvesterDetail.mustBeLoggedIn", { defaultValue: "You must be logged in to submit a review." })}</p>
                       <button
                         onClick={() => navigate('/login')}
                         className="px-4 py-2 bg-[#172263] text-white rounded-lg text-xs font-semibold hover:bg-[#11194A] transition-colors"
                       >
-                        Log In / Register
+                        {t("shared.login", { defaultValue: "Login" })}
                       </button>
                     </div>
                   )}
@@ -760,7 +768,7 @@ export function HarvesterDetail() {
 
               {/* Reviews List */}
               <div className="border-t border-[#E2E8F0] pt-6 space-y-4">
-                <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">User Reviews</h4>
+                <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">{t("harvesterDetail.userReviews", { defaultValue: "User Reviews" })}</h4>
                 {ratingsData.reviews.length > 0 ? (
                   <div className="divide-y divide-[#E2E8F0] space-y-4">
                     {ratingsData.reviews.map((rev, idx) => (
@@ -787,7 +795,7 @@ export function HarvesterDetail() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-[#57585A] italic">No reviews have been written yet.</p>
+                  <p className="text-xs text-[#57585A] italic">{t("harvesterDetail.noReviewsYet", { defaultValue: "No reviews have been written yet." })}</p>
                 )}
               </div>
             </div>
@@ -798,7 +806,7 @@ export function HarvesterDetail() {
                   onClick={() => setShowDeleteConfirm(true)}
                   className="px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm hover:bg-red-100 hover:text-red-700 transition-colors flex items-center justify-center gap-2 font-semibold"
                 >
-                  <Trash2 size={18} /> Delete Listing
+                  <Trash2 size={18} /> {t("harvesterDetail.deleteListing", { defaultValue: "Delete Listing" })}
                 </button>
               </div>
             )}
@@ -809,11 +817,11 @@ export function HarvesterDetail() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full border border-[#E2E8F0]">
-            <h3 className="text-lg text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Delete Machine Listing?</h3>
-            <p className="text-[#57585A] text-sm mb-4">Are you sure you want to delete this listing? This action cannot be undone.</p>
+            <h3 className="text-lg text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("harvesterDetail.deleteConfirmTitle", { defaultValue: "Delete Machine Listing?" })}</h3>
+            <p className="text-[#57585A] text-sm mb-4">{t("harvesterDetail.deleteConfirmDesc", { defaultValue: "Are you sure you want to delete this listing? This action cannot be undone." })}</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-sm">Cancel</button>
-              <button onClick={handleDelete} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 transition-colors">Delete</button>
+              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-sm">{t("harvesterDetail.cancel", { defaultValue: "Cancel" })}</button>
+              <button onClick={handleDelete} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 transition-colors">{t("harvesterDetail.delete", { defaultValue: "Delete" })}</button>
             </div>
           </div>
         </div>
@@ -826,6 +834,7 @@ export function HarvesterDetail() {
 // EXPLORE OPERATORS
 // ===========================
 export function ExploreOperators() {
+  const { t } = useTranslation(["pages", "static"]);
   const [operators, setOperators] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [selectedState, setSelectedState] = useState("");
@@ -865,11 +874,11 @@ export function ExploreOperators() {
       setSelectedState(defaultState);
       setSelectedDistrict(defaultDistrict);
     } else if (dismissed !== "true") {
-      const toastId = toast("📍 Optimize search results by auto-detecting your location.", {
+      const toastId = toast(t("operators.locationPrompt", { defaultValue: "📍 Optimize search results by auto-detecting your location." }), {
         action: {
-          label: "Detect",
+          label: t("operators.detect", { defaultValue: "Detect" }),
           onClick: async () => {
-            const loadingToastId = toast.loading("Detecting location...");
+            const loadingToastId = toast.loading(t("operators.detectingLocation", { defaultValue: "Detecting location..." }));
             const detected = await detectUserLocation();
             toast.dismiss(loadingToastId);
             if (detected) {
@@ -879,17 +888,17 @@ export function ExploreOperators() {
                 localStorage.setItem("tractorsewa_default_district", matched.district);
                 setSelectedState(matched.state);
                 setSelectedDistrict(matched.district);
-                toast.success(`Location set to ${matched.district}, ${matched.state}!`);
+                toast.success(t("operators.locationSet", { defaultValue: "Location set to {{district}}, {{state}}!", district: matched.district, state: matched.state }));
               } else {
-                toast.error("Could not match your location with Indian states/districts.");
+                toast.error(t("operators.locationMatchError", { defaultValue: "Could not match your location with Indian states/districts." }));
               }
             } else {
-              toast.error("Could not detect location. Please select manually.");
+              toast.error(t("operators.locationDetectError", { defaultValue: "Could not detect location. Please select manually." }));
             }
           }
         },
         cancel: {
-          label: "Dismiss",
+          label: t("operators.dismiss", { defaultValue: "Dismiss" }),
           onClick: () => {
             localStorage.setItem("tractorsewa_location_dismissed", "true");
           }
@@ -898,7 +907,7 @@ export function ExploreOperators() {
       });
       return () => { toast.dismiss(toastId); };
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const fetchOperators = async () => {
@@ -932,7 +941,7 @@ export function ExploreOperators() {
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
-        <PageHeader title="Find Operators" subtitle={`${filtered.length} operators available`} />
+        <PageHeader title={t("operators.title", { defaultValue: "Find Operators" })} subtitle={t("operators.subtitle", { defaultValue: "{{count}} operators available", count: filtered.length })} />
 
         <div className="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-sm mb-8">
           <div className="flex flex-col md:flex-row gap-3">
@@ -941,7 +950,7 @@ export function ExploreOperators() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by operator name..."
+                placeholder={t("operators.searchPlaceholder", { defaultValue: "Search by operator name..." })}
                 className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
             </div>
@@ -954,9 +963,9 @@ export function ExploreOperators() {
               }}
               className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-48"
             >
-              <option value="">All States</option>
+              <option value="">{t("operators.allStates", { defaultValue: "All States" })}</option>
               {INDIAN_STATES.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>{t("states." + s, { ns: "static", defaultValue: s })}</option>
               ))}
             </select>
 
@@ -966,12 +975,12 @@ export function ExploreOperators() {
               disabled={!selectedState}
               className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-48 disabled:opacity-50"
             >
-              <option value="">All Districts</option>
+              <option value="">{t("operators.allDistricts", { defaultValue: "All Districts" })}</option>
               {selectedState &&
                 districtsData.states
                   .find((s) => s.state === selectedState)
                   ?.districts.map((d) => (
-                    <option key={d} value={d}>{d}</option>
+                    <option key={d} value={d}>{t("districts." + d, { ns: "static", defaultValue: d })}</option>
                   ))}
             </select>
 
@@ -980,10 +989,10 @@ export function ExploreOperators() {
               onChange={(e) => setAvailability(e.target.value)}
               className="px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] w-full md:w-44"
             >
-              <option value="">All Status</option>
-              <option value="Available">Available</option>
-              <option value="Busy">Busy</option>
-              <option value="Not Available">Not Available</option>
+              <option value="">{t("operators.allStatus", { defaultValue: "All Status" })}</option>
+              <option value="Available">{t("status.available", { ns: "static", defaultValue: "Available" })}</option>
+              <option value="Busy">{t("status.busy", { ns: "static", defaultValue: "Busy" })}</option>
+              <option value="Not Available">{t("status.notAvailable", { ns: "static", defaultValue: "Not Available" })}</option>
             </select>
             {(search || selectedState || selectedDistrict || availability) && (
               <button
@@ -995,7 +1004,7 @@ export function ExploreOperators() {
                 }}
                 className="text-[#172263] text-sm px-3 hover:underline"
               >
-                Clear All
+                {t("operators.clearAll", { defaultValue: "Clear All" })}
               </button>
             )}
           </div>
@@ -1006,7 +1015,7 @@ export function ExploreOperators() {
             {Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : filtered.length === 0 ? (
-          <EmptyState title="No operators found" description="Try adjusting your filters." />
+          <EmptyState title={t("operators.emptyTitle", { defaultValue: "No operators found" })} description={t("operators.emptyDescription", { defaultValue: "Try adjusting your filters." })} />
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((op) => (
@@ -1027,6 +1036,7 @@ export function ExploreOperators() {
 // OPERATOR PROFILE
 // ===========================
 export function OperatorProfile() {
+  const { t } = useTranslation(["pages", "static"]);
   const { id } = useParams();
   const [operator, setOperator] = useState<any>(null);
   const [harvesters, setHarvesters] = useState<any[]>([]);
@@ -1116,13 +1126,13 @@ export function OperatorProfile() {
   const handleRatingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (userRating === 0) {
-      toast.error("Please select a rating of 1 to 5 stars");
+      toast.error(t("operatorProfile.toastSelectRating", { defaultValue: "Please select a rating of 1 to 5 stars" }));
       return;
     }
 
     const token = localStorage.getItem("tractorsewa_token");
     if (!token) {
-      toast.error("Please log in to submit a rating");
+      toast.error(t("operatorProfile.toastLoginToRate", { defaultValue: "Please log in to submit a rating" }));
       return;
     }
 
@@ -1143,22 +1153,22 @@ export function OperatorProfile() {
       });
 
       if (res.ok) {
-        toast.success("Rating submitted successfully!");
+        toast.success(t("operatorProfile.toastRatingSuccess", { defaultValue: "Rating submitted successfully!" }));
         fetchRatings();
       } else {
         const err = await res.json();
-        toast.error(err.error || "Failed to submit rating");
+        toast.error(err.error || t("operatorProfile.toastRatingFailed", { defaultValue: "Failed to submit rating" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error submitting rating");
+      toast.error(t("operatorProfile.toastRatingError", { defaultValue: "Error submitting rating" }));
     } finally {
       setSubmittingRating(false);
     }
   };
 
   if (loading) return <LoadingSpinner />;
-  if (!operator) return <EmptyState title="Operator profile not found" />;
+  if (!operator) return <EmptyState title={t("operatorProfile.emptyTitle", { defaultValue: "Operator profile not found" })} />;
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
@@ -1166,7 +1176,7 @@ export function OperatorProfile() {
       <div className="w-full mx-auto px-4 sm:px-6 pt-4">
         <Link to="/operators" className="inline-flex items-center gap-2 text-[#57585A] text-sm hover:text-[#172263] transition-colors group">
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
-          Back to Operators
+          {t("operatorProfile.backToOperators", { defaultValue: "Back to Operators" })}
         </Link>
       </div>
       <div className="relative mt-2">
@@ -1203,9 +1213,9 @@ export function OperatorProfile() {
               {/* Stats */}
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { value: `${operator.experience} Yrs`, label: "Experience" },
-                  { value: `${operator.machineExpertise?.length || 0}`, label: "Machine Types" },
-                  { value: operator.availability, label: "Status" },
+                  { value: t("operatorProfile.experienceYears", { defaultValue: "{{count}} Yrs", count: operator.experience }), label: t("operatorProfile.experience", { defaultValue: "Experience" }) },
+                  { value: `${operator.machineExpertise?.length || 0}`, label: t("operatorProfile.machineTypes", { defaultValue: "Machine Types" }) },
+                  { value: t("status." + (operator.availability === "Not Available" ? "notAvailable" : operator.availability.toLowerCase()), { ns: "static", defaultValue: operator.availability }), label: t("operatorProfile.status", { defaultValue: "Status" }) },
                 ].map((s) => (
                   <div key={s.label} className="bg-white rounded-2xl p-4 text-center border border-[#E2E8F0]">
                     <p className="text-[#172263] text-lg" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{s.value}</p>
@@ -1216,19 +1226,19 @@ export function OperatorProfile() {
 
               {/* About */}
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>About</h3>
+                <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("operatorProfile.about", { defaultValue: "About" })}</h3>
                 <p className="text-[#57585A] text-sm leading-relaxed">
-                  {operator.description || `Experienced harvester operator with ${operator.experience}+ years in agricultural machinery operation. Skilled in operating combine harvesters, rice harvesters, and wheat harvesters across multiple states in India.`}
+                  {operator.description || t("operatorProfile.fallbackDesc", { defaultValue: "Experienced harvester operator with {{count}}+ years in agricultural machinery operation. Skilled in operating combine harvesters, rice harvesters, and wheat harvesters across multiple states in India.", count: operator.experience })}
                 </p>
               </div>
 
               {/* Machine Expertise */}
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Machine Expertise</h3>
+                <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("operatorProfile.machineExpertise", { defaultValue: "Machine Expertise" })}</h3>
                 <div className="flex flex-wrap gap-2">
                   {operator.machineExpertise?.map((m: string) => (
                     <span key={m} className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-sm">
-                      {m}
+                      {t("machineTypes." + m, { ns: "static", defaultValue: m })}
                     </span>
                   ))}
                 </div>
@@ -1237,7 +1247,7 @@ export function OperatorProfile() {
               {/* Listed Machines */}
               {harvesters.length > 0 && (
                 <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-                  <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Listed Harvesters</h3>
+                  <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("operatorProfile.listedHarvesters", { defaultValue: "Listed Harvesters" })}</h3>
                   <div className="grid sm:grid-cols-2 gap-4">
                     {harvesters.map((h) => (
                       <HarvesterCard key={h.id} {...h} />
@@ -1249,7 +1259,7 @@ export function OperatorProfile() {
               {/* Ratings & Reviews Section */}
               <div id="ratings-section" className="bg-white rounded-2xl border border-[#E2E8F0] p-6 space-y-6">
                 <div>
-                  <h3 className="text-lg text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Ratings & Reviews</h3>
+                  <h3 className="text-lg text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("operatorProfile.ratingsReviews", { defaultValue: "Ratings & Reviews" })}</h3>
                   <div className="w-12 h-1 bg-[#172263] rounded-full" />
                 </div>
 
@@ -1268,12 +1278,12 @@ export function OperatorProfile() {
                             />
                           ))}
                         </div>
-                        <span className="text-[10px] text-[#57585A] font-semibold">Based on {ratingsData.count} {ratingsData.count === 1 ? 'rating' : 'ratings'}</span>
+                        <span className="text-[10px] text-[#57585A] font-semibold">{t("operatorProfile.basedOnRatings", { count: ratingsData.count, defaultValue: "Based on {{count}} ratings" })}</span>
                       </>
                     ) : (
                       <>
-                        <span className="text-xs font-bold text-[#57585A]">No ratings yet</span>
-                        <span className="text-[10px] text-[#57585A] mt-0.5">Be the first to rate this operator!</span>
+                        <span className="text-xs font-bold text-[#57585A]">{t("operatorProfile.noRatingsYet", { defaultValue: "No ratings yet" })}</span>
+                        <span className="text-[10px] text-[#57585A] mt-0.5">{t("operatorProfile.firstToRate", { defaultValue: "Be the first to rate this operator!" })}</span>
                       </>
                     )}
                   </div>
@@ -1282,15 +1292,15 @@ export function OperatorProfile() {
                   <div className="md:col-span-8">
                     {currentUser && (operator.user_id === currentUser.id) ? (
                       <div className="h-full flex items-center justify-center p-4 border border-dashed border-[#E2E8F0] rounded-2xl bg-slate-50/50">
-                        <p className="text-xs text-[#57585A] text-center font-medium">You cannot rate your own operator profile.</p>
+                        <p className="text-xs text-[#57585A] text-center font-medium">{t("operatorProfile.cannotRateOwn", { defaultValue: "You cannot rate your own operator profile." })}</p>
                       </div>
                     ) : currentUser ? (
                       <form onSubmit={handleRatingSubmit} className="space-y-3">
-                        <h4 className="text-xs font-bold text-[#1A1A1A] font-sora">Submit Your Rating</h4>
+                        <h4 className="text-xs font-bold text-[#1A1A1A] font-sora">{t("operatorProfile.submitYourRating", { defaultValue: "Submit Your Rating" })}</h4>
 
                         {/* Interactive Stars */}
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-[#57585A] font-semibold">Your Score:</span>
+                          <span className="text-[11px] text-[#57585A] font-semibold">{t("operatorProfile.yourScore", { defaultValue: "Your Score:" })}</span>
                           <div className="flex gap-1">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <button
@@ -1313,7 +1323,7 @@ export function OperatorProfile() {
                           <textarea
                             value={userReview}
                             onChange={(e) => setUserReview(e.target.value)}
-                            placeholder="Write a brief review about your experience with this operator (optional)..."
+                            placeholder={t("operatorProfile.reviewPlaceholder", { defaultValue: "Write a brief review about your experience with this operator (optional)..." })}
                             className="w-full p-2.5 border border-[#E2E8F0] rounded-xl text-[11px] focus:outline-none focus:border-[#172263] min-h-[70px]"
                           />
                         </div>
@@ -1323,17 +1333,17 @@ export function OperatorProfile() {
                           disabled={submittingRating}
                           className="px-4 py-2 bg-[#172263] text-white hover:bg-[#11194A] transition-colors rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50"
                         >
-                          {submittingRating ? "Submitting..." : "Submit Review"}
+                          {submittingRating ? t("operatorProfile.submitting", { defaultValue: "Submitting..." }) : t("operatorProfile.submitReview", { defaultValue: "Submit Review" })}
                         </button>
                       </form>
                     ) : (
                       <div className="h-full flex flex-col items-center justify-center p-4 border border-[#E2E8F0] rounded-2xl bg-amber-50/40 text-center">
-                        <p className="text-xs text-[#57585A] font-semibold mb-1.5">You must be logged in to submit a review.</p>
+                        <p className="text-xs text-[#57585A] font-semibold mb-1.5">{t("operatorProfile.loginToSubmitReview", { defaultValue: "You must be logged in to submit a review." })}</p>
                         <button
                           onClick={() => navigate('/login')}
                           className="px-3.5 py-1.5 bg-[#172263] text-white rounded-lg text-xs font-semibold hover:bg-[#11194A] transition-colors"
                         >
-                          Log In / Register
+                          {t("operatorProfile.loginRegister", { defaultValue: "Log In / Register" })}
                         </button>
                       </div>
                     )}
@@ -1342,7 +1352,7 @@ export function OperatorProfile() {
 
                 {/* Reviews List */}
                 <div className="border-t border-[#E2E8F0] pt-4 space-y-3">
-                  <h4 className="text-xs font-bold text-[#1A1A1A] font-sora">User Reviews</h4>
+                  <h4 className="text-xs font-bold text-[#1A1A1A] font-sora">{t("operatorProfile.userReviews", { defaultValue: "User Reviews" })}</h4>
                   {ratingsData.reviews.length > 0 ? (
                     <div className="divide-y divide-[#E2E8F0] space-y-3">
                       {ratingsData.reviews.map((rev, idx) => (
@@ -1369,7 +1379,7 @@ export function OperatorProfile() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-[#57585A] italic">No reviews have been written yet.</p>
+                    <p className="text-xs text-[#57585A] italic">{t("operatorProfile.noReviewsYet", { defaultValue: "No reviews have been written yet." })}</p>
                   )}
                 </div>
               </div>
@@ -1378,7 +1388,7 @@ export function OperatorProfile() {
             {/* Contact card */}
             <div>
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)]">
-                <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Contact Operator</h3>
+                <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("operatorProfile.contactOperator", { defaultValue: "Contact Operator" })}</h3>
                 <p className="text-sm text-[#57585A] mb-2 flex items-center gap-2">
                   <Phone size={14} /> +91-{operator.phone || 'XXXXXXXXXX'}
                 </p>
@@ -1394,13 +1404,13 @@ export function OperatorProfile() {
                     rel="noopener noreferrer"
                     className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
                   >
-                    <MessageSquare size={16} /> WhatsApp
+                    <MessageSquare size={16} /> {t("operatorProfile.whatsapp", { defaultValue: "WhatsApp" })}
                   </a>
                   {(!currentUser || operator.user_id !== currentUser.id) && (
                     <button
                       onClick={() => {
                         if (!currentUser) {
-                          toast.error("Please log in to send a message");
+                          toast.error(t("operatorProfile.toastLoginToMessage", { defaultValue: "Please log in to send a message" }));
                           navigate("/login");
                         } else {
                           navigate(`/messages?userId=${operator.user_id}`);
@@ -1408,7 +1418,7 @@ export function OperatorProfile() {
                       }}
                       className="w-full py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors"
                     >
-                      Send Message
+                      {t("operatorProfile.sendMessage", { defaultValue: "Send Message" })}
                     </button>
                   )}
                   {currentUser && (operator.user_id !== currentUser.id) && (
@@ -1418,7 +1428,7 @@ export function OperatorProfile() {
                       }}
                       className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-semibold cursor-pointer"
                     >
-                      <Star size={16} fill="currentColor" /> Rate Operator
+                      <Star size={16} fill="currentColor" /> {t("operatorProfile.rateOperator", { defaultValue: "Rate Operator" })}
                     </button>
                   )}
                 </div>
@@ -1435,7 +1445,7 @@ export function OperatorProfile() {
           className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center font-semibold"
           style={{ fontFamily: "'Sora', sans-serif" }}
         >
-          Call Operator
+          {t("operatorProfile.callOperator", { defaultValue: "Call Operator" })}
         </a>
       </div>
     </div>
@@ -1446,6 +1456,7 @@ export function OperatorProfile() {
 // ADD OPERATOR FORM
 // ===========================
 export function AddOperator() {
+  const { t } = useTranslation(["pages", "static"]);
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [experience, setExperience] = useState("");
@@ -1471,7 +1482,7 @@ export function AddOperator() {
   }, []);
 
   const handleDetectLocation = async () => {
-    const loadingToastId = toast.loading("Detecting location...");
+    const loadingToastId = toast.loading(t("addOperator.toastDetectingLocation", { defaultValue: "Detecting location..." }));
     const detected = await detectUserLocation();
     toast.dismiss(loadingToastId);
     if (detected) {
@@ -1481,12 +1492,12 @@ export function AddOperator() {
         setLocation(matched.district);
         localStorage.setItem("tractorsewa_default_state", matched.state);
         localStorage.setItem("tractorsewa_default_district", matched.district);
-        toast.success(`Location set to ${matched.district}, ${matched.state}`);
+        toast.success(t("addOperator.toastLocationSet", { defaultValue: "Location set to {{district}}, {{state}}", district: matched.district, state: matched.state }));
       } else {
-        toast.error("Could not match detected location with Indian states/districts.");
+        toast.error(t("addOperator.toastLocationMatchError", { defaultValue: "Could not match detected location with Indian states/districts." }));
       }
     } else {
-      toast.error("Could not detect location. Please select manually.");
+      toast.error(t("addOperator.toastLocationDetectError", { defaultValue: "Could not detect location. Please select manually." }));
     }
   };
 
@@ -1498,7 +1509,7 @@ export function AddOperator() {
 
   const handleSubmit = async () => {
     if (!name.trim() || !experience.trim() || !location || !state || selectedMachines.length === 0) {
-      toast.error("Please make sure all basic details and skills are filled out correctly from previous steps.");
+      toast.error(t("addOperator.toastFillDetails", { defaultValue: "Please make sure all basic details and skills are filled out correctly from previous steps." }));
       return;
     }
     const cleanedPhone = phone.replace(/\D/g, "");
@@ -1510,7 +1521,7 @@ export function AddOperator() {
     }
 
     if (!/^\d{10}$/.test(finalPhone)) {
-      toast.error("Please enter a valid 10-digit phone number");
+      toast.error(t("addOperator.toastPhoneError", { defaultValue: "Please enter a valid 10-digit phone number" }));
       return;
     }
 
@@ -1523,7 +1534,7 @@ export function AddOperator() {
     }
 
     if (!/^\d{10}$/.test(finalWhatsapp)) {
-      toast.error("Please enter a valid 10-digit WhatsApp number");
+      toast.error(t("addOperator.toastWhatsappError", { defaultValue: "Please enter a valid 10-digit WhatsApp number" }));
       return;
     }
 
@@ -1565,21 +1576,25 @@ export function AddOperator() {
       });
 
       if (res.ok) {
-        toast.success("Profile created successfully!");
+        toast.success(t("addOperator.toastSuccess", { defaultValue: "Profile created successfully!" }));
         navigate("/dashboard");
       } else {
         const err = await res.json();
-        toast.error(err.error || "Failed to create profile");
+        toast.error(err.error || t("addOperator.toastFailed", { defaultValue: "Failed to create profile" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error creating profile");
+      toast.error(t("addOperator.toastError", { defaultValue: "Error creating profile" }));
     } finally {
       setLoading(false);
     }
   };
 
-  const steps = ["Basic Info", "Skills & Equipment", "Contact"];
+  const steps = [
+    t("addOperator.stepBasic", { defaultValue: "Basic Info" }),
+    t("addOperator.stepSkills", { defaultValue: "Skills & Equipment" }),
+    t("addOperator.stepContact", { defaultValue: "Contact" })
+  ];
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
@@ -1587,9 +1602,9 @@ export function AddOperator() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <Link to="/dashboard" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263] transition-colors group">
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
-          Back to Dashboard
+          {t("addOperator.backToDashboard", { defaultValue: "Back to Dashboard" })}
         </Link>
-        <PageHeader title="Register as Operator" subtitle="Complete your profile to get discovered by farmers" />
+        <PageHeader title={t("addOperator.title", { defaultValue: "Register as Operator" })} subtitle={t("addOperator.subtitle", { defaultValue: "Complete your profile to get discovered by farmers" })} />
 
         {/* Stepper */}
         <div className="flex items-center gap-2 mb-8">
@@ -1631,34 +1646,34 @@ export function AddOperator() {
                 ) : (
                   <>
                     <Upload size={32} className="text-orange-400 mx-auto mb-2" />
-                    <p className="text-sm text-[#57585A]">Drop your photo here or click to upload</p>
+                    <p className="text-sm text-[#57585A]">{t("addOperator.dropPhoto", { defaultValue: "Drop your photo here or click to upload" })}</p>
                   </>
                 )}
               </div>
 
               <div>
-                <label className="text-sm text-[#57585A] block mb-1.5">Full Name</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">{t("addOperator.fullName", { defaultValue: "Full Name" })}</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]"><User size={16} /></span>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Your full name"
+                    placeholder={t("addOperator.fullNamePlaceholder", { defaultValue: "Your full name" })}
                     className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm text-[#57585A] block mb-1.5">Experience (years)</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">{t("addOperator.experience", { defaultValue: "Experience (years)" })}</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]"><Award size={16} /></span>
                   <input
                     type="number"
                     value={experience}
                     onChange={(e) => setExperience(e.target.value)}
-                    placeholder="e.g. 5"
+                    placeholder={t("addOperator.experiencePlaceholder", { defaultValue: "e.g. 5" })}
                     className="w-full pl-10 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                   />
                 </div>
@@ -1666,19 +1681,19 @@ export function AddOperator() {
 
               <div className="border-t border-[#E2E8F0] pt-4 my-2">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-medium text-[#1A1A1A]">Location Details</span>
+                  <span className="text-sm font-medium text-[#1A1A1A]">{t("addOperator.locationDetails", { defaultValue: "Location Details" })}</span>
                   <button
                     type="button"
                     onClick={handleDetectLocation}
                     className="text-xs text-[#172263] hover:underline flex items-center gap-1 font-semibold"
                   >
-                    <MapPin size={12} className="text-[#172263]" /> Auto-detect Location
+                    <MapPin size={12} className="text-[#172263]" /> {t("addOperator.autoDetect", { defaultValue: "Auto-detect Location" })}
                   </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-[#57585A] block mb-1">State *</label>
+                    <label className="text-xs text-[#57585A] block mb-1">{t("addOperator.stateLabel", { defaultValue: "State *" })}</label>
                     <select
                       value={state}
                       onChange={(e) => {
@@ -1687,24 +1702,24 @@ export function AddOperator() {
                       }}
                       className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                     >
-                      <option value="">Select State</option>
-                      {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      <option value="">{t("addOperator.selectState", { defaultValue: "Select State" })}</option>
+                      {INDIAN_STATES.map((s) => <option key={s} value={s}>{t("states." + s, { ns: "static", defaultValue: s })}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-[#57585A] block mb-1">District / City *</label>
+                    <label className="text-xs text-[#57585A] block mb-1">{t("addOperator.districtLabel", { defaultValue: "District / City *" })}</label>
                     <select
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       disabled={!state}
                       className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
                     >
-                      <option value="">Select District</option>
+                      <option value="">{t("addOperator.selectDistrict", { defaultValue: "Select District" })}</option>
                       {state &&
                         districtsData.states
                           .find((s) => s.state === state)
                           ?.districts.map((d) => (
-                            <option key={d} value={d}>{d}</option>
+                            <option key={d} value={d}>{t("districts." + d, { ns: "static", defaultValue: d })}</option>
                           ))}
                     </select>
                   </div>
@@ -1714,19 +1729,19 @@ export function AddOperator() {
               <button
                 onClick={() => {
                   if (!name.trim()) {
-                    toast.error("Please enter your full name");
+                    toast.error(t("addOperator.toastEnterName", { defaultValue: "Please enter your full name" }));
                     return;
                   }
                   if (!experience.trim() || isNaN(Number(experience.trim())) || parseInt(experience) <= 0) {
-                    toast.error("Please enter a valid experience in years");
+                    toast.error(t("addOperator.toastEnterExperience", { defaultValue: "Please enter a valid experience in years" }));
                     return;
                   }
                   if (!state) {
-                    toast.error("Please select your state");
+                    toast.error(t("addOperator.toastSelectState", { defaultValue: "Please select your state" }));
                     return;
                   }
                   if (!location) {
-                    toast.error("Please select your district location");
+                    toast.error(t("addOperator.toastSelectDistrict", { defaultValue: "Please select your district location" }));
                     return;
                   }
                   setStep(2);
@@ -1734,7 +1749,7 @@ export function AddOperator() {
                 className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center gap-2"
                 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
               >
-                Next <ArrowRight size={16} />
+                {t("addOperator.next", { defaultValue: "Next" })} <ArrowRight size={16} />
               </button>
 
             </div>
@@ -1743,7 +1758,7 @@ export function AddOperator() {
           {step === 2 && (
             <div className="space-y-5">
               <div>
-                <label className="text-sm text-[#57585A] block mb-3">Machine Expertise</label>
+                <label className="text-sm text-[#57585A] block mb-3">{t("addOperator.machineExpertise", { defaultValue: "Machine Expertise" })}</label>
                 <div className="flex flex-wrap gap-2">
                   {MACHINE_TYPES.map((m) => (
                     <button
@@ -1755,14 +1770,14 @@ export function AddOperator() {
                           : "bg-white border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
                         }`}
                     >
-                      {selectedMachines.includes(m) ? "✓ " : ""}{m}
+                      {selectedMachines.includes(m) ? "✓ " : ""}{t("machineTypes." + m, { ns: "static", defaultValue: m })}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="text-sm text-[#57585A] block mb-3">Availability</label>
+                <label className="text-sm text-[#57585A] block mb-3">{t("addOperator.availability", { defaultValue: "Availability" })}</label>
                 <div className="flex gap-2">
                   {["Available", "Busy", "Not Available"].map((a) => (
                     <button
@@ -1776,36 +1791,36 @@ export function AddOperator() {
                           : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
                         }`}
                     >
-                      {a === "Available" ? "✓" : a === "Busy" ? "⏳" : "✗"} {a}
+                      {a === "Available" ? "✓" : a === "Busy" ? "⏳" : "✗"} {t("status." + (a === "Not Available" ? "notAvailable" : a.toLowerCase()), { ns: "static", defaultValue: a })}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="text-sm text-[#57585A] block mb-1.5">Description</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">{t("addOperator.description", { defaultValue: "Description" })}</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                   maxLength={500}
-                  placeholder="Tell farmers about your experience and expertise..."
+                  placeholder={t("addOperator.descPlaceholder", { defaultValue: "Tell farmers about your experience and expertise..." })}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none"
                 />
                 <p className="text-xs text-[#57585A] text-right">{description.length}/500</p>
               </div>
 
               <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 border-2 border-[#E2E8F0] text-[#57585A] rounded-xl hover:border-[#172263] hover:text-[#172263] transition-colors">← Back</button>
+                <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 border-2 border-[#E2E8F0] text-[#57585A] rounded-xl hover:border-[#172263] hover:text-[#172263] transition-colors">{t("addOperator.back", { defaultValue: "← Back" })}</button>
                 <button
                   type="button"
                   onClick={() => {
                     if (selectedMachines.length === 0) {
-                      toast.error("Please select at least one machine expertise");
+                      toast.error(t("addOperator.toastSelectExpertise", { defaultValue: "Please select at least one machine expertise" }));
                       return;
                     }
                     if (!description.trim()) {
-                      toast.error("Please enter a brief description");
+                      toast.error(t("addOperator.toastEnterDesc", { defaultValue: "Please enter a brief description" }));
                       return;
                     }
                     setStep(3);
@@ -1813,7 +1828,7 @@ export function AddOperator() {
                   className="flex-1 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors"
                   style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
                 >
-                  Next →
+                  {t("addOperator.next", { defaultValue: "Next" })} →
                 </button>
               </div>
             </div>
@@ -1822,33 +1837,65 @@ export function AddOperator() {
           {step === 3 && (
             <div className="space-y-5">
               {[
-                { label: "Phone Number", value: phone, onChange: setPhone, placeholder: "9876543210" },
-                { label: "WhatsApp Number", value: whatsapp, onChange: setWhatsapp, placeholder: "9876543210" },
-              ].map((f) => (
-                <div key={f.label}>
-                  <label className="text-sm text-[#57585A] block mb-1.5">{f.label}</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
-                    <input
-                      type="tel"
-                      value={f.value}
-                      onChange={(e) => f.onChange(e.target.value)}
-                      placeholder={f.placeholder}
-                      className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
-                    />
+                { 
+                  label: t("addOperator.phoneLabel", { defaultValue: "Phone Number" }), 
+                  value: phone, 
+                  onChange: setPhone, 
+                  placeholder: "9876543210",
+                  errorKey: "addOperator.toastPhoneError",
+                  defaultError: "Please enter a valid 10-digit phone number"
+                },
+                { 
+                  label: t("addOperator.whatsappLabel", { defaultValue: "WhatsApp Number" }), 
+                  value: whatsapp, 
+                  onChange: setWhatsapp, 
+                  placeholder: "9876543210",
+                  errorKey: "addOperator.toastWhatsappError",
+                  defaultError: "Please enter a valid 10-digit WhatsApp number"
+                },
+              ].map((f) => {
+                const cleaned = f.value.replace(/\D/g, "");
+                const isInvalid = f.value.length > 0 && cleaned.length !== 10;
+                return (
+                  <div key={f.label}>
+                    <label className="text-sm text-[#57585A] block mb-1.5">{f.label}</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
+                      <input
+                        type="tel"
+                        value={f.value}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                          f.onChange(val);
+                        }}
+                        maxLength={10}
+                        placeholder={f.placeholder}
+                        className={cn(
+                          "w-full pl-16 pr-4 py-3 bg-[#ffffff] border rounded-xl text-sm focus:outline-none",
+                          isInvalid 
+                            ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" 
+                            : "border-[#E2E8F0] focus:border-[#172263]"
+                        )}
+                      />
+                    </div>
+                    {isInvalid && (
+                      <p className="text-xs text-red-500 mt-1 font-semibold">
+                        {t(f.errorKey, { defaultValue: f.defaultError })}
+                      </p>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <div className="flex gap-3">
-                <button onClick={() => setStep(2)} className="flex-1 py-3 border-2 border-[#E2E8F0] text-[#57585A] rounded-xl hover:border-[#172263] hover:text-[#172263] transition-colors">← Back</button>
+                <button onClick={() => setStep(2)} className="flex-1 py-3 border-2 border-[#E2E8F0] text-[#57585A] rounded-xl hover:border-[#172263] hover:text-[#172263] transition-colors">{t("addOperator.back", { defaultValue: "← Back" })}</button>
                 <button
                   onClick={handleSubmit}
                   disabled={loading}
                   className="flex-1 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                   style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
                 >
-                  {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "Submit Profile →"}
+                  {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : t("addOperator.submitProfile", { defaultValue: "Submit Profile →" })}
                 </button>
               </div>
             </div>
@@ -1876,6 +1923,7 @@ export function AddOperator() {
 // ADD HARVESTER FORM
 // ===========================
 export function AddHarvester() {
+  const { t } = useTranslation(["pages", "static"]);
   const [company, setCompany] = useState("");
   const [customCompany, setCustomCompany] = useState("");
   const [model, setModel] = useState("");
@@ -1901,7 +1949,7 @@ export function AddHarvester() {
   }, []);
 
   const handleDetectLocation = async () => {
-    const loadingToastId = toast.loading("Detecting location...");
+    const loadingToastId = toast.loading(t("addHarvester.toastDetectingLocation", { defaultValue: "Detecting location..." }));
     const detected = await detectUserLocation();
     toast.dismiss(loadingToastId);
     if (detected) {
@@ -1911,12 +1959,12 @@ export function AddHarvester() {
         setLocation(matched.district);
         localStorage.setItem("tractorsewa_default_state", matched.state);
         localStorage.setItem("tractorsewa_default_district", matched.district);
-        toast.success(`Location set to ${matched.district}, ${matched.state}`);
+        toast.success(t("addHarvester.toastLocationSet", { defaultValue: "Location set to {{district}}, {{state}}", district: matched.district, state: matched.state }));
       } else {
-        toast.error("Could not match detected location with Indian states/districts.");
+        toast.error(t("addHarvester.toastLocationMatchError", { defaultValue: "Could not match detected location with Indian states/districts." }));
       }
     } else {
-      toast.error("Could not detect location. Please select manually.");
+      toast.error(t("addHarvester.toastLocationDetectError", { defaultValue: "Could not detect location. Please select manually." }));
     }
   };
 
@@ -1927,26 +1975,26 @@ export function AddHarvester() {
     const finalModel = model === "Other / Custom Model" ? customModel.trim() : model;
 
     if (!finalCompany) {
-      toast.error("Please specify a manufacturer company");
+      toast.error(t("addHarvester.toastCompanyError", { defaultValue: "Please specify a manufacturer company" }));
       return;
     }
     if (!finalModel) {
-      toast.error("Please specify a harvester model");
+      toast.error(t("addHarvester.toastModelError", { defaultValue: "Please specify a harvester model" }));
       return;
     }
 
     const machineName = `${finalCompany} ${finalModel}`;
 
     if (year && (isNaN(Number(year)) || parseInt(year) < 1900 || parseInt(year) > new Date().getFullYear() + 1)) {
-      toast.error("Please enter a valid model year");
+      toast.error(t("addHarvester.toastYearError", { defaultValue: "Please enter a valid model year" }));
       return;
     }
     if (!state) {
-      toast.error("Please select the state");
+      toast.error(t("addHarvester.toastSelectState", { defaultValue: "Please select the state" }));
       return;
     }
     if (!location) {
-      toast.error("Please select the district location");
+      toast.error(t("addHarvester.toastSelectDistrict", { defaultValue: "Please select the district location" }));
       return;
     }
     const cleanedPhone = phone.replace(/\D/g, "");
@@ -1958,7 +2006,7 @@ export function AddHarvester() {
     }
 
     if (!/^\d{10}$/.test(finalPhone)) {
-      toast.error("Please enter a valid 10-digit phone number");
+      toast.error(t("addHarvester.toastPhoneError", { defaultValue: "Please enter a valid 10-digit phone number" }));
       return;
     }
 
@@ -1973,7 +2021,7 @@ export function AddHarvester() {
       }
 
       if (!/^\d{10}$/.test(finalWhatsapp)) {
-        toast.error("Please enter a valid 10-digit WhatsApp number");
+        toast.error(t("addHarvester.toastWhatsappError", { defaultValue: "Please enter a valid 10-digit WhatsApp number" }));
         return;
       }
     }
@@ -2016,15 +2064,15 @@ export function AddHarvester() {
       });
 
       if (res.ok) {
-        toast.success("Harvester listed successfully!");
+        toast.success(t("addHarvester.toastSuccess", { defaultValue: "Harvester listed successfully!" }));
         navigate("/harvesters");
       } else {
         const err = await res.json();
-        toast.error(err.error || "Failed to list harvester");
+        toast.error(err.error || t("addHarvester.toastFailed", { defaultValue: "Failed to list harvester" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error listing harvester");
+      toast.error(t("addHarvester.toastError", { defaultValue: "Error listing harvester" }));
     } finally {
       setLoading(false);
     }
@@ -2036,9 +2084,9 @@ export function AddHarvester() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <Link to="/dashboard" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263] transition-colors group">
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
-          Back to Dashboard
+          {t("addHarvester.backToDashboard", { defaultValue: "Back to Dashboard" })}
         </Link>
-        <PageHeader title="List Your Harvester" subtitle="Add your machine to reach thousands of farmers" />
+        <PageHeader title={t("addHarvester.title", { defaultValue: "List Your Harvester" })} subtitle={t("addHarvester.subtitle", { defaultValue: "Add your machine to reach thousands of farmers" })} />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
           <div
@@ -2064,14 +2112,14 @@ export function AddHarvester() {
             ) : (
               <>
                 <Upload size={32} className="text-orange-400 mx-auto mb-2" />
-                <p className="text-sm text-[#57585A]">Upload machine photo</p>
+                <p className="text-sm text-[#57585A]">{t("addHarvester.uploadPhoto", { defaultValue: "Upload machine photo" })}</p>
               </>
             )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Manufacturer Company</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.companyLabel", { defaultValue: "Manufacturer Company" })}</label>
               <select
                 value={company}
                 onChange={(e) => {
@@ -2082,13 +2130,13 @@ export function AddHarvester() {
                 }}
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
               >
-                <option value="">Select Company</option>
-                {HARVESTER_COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                <option value="">{t("addHarvester.selectCompany", { defaultValue: "Select Company" })}</option>
+                {HARVESTER_COMPANIES.map((c) => <option key={c} value={c}>{t("companies." + c, { ns: "static", defaultValue: c })}</option>)}
               </select>
             </div>
 
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.modelLabel", { defaultValue: "Harvester Model" })}</label>
               <select
                 value={model}
                 onChange={(e) => {
@@ -2098,7 +2146,7 @@ export function AddHarvester() {
                 disabled={!company}
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
               >
-                <option value="">Select Model</option>
+                <option value="">{t("addHarvester.selectModel", { defaultValue: "Select Model" })}</option>
                 {company && HARVESTER_MODELS[company]?.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
@@ -2108,11 +2156,11 @@ export function AddHarvester() {
 
           {company === "Other" && (
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Custom Company Name *</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.customCompanyLabel", { defaultValue: "Custom Company Name *" })}</label>
               <input
                 value={customCompany}
                 onChange={(e) => setCustomCompany(e.target.value)}
-                placeholder="Enter manufacturer name (e.g. John Deere)"
+                placeholder={t("addHarvester.customCompanyPlaceholder", { defaultValue: "Enter manufacturer name (e.g. John Deere)" })}
                 required
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
@@ -2121,11 +2169,11 @@ export function AddHarvester() {
 
           {(company === "Other" || model === "Other / Custom Model") && company !== "" && (
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Custom Model Name *</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.customModelLabel", { defaultValue: "Custom Model Name *" })}</label>
               <input
                 value={customModel}
                 onChange={(e) => setCustomModel(e.target.value)}
-                placeholder="Enter harvester model name (e.g. S660)"
+                placeholder={t("addHarvester.customModelPlaceholder", { defaultValue: "Enter harvester model name (e.g. S660)" })}
                 required
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
@@ -2134,40 +2182,75 @@ export function AddHarvester() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Year of Manufacture</label>
-              <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g. 2020" className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.yearLabel", { defaultValue: "Year of Manufacture" })}</label>
+              <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder={t("addHarvester.yearPlaceholder", { defaultValue: "e.g. 2020" })} className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
             </div>
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Phone Number *</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.phoneLabel", { defaultValue: "Phone Number *" })}</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" required className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+                <input 
+                  type="tel" 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} 
+                  maxLength={10}
+                  placeholder="9876543210" 
+                  required 
+                  className={cn(
+                    "w-full pl-16 pr-4 py-3 bg-[#ffffff] border rounded-xl text-sm focus:outline-none",
+                    phone.length > 0 && phone.replace(/\D/g, "").length !== 10
+                      ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" 
+                      : "border-[#E2E8F0] focus:border-[#172263]"
+                  )} 
+                />
               </div>
+              {phone.length > 0 && phone.replace(/\D/g, "").length !== 10 && (
+                <p className="text-xs text-red-500 mt-1 font-semibold">
+                  {t("addHarvester.toastPhoneError", { defaultValue: "Please enter a valid 10-digit phone number" })}
+                </p>
+              )}
             </div>
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">WhatsApp Number</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.whatsappLabel", { defaultValue: "WhatsApp Number" })}</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
-                <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="9876543210" className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+                <input 
+                  type="tel" 
+                  value={whatsapp} 
+                  onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, "").slice(0, 10))} 
+                  maxLength={10}
+                  placeholder="9876543210" 
+                  className={cn(
+                    "w-full pl-16 pr-4 py-3 bg-[#ffffff] border rounded-xl text-sm focus:outline-none",
+                    whatsapp.length > 0 && whatsapp.replace(/\D/g, "").length !== 10
+                      ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" 
+                      : "border-[#E2E8F0] focus:border-[#172263]"
+                  )} 
+                />
               </div>
+              {whatsapp.length > 0 && whatsapp.replace(/\D/g, "").length !== 10 && (
+                <p className="text-xs text-red-500 mt-1 font-semibold">
+                  {t("addHarvester.toastWhatsappError", { defaultValue: "Please enter a valid 10-digit WhatsApp number" })}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="border-t border-[#E2E8F0] pt-4 my-2">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-medium text-[#1A1A1A]">Location Details</span>
+              <span className="text-sm font-medium text-[#1A1A1A]">{t("addHarvester.locationDetails", { defaultValue: "Location Details" })}</span>
               <button
                 type="button"
                 onClick={handleDetectLocation}
                 className="text-xs text-[#172263] hover:underline flex items-center gap-1 font-semibold"
               >
-                <MapPin size={12} className="text-[#172263]" /> Auto-detect Location
+                <MapPin size={12} className="text-[#172263]" /> {t("addHarvester.autoDetect", { defaultValue: "Auto-detect Location" })}
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-[#57585A] block mb-1">State *</label>
+                <label className="text-xs text-[#57585A] block mb-1">{t("addHarvester.stateLabel", { defaultValue: "State *" })}</label>
                 <select
                   value={state}
                   onChange={(e) => {
@@ -2176,24 +2259,24 @@ export function AddHarvester() {
                   }}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                 >
-                  <option value="">Select State</option>
-                  {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  <option value="">{t("addHarvester.selectState", { defaultValue: "Select State" })}</option>
+                  {INDIAN_STATES.map((s) => <option key={s} value={s}>{t("states." + s, { ns: "static", defaultValue: s })}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-[#57585A] block mb-1">District / City *</label>
+                <label className="text-xs text-[#57585A] block mb-1">{t("addHarvester.districtLabel", { defaultValue: "District / City *" })}</label>
                 <select
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   disabled={!state}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
                 >
-                  <option value="">Select District</option>
+                  <option value="">{t("addHarvester.selectDistrict", { defaultValue: "Select District" })}</option>
                   {state &&
                     districtsData.states
                       .find((s) => s.state === state)
                       ?.districts.map((d) => (
-                        <option key={d} value={d}>{d}</option>
+                        <option key={d} value={d}>{t("districts." + d, { ns: "static", defaultValue: d })}</option>
                       ))}
                 </select>
               </div>
@@ -2201,11 +2284,11 @@ export function AddHarvester() {
           </div>
 
           <div>
-            <label className="text-sm text-[#57585A] block mb-1.5">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Describe the machine condition and availability..." className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" />
+            <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.descriptionLabel", { defaultValue: "Description" })}</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder={t("addHarvester.descriptionPlaceholder", { defaultValue: "Describe the machine condition and availability..." })} className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" />
           </div>
           <button type="submit" disabled={loading} className="w-full py-3 bg-[#15803D] text-white rounded-xl hover:bg-green-700 transition-colors shadow-md disabled:opacity-60 flex items-center justify-center gap-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
-            {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "Submit Listing →"}
+            {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : t("addHarvester.submitListing", { defaultValue: "Submit Listing →" })}
           </button>
         </form>
       </div>
@@ -2231,6 +2314,7 @@ export function AddHarvester() {
 // EDIT HARVESTER FORM
 // ===========================
 export function EditHarvester() {
+  const { t } = useTranslation(["pages", "static"]);
   const { id } = useParams();
   const [company, setCompany] = useState("");
   const [customCompany, setCustomCompany] = useState("");
@@ -2275,21 +2359,21 @@ export function EditHarvester() {
           setDescription(data.description || "");
           if (data.imagePath) setImagePreview(data.imagePath);
         } else {
-          toast.error("Failed to load harvester details");
+          toast.error(t("editHarvester.toastLoadDetailsFailed", { defaultValue: "Failed to load harvester details" }));
           navigate("/harvesters");
         }
       } catch (err) {
         console.error(err);
-        toast.error("Error loading harvester");
+        toast.error(t("editHarvester.toastLoadError", { defaultValue: "Error loading harvester" }));
       } finally {
         setFetching(false);
       }
     };
     if (id) fetchHarvester();
-  }, [id, navigate]);
+  }, [id, navigate, t]);
 
   const handleDetectLocation = async () => {
-    const loadingToastId = toast.loading("Detecting location...");
+    const loadingToastId = toast.loading(t("editHarvester.toastDetectingLocation", { defaultValue: "Detecting location..." }));
     const detected = await detectUserLocation();
     toast.dismiss(loadingToastId);
     if (detected) {
@@ -2299,12 +2383,12 @@ export function EditHarvester() {
         setLocation(matched.district);
         localStorage.setItem("tractorsewa_default_state", matched.state);
         localStorage.setItem("tractorsewa_default_district", matched.district);
-        toast.success(`Location set to ${matched.district}, ${matched.state}`);
+        toast.success(t("editHarvester.toastLocationSet", { defaultValue: "Location set to {{district}}, {{state}}", district: matched.district, state: matched.state }));
       } else {
-        toast.error("Could not match detected location with Indian states/districts.");
+        toast.error(t("editHarvester.toastLocationMatchError", { defaultValue: "Could not match detected location with Indian states/districts." }));
       }
     } else {
-      toast.error("Could not detect location. Please select manually.");
+      toast.error(t("editHarvester.toastLocationDetectError", { defaultValue: "Could not detect location. Please select manually." }));
     }
   };
 
@@ -2315,26 +2399,26 @@ export function EditHarvester() {
     const finalModel = model === "Other / Custom Model" ? customModel.trim() : model;
 
     if (!finalCompany) {
-      toast.error("Please specify a manufacturer company");
+      toast.error(t("editHarvester.toastCompanyError", { defaultValue: "Please specify a manufacturer company" }));
       return;
     }
     if (!finalModel) {
-      toast.error("Please specify a harvester model");
+      toast.error(t("editHarvester.toastModelError", { defaultValue: "Please specify a harvester model" }));
       return;
     }
 
     const machineName = `${finalCompany} ${finalModel}`;
 
     if (year && (isNaN(Number(year)) || parseInt(year) < 1900 || parseInt(year) > new Date().getFullYear() + 1)) {
-      toast.error("Please enter a valid model year");
+      toast.error(t("editHarvester.toastYearError", { defaultValue: "Please enter a valid model year" }));
       return;
     }
     if (!state) {
-      toast.error("Please select the state");
+      toast.error(t("editHarvester.toastSelectState", { defaultValue: "Please select the state" }));
       return;
     }
     if (!location) {
-      toast.error("Please select the district location");
+      toast.error(t("editHarvester.toastSelectDistrict", { defaultValue: "Please select the district location" }));
       return;
     }
     const cleanedPhone = phone.replace(/\D/g, "");
@@ -2346,7 +2430,7 @@ export function EditHarvester() {
     }
 
     if (!/^\d{10}$/.test(finalPhone)) {
-      toast.error("Please enter a valid 10-digit phone number");
+      toast.error(t("editHarvester.toastPhoneError", { defaultValue: "Please enter a valid 10-digit phone number" }));
       return;
     }
 
@@ -2361,7 +2445,7 @@ export function EditHarvester() {
       }
 
       if (!/^\d{10}$/.test(finalWhatsapp)) {
-        toast.error("Please enter a valid 10-digit WhatsApp number");
+        toast.error(t("editHarvester.toastWhatsappError", { defaultValue: "Please enter a valid 10-digit WhatsApp number" }));
         return;
       }
     }
@@ -2404,15 +2488,15 @@ export function EditHarvester() {
       });
 
       if (res.ok) {
-        toast.success("Harvester updated successfully!");
+        toast.success(t("editHarvester.toastSuccess", { defaultValue: "Harvester updated successfully!" }));
         navigate(`/harvesters/${id}`);
       } else {
         const err = await res.json();
-        toast.error(err.error || "Failed to update harvester");
+        toast.error(err.error || t("editHarvester.toastFailed", { defaultValue: "Failed to update harvester" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error updating harvester");
+      toast.error(t("editHarvester.toastError", { defaultValue: "Error updating harvester" }));
     } finally {
       setLoading(false);
     }
@@ -2426,9 +2510,9 @@ export function EditHarvester() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <Link to={`/harvesters/${id}`} className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263] transition-colors group">
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
-          Back to Harvester Detail
+          {t("editHarvester.backToDetail", { defaultValue: "Back to Harvester Detail" })}
         </Link>
-        <PageHeader title="Edit Harvester" subtitle="Update your machine details" />
+        <PageHeader title={t("editHarvester.title", { defaultValue: "Edit Harvester" })} subtitle={t("editHarvester.subtitle", { defaultValue: "Update your machine details" })} />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
           <div
@@ -2454,14 +2538,14 @@ export function EditHarvester() {
             ) : (
               <>
                 <Upload size={32} className="text-orange-400 mx-auto mb-2" />
-                <p className="text-sm text-[#57585A]">Upload new machine photo</p>
+                <p className="text-sm text-[#57585A]">{t("editHarvester.uploadPhoto", { defaultValue: "Upload new machine photo" })}</p>
               </>
             )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Manufacturer Company</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("editHarvester.companyLabel", { defaultValue: "Manufacturer Company" })}</label>
               <select
                 value={company}
                 onChange={(e) => {
@@ -2472,13 +2556,13 @@ export function EditHarvester() {
                 }}
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
               >
-                <option value="">Select Company</option>
-                {HARVESTER_COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                <option value="">{t("editHarvester.selectCompany", { defaultValue: "Select Company" })}</option>
+                {HARVESTER_COMPANIES.map((c) => <option key={c} value={c}>{t("companies." + c, { ns: "static", defaultValue: c })}</option>)}
               </select>
             </div>
 
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("editHarvester.modelLabel", { defaultValue: "Harvester Model" })}</label>
               <select
                 value={model}
                 onChange={(e) => {
@@ -2488,7 +2572,7 @@ export function EditHarvester() {
                 disabled={!company}
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
               >
-                <option value="">Select Model</option>
+                <option value="">{t("editHarvester.selectModel", { defaultValue: "Select Model" })}</option>
                 {company && HARVESTER_MODELS[company]?.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
@@ -2498,11 +2582,11 @@ export function EditHarvester() {
 
           {company === "Other" && (
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Custom Company Name *</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("editHarvester.customCompanyLabel", { defaultValue: "Custom Company Name *" })}</label>
               <input
                 value={customCompany}
                 onChange={(e) => setCustomCompany(e.target.value)}
-                placeholder="Enter manufacturer name (e.g. John Deere)"
+                placeholder={t("editHarvester.customCompanyPlaceholder", { defaultValue: "Enter manufacturer name (e.g. John Deere)" })}
                 required
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
@@ -2511,11 +2595,11 @@ export function EditHarvester() {
 
           {(company === "Other" || model === "Other / Custom Model") && company !== "" && (
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Custom Model Name *</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("editHarvester.customModelLabel", { defaultValue: "Custom Model Name *" })}</label>
               <input
                 value={customModel}
                 onChange={(e) => setCustomModel(e.target.value)}
-                placeholder="Enter harvester model name (e.g. S660)"
+                placeholder={t("editHarvester.customModelPlaceholder", { defaultValue: "Enter harvester model name (e.g. S660)" })}
                 required
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
               />
@@ -2524,40 +2608,75 @@ export function EditHarvester() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Year of Manufacture</label>
-              <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g. 2020" className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("editHarvester.yearLabel", { defaultValue: "Year of Manufacture" })}</label>
+              <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder={t("editHarvester.yearPlaceholder", { defaultValue: "e.g. 2020" })} className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
             </div>
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Phone Number *</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("editHarvester.phoneLabel", { defaultValue: "Phone Number *" })}</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" required className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+                <input 
+                  type="tel" 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} 
+                  maxLength={10}
+                  placeholder="9876543210" 
+                  required 
+                  className={cn(
+                    "w-full pl-16 pr-4 py-3 bg-[#ffffff] border rounded-xl text-sm focus:outline-none",
+                    phone.length > 0 && phone.replace(/\D/g, "").length !== 10
+                      ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" 
+                      : "border-[#E2E8F0] focus:border-[#172263]"
+                  )} 
+                />
               </div>
+              {phone.length > 0 && phone.replace(/\D/g, "").length !== 10 && (
+                <p className="text-xs text-red-500 mt-1 font-semibold">
+                  {t("editHarvester.toastPhoneError", { defaultValue: "Please enter a valid 10-digit phone number" })}
+                </p>
+              )}
             </div>
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">WhatsApp Number</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("editHarvester.whatsappLabel", { defaultValue: "WhatsApp Number" })}</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#57585A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">+91</span>
-                <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="9876543210" className="w-full pl-16 pr-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
+                <input 
+                  type="tel" 
+                  value={whatsapp} 
+                  onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, "").slice(0, 10))} 
+                  maxLength={10}
+                  placeholder="9876543210" 
+                  className={cn(
+                    "w-full pl-16 pr-4 py-3 bg-[#ffffff] border rounded-xl text-sm focus:outline-none",
+                    whatsapp.length > 0 && whatsapp.replace(/\D/g, "").length !== 10
+                      ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" 
+                      : "border-[#E2E8F0] focus:border-[#172263]"
+                  )} 
+                />
               </div>
+              {whatsapp.length > 0 && whatsapp.replace(/\D/g, "").length !== 10 && (
+                <p className="text-xs text-red-500 mt-1 font-semibold">
+                  {t("editHarvester.toastWhatsappError", { defaultValue: "Please enter a valid 10-digit WhatsApp number" })}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="border-t border-[#E2E8F0] pt-4 my-2">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-medium text-[#1A1A1A]">Location Details</span>
+              <span className="text-sm font-medium text-[#1A1A1A]">{t("editHarvester.locationDetails", { defaultValue: "Location Details" })}</span>
               <button
                 type="button"
                 onClick={handleDetectLocation}
                 className="text-xs text-[#172263] hover:underline flex items-center gap-1 font-semibold"
               >
-                <MapPin size={12} className="text-[#172263]" /> Auto-detect Location
+                <MapPin size={12} className="text-[#172263]" /> {t("editHarvester.autoDetect", { defaultValue: "Auto-detect Location" })}
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-[#57585A] block mb-1">State *</label>
+                <label className="text-xs text-[#57585A] block mb-1">{t("editHarvester.stateLabel", { defaultValue: "State *" })}</label>
                 <select
                   value={state}
                   onChange={(e) => {
@@ -2566,24 +2685,24 @@ export function EditHarvester() {
                   }}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                 >
-                  <option value="">Select State</option>
-                  {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  <option value="">{t("editHarvester.selectState", { defaultValue: "Select State" })}</option>
+                  {INDIAN_STATES.map((s) => <option key={s} value={s}>{t("states." + s, { ns: "static", defaultValue: s })}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-[#57585A] block mb-1">District / City *</label>
+                <label className="text-xs text-[#57585A] block mb-1">{t("editHarvester.districtLabel", { defaultValue: "District / City *" })}</label>
                 <select
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   disabled={!state}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
                 >
-                  <option value="">Select District</option>
+                  <option value="">{t("editHarvester.selectDistrict", { defaultValue: "Select District" })}</option>
                   {state &&
                     districtsData.states
                       .find((s) => s.state === state)
                       ?.districts.map((d) => (
-                        <option key={d} value={d}>{d}</option>
+                        <option key={d} value={d}>{t("districts." + d, { ns: "static", defaultValue: d })}</option>
                       ))}
                 </select>
               </div>
@@ -2591,11 +2710,11 @@ export function EditHarvester() {
           </div>
 
           <div>
-            <label className="text-sm text-[#57585A] block mb-1.5">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Describe the machine condition and availability..." className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" />
+            <label className="text-sm text-[#57585A] block mb-1.5">{t("editHarvester.descriptionLabel", { defaultValue: "Description" })}</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder={t("editHarvester.descriptionPlaceholder", { defaultValue: "Describe the machine condition and availability..." })} className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" />
           </div>
           <button type="submit" disabled={loading} className="w-full py-3 bg-[#15803D] text-white rounded-xl hover:bg-green-700 transition-colors shadow-md disabled:opacity-60 flex items-center justify-center gap-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
-            {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "Save Changes →"}
+            {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : t("editHarvester.saveChanges", { defaultValue: "Save Changes →" })}
           </button>
         </form>
       </div>
@@ -2621,6 +2740,7 @@ export function EditHarvester() {
 // REQUESTS
 // ===========================
 export function Requests() {
+  const { t } = useTranslation(["pages", "static"]);
   const [requests, setRequests] = useState<any[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [reqType, setReqType] = useState<"operator" | "harvester">("operator");
@@ -2662,11 +2782,11 @@ export function Requests() {
       setSelectedState(defaultState);
       setSelectedDistrict(defaultDistrict);
     } else if (dismissed !== "true") {
-      const toastId = toast("📍 Optimize search results by auto-detecting your location.", {
+      const toastId = toast(t("requests.locationPrompt", { defaultValue: "📍 Optimize search results by auto-detecting your location." }), {
         action: {
-          label: "Detect",
+          label: t("requests.detect", { defaultValue: "Detect" }),
           onClick: async () => {
-            const loadingToastId = toast.loading("Detecting location...");
+            const loadingToastId = toast.loading(t("requests.detectingLocation", { defaultValue: "Detecting location..." }));
             const detected = await detectUserLocation();
             toast.dismiss(loadingToastId);
             if (detected) {
@@ -2676,17 +2796,17 @@ export function Requests() {
                 localStorage.setItem("tractorsewa_default_district", matched.district);
                 setSelectedState(matched.state);
                 setSelectedDistrict(matched.district);
-                toast.success(`Location set to ${matched.district}, ${matched.state}!`);
+                toast.success(t("requests.locationSet", { defaultValue: "Location set to {{district}}, {{state}}!", district: matched.district, state: matched.state }));
               } else {
-                toast.error("Could not match your location with Indian states/districts.");
+                toast.error(t("requests.locationMatchError", { defaultValue: "Could not match your location with Indian states/districts." }));
               }
             } else {
-              toast.error("Could not detect location. Please select manually.");
+              toast.error(t("requests.locationDetectError", { defaultValue: "Could not detect location. Please select manually." }));
             }
           }
         },
         cancel: {
-          label: "Dismiss",
+          label: t("requests.dismiss", { defaultValue: "Dismiss" }),
           onClick: () => {
             localStorage.setItem("tractorsewa_location_dismissed", "true");
           }
@@ -2695,7 +2815,7 @@ export function Requests() {
       });
       return () => { toast.dismiss(toastId); };
     }
-  }, []);
+  }, [t]);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -2721,7 +2841,7 @@ export function Requests() {
 
   // Handle auto-detect for Dialog
   const handleDialogDetectLocation = async () => {
-    const loadingToastId = toast.loading("Detecting location...");
+    const loadingToastId = toast.loading(t("requests.dialogDetectingLocation", { defaultValue: "Detecting location..." }));
     const detected = await detectUserLocation();
     toast.dismiss(loadingToastId);
     if (detected) {
@@ -2732,18 +2852,18 @@ export function Requests() {
           state: matched.state,
           location: matched.district
         }));
-        toast.success(`Location set to ${matched.district}, ${matched.state}`);
+        toast.success(t("requests.dialogLocationSet", { defaultValue: "Location set to {{district}}, {{state}}", district: matched.district, state: matched.state }));
       } else {
-        toast.error("Could not match location with Indian states/districts.");
+        toast.error(t("requests.dialogLocationMatchError", { defaultValue: "Could not match location with Indian states/districts." }));
       }
     } else {
-      toast.error("Could not detect location. Please select manually.");
+      toast.error(t("requests.dialogLocationDetectError", { defaultValue: "Could not detect location. Please select manually." }));
     }
   };
 
   const postReq = async () => {
     if (!newReq.location || !newReq.state || !newReq.machineType || !newReq.startDate) {
-      toast.error("Please fill out all required fields");
+      toast.error(t("requests.toastFillRequired", { defaultValue: "Please fill out all required fields" }));
       return;
     }
     try {
@@ -2763,15 +2883,15 @@ export function Requests() {
       if (res.ok) {
         setShowDialog(false);
         setNewReq({ location: "", state: "", machineType: "", duration: "", startDate: "", description: "" });
-        toast.success("Requirement posted successfully!");
+        toast.success(t("requests.toastPostSuccess", { defaultValue: "Requirement posted successfully!" }));
         fetchRequests();
       } else {
         const err = await res.json();
-        toast.error(err.error || "Failed to post requirement");
+        toast.error(err.error || t("requests.toastPostFailed", { defaultValue: "Failed to post requirement" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error posting requirement");
+      toast.error(t("requests.toastPostError", { defaultValue: "Error posting requirement" }));
     }
   };
 
@@ -2785,15 +2905,15 @@ export function Requests() {
 
       if (res.ok) {
         setConfirmDelete(null);
-        toast.success("Requirement deleted.");
+        toast.success(t("requests.toastDeleteSuccess", { defaultValue: "Requirement deleted." }));
         fetchRequests();
       } else {
         const err = await res.json();
-        toast.error(err.error || "Failed to delete");
+        toast.error(err.error || t("requests.toastDeleteFailed", { defaultValue: "Failed to delete" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error deleting requirement");
+      toast.error(t("requests.toastDeleteError", { defaultValue: "Error deleting requirement" }));
     }
   };
 
@@ -2804,7 +2924,7 @@ export function Requests() {
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader
-          title="Browse Requirements"
+          title={t("requests.title", { defaultValue: "Browse Requirements" })}
           action={
             <button
               onClick={() => {
@@ -2822,7 +2942,7 @@ export function Requests() {
               }}
               className="flex items-center gap-2 px-4 py-2 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors"
             >
-              <Plus size={16} /> Post Requirement
+              <Plus size={16} /> {t("requests.postRequirement", { defaultValue: "Post Requirement" })}
             </button>
           }
         />
@@ -2830,14 +2950,14 @@ export function Requests() {
         {/* Tabs and filters */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex gap-2">
-            {(["operator", "harvester"] as const).map((t) => (
+            {(["operator", "harvester"] as const).map((tVal) => (
               <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${tab === t ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
+                key={tVal}
+                onClick={() => setTab(tVal)}
+                className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${tab === tVal ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
                   }`}
               >
-                {t === "operator" ? "Need Operator" : "Need Harvester"}
+                {tVal === "operator" ? t("requests.needOperator", { defaultValue: "Need Operator" }) : t("requests.needHarvester", { defaultValue: "Need Harvester" })}
               </button>
             ))}
           </div>
@@ -2851,9 +2971,9 @@ export function Requests() {
               }}
               className="px-3 py-2 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] bg-white w-40"
             >
-              <option value="">All States</option>
+              <option value="">{t("requests.allStates", { defaultValue: "All States" })}</option>
               {INDIAN_STATES.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>{t("states." + s, { ns: "static", defaultValue: s })}</option>
               ))}
             </select>
 
@@ -2863,12 +2983,12 @@ export function Requests() {
               disabled={!selectedState}
               className="px-3 py-2 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] bg-white w-40 disabled:opacity-50"
             >
-              <option value="">All Districts</option>
+              <option value="">{t("requests.allDistricts", { defaultValue: "All Districts" })}</option>
               {selectedState &&
                 districtsData.states
                   .find((s) => s.state === selectedState)
                   ?.districts.map((d) => (
-                    <option key={d} value={d}>{d}</option>
+                    <option key={d} value={d}>{t("districts." + d, { ns: "static", defaultValue: d })}</option>
                   ))}
             </select>
             {(selectedState || selectedDistrict) && (
@@ -2879,7 +2999,7 @@ export function Requests() {
                 }}
                 className="text-[#172263] text-xs px-2 hover:underline"
               >
-                Clear Location
+                {t("requests.clearLocation", { defaultValue: "Clear Location" })}
               </button>
             )}
           </div>
@@ -2889,7 +3009,7 @@ export function Requests() {
           {loading ? (
             <LoadingSpinner />
           ) : filtered.length === 0 ? (
-            <EmptyState title="No requirements posted" description="Post your first requirement to find operators or harvesters." />
+            <EmptyState title={t("requests.emptyTitle", { defaultValue: "No requirements posted" })} description={t("requests.emptyDescription", { defaultValue: "Post your first requirement to find operators or harvesters." })} />
           ) : (
             filtered.map((req) => {
               const isOwner = currentUser && req.userId === currentUser.id;
@@ -2898,14 +3018,14 @@ export function Requests() {
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className={`text-xs px-2 py-0.5 rounded-full border ${req.type === "operator" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"}`}>
-                        {req.type === "operator" ? "Need Operator" : "Need Harvester"}
+                        {req.type === "operator" ? t("requests.needOperator", { defaultValue: "Need Operator" }) : t("requests.needHarvester", { defaultValue: "Need Harvester" })}
                       </span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${req.status === "Open" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                        {req.status}
+                        {t("requests.status." + req.status.toLowerCase(), { defaultValue: req.status })}
                       </span>
                       {isOwner && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-semibold shadow-sm">
-                          My Requirement
+                          {t("requests.myRequirement", { defaultValue: "My Requirement" })}
                         </span>
                       )}
                     </div>
@@ -2913,14 +3033,14 @@ export function Requests() {
                       <span className="flex items-center gap-1">
                         <MapPin size={13} /> {req.location}{req.state ? `, ${req.state}` : ""}
                       </span>
-                      <span>{req.machineType}</span>
-                      <span>{req.duration} days</span>
+                      <span>{t("machineTypes." + req.machineType, { ns: "static", defaultValue: req.machineType })}</span>
+                      <span>{t("requests.durationDays", { defaultValue: "{{count}} days", count: req.duration })}</span>
                       <span>{new Date(req.startDate).toLocaleDateString()}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Link to={`/requests/${req.id}`} className="text-xs px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium">
-                      View
+                      {t("requests.viewBtn", { defaultValue: "View" })}
                     </Link>
                     {isOwner && (
                       <button onClick={() => setConfirmDelete(req.id)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors text-red-400">
@@ -2944,85 +3064,85 @@ export function Requests() {
             animate={{ opacity: 1, scale: 1 }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>Post a Requirement</h3>
+              <h3 className="text-xl text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{t("requests.postTitle", { defaultValue: "Post a Requirement" })}</h3>
               <button
                 type="button"
                 onClick={handleDialogDetectLocation}
                 className="text-xs px-3 py-1.5 bg-blue-50 border border-blue-200 text-[#172263] rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
               >
-                <MapPin size={12} /> Auto-detect Location
+                <MapPin size={12} /> {t("requests.autoDetect", { defaultValue: "Auto-detect Location" })}
               </button>
             </div>
             <div className="flex gap-2 mb-4">
-              {(["operator", "harvester"] as const).map((t) => (
-                <button key={t} onClick={() => setReqType(t)} className={`flex-1 py-2 rounded-xl text-sm border-2 transition-all ${reqType === t ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A]"}`}>
-                  {t === "operator" ? "Need Operator" : "Need Harvester"}
+              {(["operator", "harvester"] as const).map((tVal) => (
+                <button key={tVal} onClick={() => setNewReq((prev) => ({ ...prev, type: tVal }) as any) || setReqType(tVal)} className={`flex-1 py-2 rounded-xl text-sm border-2 transition-all ${reqType === tVal ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A]"}`}>
+                  {tVal === "operator" ? t("requests.needOperator", { defaultValue: "Need Operator" }) : t("requests.needHarvester", { defaultValue: "Need Harvester" })}
                 </button>
               ))}
             </div>
             <div className="space-y-3">
               {/* State Dropdown */}
               <div>
-                <label className="text-xs text-[#57585A] block mb-1">State *</label>
+                <label className="text-xs text-[#57585A] block mb-1">{t("requests.stateLabel", { defaultValue: "State *" })}</label>
                 <select
                   value={newReq.state}
                   onChange={(e) => setNewReq(prev => ({ ...prev, state: e.target.value, location: "" }))}
                   className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] bg-[#ffffff]"
                 >
-                  <option value="">Select State</option>
+                  <option value="">{t("requests.selectState", { defaultValue: "Select State" })}</option>
                   {INDIAN_STATES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                    <option key={s} value={s}>{t("states." + s, { ns: "static", defaultValue: s })}</option>
                   ))}
                 </select>
               </div>
 
               {/* District Dropdown */}
               <div>
-                <label className="text-xs text-[#57585A] block mb-1">District / Location *</label>
+                <label className="text-xs text-[#57585A] block mb-1">{t("requests.districtLabel", { defaultValue: "District / Location *" })}</label>
                 <select
                   value={newReq.location}
                   onChange={(e) => setNewReq(prev => ({ ...prev, location: e.target.value }))}
                   disabled={!newReq.state}
                   className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] bg-[#ffffff] disabled:opacity-50"
                 >
-                  <option value="">Select District</option>
+                  <option value="">{t("requests.selectDistrict", { defaultValue: "Select District" })}</option>
                   {newReq.state &&
                     districtsData.states
                       .find((s) => s.state === newReq.state)
                       ?.districts.map((d) => (
-                        <option key={d} value={d}>{d}</option>
+                        <option key={d} value={d}>{t("districts." + d, { ns: "static", defaultValue: d })}</option>
                       ))}
                 </select>
               </div>
 
               {/* Other inputs */}
               <div>
-                <label className="text-xs text-[#57585A] block mb-1">Machine Type *</label>
+                <label className="text-xs text-[#57585A] block mb-1">{t("requests.machineTypeLabel", { defaultValue: "Machine Type *" })}</label>
                 <select
                   value={newReq.machineType}
                   onChange={(e) => setNewReq(prev => ({ ...prev, machineType: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] bg-[#ffffff]"
                 >
-                  <option value="">Select Machine Type</option>
-                  {MACHINE_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                  <option value="">{t("requests.selectMachineType", { defaultValue: "Select Machine Type" })}</option>
+                  {MACHINE_TYPES.map((tVal) => (
+                    <option key={tVal} value={tVal}>{t("machineTypes." + tVal, { ns: "static", defaultValue: tVal })}</option>
                   ))}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-[#57585A] block mb-1">Duration (days)</label>
+                  <label className="text-xs text-[#57585A] block mb-1">{t("requests.durationLabel", { defaultValue: "Duration (days)" })}</label>
                   <input
                     type="number"
-                    placeholder="Duration"
+                    placeholder={t("requests.durationPlaceholder", { defaultValue: "Duration" })}
                     value={newReq.duration}
                     onChange={(e) => setNewReq(prev => ({ ...prev, duration: e.target.value }))}
                     className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-[#57585A] block mb-1">Start Date *</label>
+                  <label className="text-xs text-[#57585A] block mb-1">{t("requests.startDateLabel", { defaultValue: "Start Date *" })}</label>
                   <input
                     type="date"
                     value={newReq.startDate}
@@ -3033,10 +3153,10 @@ export function Requests() {
               </div>
 
               <div>
-                <label className="text-xs text-[#57585A] block mb-1">Description</label>
+                <label className="text-xs text-[#57585A] block mb-1">{t("requests.descriptionLabel", { defaultValue: "Description" })}</label>
                 <textarea
                   rows={2}
-                  placeholder="Describe your requirement in detail..."
+                  placeholder={t("requests.descriptionPlaceholder", { defaultValue: "Describe your requirement in detail..." })}
                   value={newReq.description}
                   onChange={(e) => setNewReq((prev) => ({ ...prev, description: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none"
@@ -3044,8 +3164,8 @@ export function Requests() {
               </div>
             </div>
             <div className="flex gap-3 mt-4">
-              <button onClick={() => setShowDialog(false)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-[#57585A] text-sm hover:bg-gray-50">Cancel</button>
-              <button onClick={postReq} className="flex-1 py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Post Requirement →</button>
+              <button onClick={() => setShowDialog(false)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-[#57585A] text-sm hover:bg-gray-50">{t("requests.cancelBtn", { defaultValue: "Cancel" })}</button>
+              <button onClick={postReq} className="flex-1 py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("requests.postBtn", { defaultValue: "Post Requirement →" })}</button>
             </div>
           </motion.div>
         </div>
@@ -3056,11 +3176,11 @@ export function Requests() {
       {confirmDelete !== null && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full border border-[#E2E8F0]">
-            <h3 className="text-lg text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Delete Requirement?</h3>
-            <p className="text-[#57585A] text-sm mb-4">This action cannot be undone.</p>
+            <h3 className="text-lg text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("requests.deleteTitle", { defaultValue: "Delete Requirement?" })}</h3>
+            <p className="text-[#57585A] text-sm mb-4">{t("requests.deleteDesc", { defaultValue: "This action cannot be undone." })}</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-sm">Cancel</button>
-              <button onClick={() => deleteReq(confirmDelete)} className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm hover:bg-red-600 transition-colors">Delete</button>
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-sm">{t("requests.cancelBtn", { defaultValue: "Cancel" })}</button>
+              <button onClick={() => deleteReq(confirmDelete)} className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm hover:bg-red-600 transition-colors">{t("requests.deleteBtn", { defaultValue: "Delete" })}</button>
             </div>
           </div>
         </div>
@@ -3073,6 +3193,7 @@ export function Requests() {
 // REQUEST DETAIL
 // ===========================
 export function RequestDetail() {
+  const { t } = useTranslation(["pages", "static"]);
   const { id } = useParams();
   const [req, setReq] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -3128,22 +3249,22 @@ export function RequestDetail() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        toast.success("Requirement deleted successfully!");
+        toast.success(t("requestDetail.toastDeleteSuccess", { defaultValue: "Requirement deleted successfully!" }));
         navigate("/requests");
       } else {
         const err = await res.json();
-        toast.error(err.error || "Failed to delete requirement");
+        toast.error(err.error || t("requestDetail.toastDeleteFailed", { defaultValue: "Failed to delete requirement" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error deleting requirement");
+      toast.error(t("requestDetail.toastDeleteError", { defaultValue: "Error deleting requirement" }));
     } finally {
       setShowDeleteConfirm(false);
     }
   };
 
   if (loading) return <LoadingSpinner />;
-  if (!req) return <EmptyState title="Requirement not found" />;
+  if (!req) return <EmptyState title={t("requestDetail.emptyTitle", { defaultValue: "Requirement not found" })} />;
 
   const isOwner = currentUser && req.userId === currentUser.id;
 
@@ -3152,25 +3273,25 @@ export function RequestDetail() {
       <Navbar variant="auth" />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <Link to="/dashboard" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263] group transition-colors">
-          <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" /> Back to Dashboard
+          <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" /> {t("requestDetail.backToDashboard", { defaultValue: "Back to Dashboard" })}
         </Link>
         <div className="bg-white rounded-2xl border border-[#E2E8F0] p-8 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <span className={`text-sm px-3 py-1 rounded-full border ${req.type === "operator" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"}`}>
-              {req.type === "operator" ? "Need Operator" : "Need Harvester"}
+              {req.type === "operator" ? t("requestDetail.needOperator", { defaultValue: "Need Operator" }) : t("requestDetail.needHarvester", { defaultValue: "Need Harvester" })}
             </span>
-            <span className={`text-sm px-3 py-1 rounded-full ${req.status === "Open" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{req.status}</span>
+            <span className={`text-sm px-3 py-1 rounded-full ${req.status === "Open" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{t("requests.status." + req.status.toLowerCase(), { defaultValue: req.status })}</span>
             {isOwner && (
-              <span className="text-sm px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-semibold shadow-sm">My Requirement</span>
+              <span className="text-sm px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-semibold shadow-sm">{t("requestDetail.myRequirement", { defaultValue: "My Requirement" })}</span>
             )}
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {[
-              { label: "Location", value: req.location + (req.state ? `, ${req.state}` : "") },
-              { label: "Machine Type", value: req.machineType },
-              { label: "Duration", value: `${req.duration || '0'} days` },
-              { label: "Start Date", value: new Date(req.startDate).toLocaleDateString() },
+              { label: t("requestDetail.locationLabel", { defaultValue: "Location" }), value: req.location + (req.state ? `, ${t("states." + req.state, { ns: "static", defaultValue: req.state })}` : "") },
+              { label: t("requestDetail.machineTypeLabel", { defaultValue: "Machine Type" }), value: t("machineTypes." + req.machineType, { ns: "static", defaultValue: req.machineType }) },
+              { label: t("requestDetail.durationLabel", { defaultValue: "Duration" }), value: t("requestDetail.durationDays", { defaultValue: "{{count}} days", count: req.duration || 0 }) },
+              { label: t("requestDetail.startDateLabel", { defaultValue: "Start Date" }), value: new Date(req.startDate).toLocaleDateString() },
             ].map((item) => (
               <div key={item.label} className="bg-[#ffffff] rounded-xl p-3 border border-[#E2E8F0]">
                 <p className="text-xs text-[#57585A] mb-1">{item.label}</p>
@@ -3181,14 +3302,14 @@ export function RequestDetail() {
 
 
           <div className="mb-6">
-            <h3 className="text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Description</h3>
-            <p className="text-[#57585A] text-sm leading-relaxed">{req.description || "No description provided."}</p>
+            <h3 className="text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("requestDetail.descriptionHeading", { defaultValue: "Description" })}</h3>
+            <p className="text-[#57585A] text-sm leading-relaxed">{req.description || t("requestDetail.noDescription", { defaultValue: "No description provided." })}</p>
           </div>
 
           <div className="h-px bg-[#E2E8F0] mb-6" />
 
           <div className="bg-[#ffffff] rounded-xl p-4 border border-[#E2E8F0] mb-4">
-            <p className="text-sm text-[#57585A] mb-1">{isOwner ? "Posted by You" : "Posted by"}</p>
+            <p className="text-sm text-[#57585A] mb-1">{isOwner ? t("requestDetail.postedByYou", { defaultValue: "Posted by You" }) : t("requestDetail.postedBy", { defaultValue: "Posted by" })}</p>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center overflow-hidden shrink-0">
                 {req.requesterProfilePic ? (
@@ -3207,13 +3328,13 @@ export function RequestDetail() {
           {isOwner ? (
             <div className="space-y-2">
               <div className="text-center text-xs py-1.5 px-3 bg-green-50 border border-green-200 text-green-700 rounded-xl font-semibold mb-2">
-                This is your requirement
+                {t("requestDetail.ownRequirement", { defaultValue: "This is your requirement" })}
               </div>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="w-full py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2 font-medium"
               >
-                <Trash2 size={16} /> Delete Requirement
+                <Trash2 size={16} /> {t("requestDetail.deleteRequirement", { defaultValue: "Delete Requirement" })}
               </button>
             </div>
           ) : (
@@ -3224,12 +3345,12 @@ export function RequestDetail() {
                 rel="noopener noreferrer"
                 className="w-full py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center font-semibold text-center text-sm gap-2"
               >
-                <MessageSquare size={16} /> WhatsApp User
+                <MessageSquare size={16} /> {t("requestDetail.whatsappUser", { defaultValue: "WhatsApp User" })}
               </a>
               <button
                 onClick={() => {
                   if (!currentUser) {
-                    toast.error("Please log in to send a message");
+                    toast.error(t("requestDetail.toastLoginToMessage", { defaultValue: "Please log in to send a message" }));
                     navigate("/login");
                   } else {
                     navigate(`/messages?userId=${req.userId}`);
@@ -3237,7 +3358,7 @@ export function RequestDetail() {
                 }}
                 className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center font-semibold text-center text-sm gap-2"
               >
-                <MessageCircle size={16} /> Message User
+                <MessageCircle size={16} /> {t("requestDetail.messageUser", { defaultValue: "Message User" })}
               </button>
             </div>
           )}
@@ -3247,11 +3368,11 @@ export function RequestDetail() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full border border-[#E2E8F0]">
-            <h3 className="text-lg text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Delete Requirement?</h3>
-            <p className="text-[#57585A] text-sm mb-4">Are you sure you want to delete this requirement? This action cannot be undone.</p>
+            <h3 className="text-lg text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("requestDetail.deleteTitle", { defaultValue: "Delete Requirement?" })}</h3>
+            <p className="text-[#57585A] text-sm mb-4">{t("requestDetail.deleteDesc", { defaultValue: "Are you sure you want to delete this requirement? This action cannot be undone." })}</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-sm">Cancel</button>
-              <button onClick={handleDelete} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 transition-colors">Delete</button>
+              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-sm">{t("requestDetail.cancelBtn", { defaultValue: "Cancel" })}</button>
+              <button onClick={handleDelete} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 transition-colors">{t("requestDetail.deleteBtn", { defaultValue: "Delete" })}</button>
             </div>
           </div>
         </div>
@@ -3266,6 +3387,7 @@ export function RequestDetail() {
 const CATEGORIES = ["All", "Harvesting Tips", "Machine Maintenance", "Success Stories", "Agri News", "Weather & Season"];
 
 export function Blogs() {
+  const { t } = useTranslation(["pages", "static"]);
   const [blogs, setBlogs] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -3430,13 +3552,13 @@ export function Blogs() {
       syncPendingLikes();
     }, 1500);
 
-    toast.success(newLiked ? "Post liked! ❤️" : "Removed from liked posts");
+    toast.success(newLiked ? t("blogs.postLiked", { defaultValue: "Post liked! ❤️" }) : t("blogs.removedFromLiked", { defaultValue: "Removed from liked posts" }));
   };
 
   const handleShare = (id: string | number) => {
     const url = `${window.location.origin}/blogs/${id}`;
     navigator.clipboard.writeText(url);
-    toast.success("Blog link copied to clipboard! 🔗");
+    toast.success(t("blogs.linkCopied", { defaultValue: "Blog link copied to clipboard! 🔗" }));
   };
 
   const handleScrollToTop = () => {
@@ -3519,13 +3641,13 @@ export function Blogs() {
           [activeBlog.id]: (prev[activeBlog.id] || 0) + 1,
         }));
         setNewCommentText("");
-        toast.success("Comment added successfully!");
+        toast.success(t("blogs.commentAdded", { defaultValue: "Comment added successfully!" }));
       } else {
         const data = await res.json();
-        toast.error(data.error || "Failed to post comment");
+        toast.error(data.error || t("blogs.failedPostComment", { defaultValue: "Failed to post comment" }));
       }
     } catch {
-      toast.error("Failed to post comment. Please try again.");
+      toast.error(t("blogs.failedPostCommentTry", { defaultValue: "Failed to post comment. Please try again." }));
     } finally {
       setSubmittingComment(false);
     }
@@ -3555,16 +3677,16 @@ export function Blogs() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-extrabold text-[#1A1A1A] font-sora">
-                    Harvesting Knowledge
+                    {t("blogs.harvestingKnowledge", { defaultValue: "Harvesting Knowledge" })}
                   </h2>
                   <p className="text-xs text-[#57585A] mt-1">
-                    Tips, guides, and stories from the field
+                    {t("blogs.subtitle", { defaultValue: "Tips, guides, and stories from the field" })}
                   </p>
                 </div>
                 <button
                   onClick={() => setIsSidebarOpen(false)}
                   className="p-1.5 hover:bg-slate-100 rounded-lg text-[#57585A] hover:text-[#172263] transition-colors"
-                  title="Collapse Sidebar"
+                  title={t("blogs.collapseSidebar", { defaultValue: "Collapse Sidebar" })}
                 >
                   <X size={16} />
                 </button>
@@ -3576,7 +3698,7 @@ export function Blogs() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search articles..."
+                  placeholder={t("blogs.searchPlaceholder", { defaultValue: "Search articles..." })}
                   className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] bg-white transition-colors"
                 />
               </div>
@@ -3584,7 +3706,7 @@ export function Blogs() {
               {/* Categories */}
               <div className="space-y-2">
                 <label className="text-[10px] uppercase font-bold tracking-wider text-[#57585A]">
-                  Categories
+                  {t("blogs.categoriesLabel", { defaultValue: "Categories" })}
                 </label>
                 <div className="flex flex-col gap-1">
                   {CATEGORIES.map((c) => (
@@ -3596,7 +3718,7 @@ export function Blogs() {
                           : "bg-white border-[#E2E8F0] text-[#57585A] hover:bg-slate-50 hover:border-slate-300"
                         }`}
                     >
-                      {c}
+                      {t("blogCategories." + c, { ns: "static", defaultValue: c })}
                     </button>
                   ))}
                 </div>
@@ -3608,7 +3730,7 @@ export function Blogs() {
             <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 text-center mt-auto">
               <Tractor size={32} className="mx-auto text-blue-300 mb-2" />
               <p className="text-[10px] text-[#57585A]">
-                Need help with a harvester machine? Connect with operators in your area.
+                {t("blogs.needHelp", { defaultValue: "Need help with a harvester machine? Connect with operators in your area." })}
               </p>
             </div>
           )}
@@ -3619,7 +3741,7 @@ export function Blogs() {
           <button
             onClick={() => setIsSidebarOpen(true)}
             className="hidden md:flex absolute left-4 top-4 z-20 p-2.5 bg-white border border-[#E2E8F0] rounded-full shadow-md text-[#172263] hover:bg-slate-50 transition-all active:scale-95 items-center justify-center"
-            title="Open Sidebar"
+            title={t("blogs.openSidebar", { defaultValue: "Open Sidebar" })}
           >
             <ChevronRight size={20} />
           </button>
@@ -3632,7 +3754,7 @@ export function Blogs() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search articles..."
+              placeholder={t("blogs.searchPlaceholder", { defaultValue: "Search articles..." })}
               className="w-full pl-10 pr-4 py-2.5 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] bg-white"
             />
           </div>
@@ -3647,7 +3769,7 @@ export function Blogs() {
                     : "bg-white border-[#E2E8F0] text-[#57585A]"
                   }`}
               >
-                {c}
+                {t("blogCategories." + c, { ns: "static", defaultValue: c })}
               </button>
             ))}
           </div>
@@ -3666,7 +3788,7 @@ export function Blogs() {
           ) : blogs.length === 0 ? (
             <div className="h-full w-full flex items-center justify-center p-4">
               <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm max-w-sm w-full p-8 text-center">
-                <EmptyState title="No articles found" description="Try a different search term or category." />
+                <EmptyState title={t("blogs.noArticlesFound", { defaultValue: "No articles found" })} description={t("blogs.tryDifferentSearch", { defaultValue: "Try a different search term or category." })} />
               </div>
             </div>
           ) : (
@@ -3708,7 +3830,7 @@ export function Blogs() {
                             } flex flex-col items-center justify-center p-6 text-white text-center w-full relative`}>
                             <Tractor size={40} className="text-white/20 mb-2 animate-pulse" />
                             <span className="text-[9px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full mb-1">
-                              {blog.category}
+                              {t("blogCategories." + blog.category, { ns: "static", defaultValue: blog.category })}
                             </span>
                             <h4 className="text-xs font-bold leading-snug line-clamp-3 px-2">{blog.title}</h4>
                             <WheatWatermark className="opacity-10 scale-75" />
@@ -3719,7 +3841,7 @@ export function Blogs() {
                         {/* Category Badge & Date (Only on mobile overlay) */}
                         <div className="absolute top-3 left-3 md:hidden">
                           <span className="px-2.5 py-0.5 bg-[#172263] text-white text-[9px] font-bold uppercase rounded-full shadow-md">
-                            {blog.category}
+                            {t("blogCategories." + blog.category, { ns: "static", defaultValue: blog.category })}
                           </span>
                         </div>
                         <div className="absolute bottom-3 left-3 right-12 md:hidden">
@@ -3735,7 +3857,7 @@ export function Blogs() {
                         <div className="hidden md:block mb-4 shrink-0">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="px-2.5 py-0.5 bg-[#172263] text-white text-[10px] font-bold uppercase rounded-full tracking-wider">
-                              {blog.category}
+                              {t("blogCategories." + blog.category, { ns: "static", defaultValue: blog.category })}
                             </span>
                             <span className="text-[10px] text-[#57585A] font-medium flex items-center gap-1">
                               <Clock size={10} /> {blog.date}
@@ -3765,7 +3887,7 @@ export function Blogs() {
                           {/* Decorative Agriculture highlight */}
                           <div className="bg-amber-50/40 border-l-4 border-amber-500 p-3 md:p-4 rounded-r-xl">
                             <p className="text-[10px] md:text-[11px] italic text-[#D97706] font-medium leading-relaxed">
-                              "Agriculture is our wisest pursuit, because in the end it will contribute most to real wealth, good morals, and happiness."
+                              {t("blogs.agriQuote", { defaultValue: "\"Agriculture is our wisest pursuit, because in the end it will contribute most to real wealth, good morals, and happiness.\"" })}
                             </p>
                           </div>
                         </div>
@@ -3778,9 +3900,9 @@ export function Blogs() {
                             </div>
                             <div>
                               <p className="text-xs font-semibold text-[#1A1A1A]">
-                                {blog.authorName || "Agri Team"}
+                                {blog.authorName || t("blogs.authorFallback", { defaultValue: "Agri Team" })}
                               </p>
-                              <p className="text-[9px] text-[#57585A]">Expert Contributor</p>
+                              <p className="text-[9px] text-[#57585A]">{t("blogs.expertContributor", { defaultValue: "Expert Contributor" })}</p>
                             </div>
                           </div>
 
@@ -3788,7 +3910,7 @@ export function Blogs() {
                             onClick={() => handleOpenArticle(blog)}
                             className="px-4 py-2 bg-[#172263] text-white text-xs font-bold rounded-xl hover:bg-[#11194A] transition-all flex items-center gap-1.5 shadow-md active:scale-95"
                           >
-                            <BookOpen size={13} /> Read Article
+                            <BookOpen size={13} /> {t("blogs.readArticle", { defaultValue: "Read Article" })}
                           </button>
                         </div>
                       </div>
@@ -3836,7 +3958,7 @@ export function Blogs() {
                             <Share2 size={15} />
                           </motion.button>
                           <span className="text-[9px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded-full mt-1.5 backdrop-blur-xs shadow-xs border border-white/10 select-none">
-                            Share
+                            {t("blogs.share", { defaultValue: "Share" })}
                           </span>
                         </div>
                       </div>
@@ -3853,9 +3975,9 @@ export function Blogs() {
                 >
                   <div className="bg-white rounded-3xl border border-[#E2E8F0] w-full max-w-lg md:max-w-4xl h-[92%] md:h-[84%] flex flex-col justify-center items-center p-8 relative shadow-sm text-center">
                     <Loader2 size={36} className="text-[#172263] animate-spin mb-4" />
-                    <p className="text-sm font-semibold text-[#1A1A1A]">Fetching fresh updates...</p>
+                    <p className="text-sm font-semibold text-[#1A1A1A]">{t("blogs.fetchingUpdates", { defaultValue: "Fetching fresh updates..." })}</p>
                     <p className="text-xs text-[#57585A] mt-1">
-                      Bringing you the best harvesting guides
+                      {t("blogs.bestGuides", { defaultValue: "Bringing you the best harvesting guides" })}
                     </p>
                   </div>
                 </div>
@@ -3879,11 +4001,10 @@ export function Blogs() {
                       className="text-[#1A1A1A] text-lg md:text-xl font-bold mb-2"
                       style={{ fontFamily: "'Sora', sans-serif" }}
                     >
-                      You're All Caught Up!
+                      {t("blogs.allCaughtUp", { defaultValue: "You're All Caught Up!" })}
                     </h3>
                     <p className="text-[#57585A] text-xs md:text-sm max-w-xs mb-8">
-                      This was all for today. Check back tomorrow for more agri guides and harvester
-                      updates.
+                      {t("blogs.allCaughtUpDesc", { defaultValue: "This was all for today. Check back tomorrow for more agri guides and harvester updates." })}
                     </p>
 
                     {/* Back to top button */}
@@ -3891,7 +4012,7 @@ export function Blogs() {
                       onClick={handleScrollToTop}
                       className="px-6 py-3 bg-[#172263] text-white text-xs md:text-sm font-bold rounded-xl hover:bg-[#11194A] transition-all flex items-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
                     >
-                      <ArrowLeft size={16} className="rotate-90" /> Back to Top
+                      <ArrowLeft size={16} className="rotate-90" /> {t("blogs.backToTop", { defaultValue: "Back to Top" })}
                     </button>
 
                     {/* Subtle wheat watermark */}
@@ -3926,7 +4047,7 @@ export function Blogs() {
               <div className="px-6 py-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#F8FAFC]">
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-200">
-                    {activeBlog.category}
+                    {t("blogCategories." + activeBlog.category, { ns: "static", defaultValue: activeBlog.category })}
                   </span>
                   <span className="text-xs text-[#57585A]">{activeBlog.date}</span>
                 </div>
@@ -3972,9 +4093,9 @@ export function Blogs() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-[#1A1A1A]">
-                      {activeBlog.authorName || "Tractor Seva Agri Team"}
+                      {activeBlog.authorName || t("blogs.authorTeam", { defaultValue: "Tractor Seva Agri Team" })}
                     </p>
-                    <p className="text-xs text-[#57585A]">Agricultural Expert & Writer</p>
+                    <p className="text-xs text-[#57585A]">{t("blogs.authorSub", { defaultValue: "Agricultural Expert & Writer" })}</p>
                   </div>
                 </div>
 
@@ -3985,13 +4106,13 @@ export function Blogs() {
                   <p className="font-semibold text-[#1A1A1A] text-base">
                     {activeBlog.short_description || activeBlog.shortDescription}
                   </p>
-                  <p>{activeBlog.content || "Full article text is loading..."}</p>
+                  <p>{activeBlog.content || t("blogs.loadingContent", { defaultValue: "Full article text is loading..." })}</p>
                 </div>
 
                 {/* Engagement: Comments Section */}
                 <div className="mt-8 pt-8 border-t border-[#E2E8F0] space-y-4">
                   <h3 className="text-base font-semibold text-[#1A1A1A] flex items-center gap-2">
-                    <MessageCircle size={18} /> Discussion ({activeBlog.comments ? activeBlog.comments.length : commentsCounts[activeBlog.id] || 0})
+                    <MessageCircle size={18} /> {t("blogs.discussion", { defaultValue: "Discussion" })} ({activeBlog.comments ? activeBlog.comments.length : commentsCounts[activeBlog.id] || 0})
                   </h3>
 
                   {/* Comment Form */}
@@ -3999,7 +4120,7 @@ export function Blogs() {
                     <input
                       value={newCommentText}
                       onChange={(e) => setNewCommentText(e.target.value)}
-                      placeholder="Share your thoughts or ask a question..."
+                      placeholder={t("blogs.writeComment", { defaultValue: "Share your thoughts or ask a question..." })}
                       className="flex-1 px-4 py-2 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263] bg-[#F8FAFC]"
                     />
                     <button
@@ -4007,7 +4128,7 @@ export function Blogs() {
                       disabled={submittingComment}
                       className="px-4 py-2 bg-[#172263] text-white text-xs font-bold rounded-xl hover:bg-[#11194A] transition-colors disabled:opacity-60 shrink-0"
                     >
-                      {submittingComment ? "Posting..." : "Comment"}
+                      {submittingComment ? t("blogs.posting", { defaultValue: "Posting..." }) : t("blogs.postComment", { defaultValue: "Comment" })}
                     </button>
                   </form>
 
@@ -4028,7 +4149,7 @@ export function Blogs() {
                       ))
                     ) : (
                       <p className="text-xs text-[#57585A] italic text-center py-4">
-                        No discussions yet. Be the first to share your thoughts!
+                        {t("blogs.noDiscussionsYet", { defaultValue: "No discussions yet. Be the first to share your thoughts!" })}
                       </p>
                     )}
                   </div>
@@ -4053,6 +4174,7 @@ export function Blogs() {
 // BLOG DETAIL
 // ===========================
 export function BlogDetail() {
+  const { t } = useTranslation(["pages", "static"]);
   const { id } = useParams();
   const [blog, setBlog] = useState<any>(null);
   const [relatedBlogs, setRelatedBlogs] = useState<any[]>([]);
@@ -4082,16 +4204,16 @@ export function BlogDetail() {
   }, [id]);
 
   if (loading) return <LoadingSpinner />;
-  if (!blog) return <EmptyState title="Blog not found" />;
+  if (!blog) return <EmptyState title={t("blogs.notFound", { defaultValue: "Blog not found" })} />;
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <nav className="text-sm text-[#57585A] mb-6 flex items-center gap-2">
-          <Link to="/blogs" className="hover:text-[#172263]">Blogs</Link>
+          <Link to="/blogs" className="hover:text-[#172263]">{t("blogs.title", { defaultValue: "Blogs" })}</Link>
           <ChevronRight size={14} />
-          <span className="text-[#172263]">{blog.category}</span>
+          <span className="text-[#172263]">{t("blogCategories." + blog.category, { ns: "static", defaultValue: blog.category })}</span>
           <ChevronRight size={14} />
           <span className="truncate">{blog.title}</span>
         </nav>
@@ -4101,12 +4223,14 @@ export function BlogDetail() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-6">
-          <span className="px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">{blog.category}</span>
+          <span className="px-3 py-1 bg-green-100 text-green-700 border border-green-200 rounded-full text-sm">
+            {t("blogCategories." + blog.category, { ns: "static", defaultValue: blog.category })}
+          </span>
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center">
               <span className="text-white text-xs font-bold">A</span>
             </div>
-            <span className="text-sm text-[#57585A]">Agri Team</span>
+            <span className="text-sm text-[#57585A]">{t("blogs.authorFallback", { defaultValue: "Agri Team" })}</span>
           </div>
           <span className="text-sm text-[#57585A]">{blog.date}</span>
         </div>
@@ -4121,25 +4245,31 @@ export function BlogDetail() {
         <div className="prose prose-sm max-w-none text-[#57585A] leading-relaxed space-y-4">
           <p className="font-semibold text-lg">{blog.short_description || blog.shortDescription}</p>
           <div className="w-full h-px bg-[#E2E8F0] my-4" />
-          <p>{blog.content || "Full article text is loading..."}</p>
+          <p>{blog.content || t("blogs.loadingContent", { defaultValue: "Full article text is loading..." })}</p>
         </div>
 
         <div className="mt-8 bg-white rounded-2xl border border-[#E2E8F0] p-5">
-          <p className="text-xs text-[#57585A] mb-3">About the Author</p>
+          <p className="text-xs text-[#57585A] mb-3">{t("blogs.aboutAuthor", { defaultValue: "About the Author" })}</p>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
               <span className="text-white font-bold">A</span>
             </div>
             <div>
-              <p className="text-[#1A1A1A] text-sm" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Tractor Seva Agri Team</p>
-              <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Agriculture Expert</span>
+              <p className="text-[#1A1A1A] text-sm" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+                {t("blogs.authorTeam", { defaultValue: "Tractor Seva Agri Team" })}
+              </p>
+              <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                {t("blogs.authorRole", { defaultValue: "Agriculture Expert" })}
+              </span>
             </div>
           </div>
         </div>
 
         {relatedBlogs.length > 0 && (
           <div className="mt-10">
-            <h3 className="text-xl text-[#1A1A1A] mb-5" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>Related Articles</h3>
+            <h3 className="text-xl text-[#1A1A1A] mb-5" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+              {t("blogs.relatedArticles", { defaultValue: "Related Articles" })}
+            </h3>
             <div className="grid sm:grid-cols-3 gap-4">
               {relatedBlogs.map((b) => (
                 <BlogCard key={b.id} {...b} />
@@ -4156,6 +4286,7 @@ export function BlogDetail() {
 // PROFILE
 // ===========================
 export function Profile() {
+  const { t } = useTranslation(["pages", "static"]);
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [harvesters, setHarvesters] = useState<any[]>([]);
@@ -4207,7 +4338,7 @@ export function Profile() {
   }, []);
 
   if (loading) return <LoadingSpinner />;
-  if (!user) return <EmptyState title="Profile not found" />;
+  if (!user) return <EmptyState title={t("profile.notFound", { defaultValue: "Profile not found" })} />;
 
   return (
     <div className="min-h-screen bg-[#ffffff] text-[#1A1A1A]">
@@ -4216,7 +4347,7 @@ export function Profile() {
         <div className="mb-6">
           <Link to="/dashboard" className="inline-flex items-center gap-2 text-[#57585A] text-sm hover:text-[#172263] transition-colors group">
             <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
-            Back to Dashboard
+            {t("profile.backToDashboard", { defaultValue: "Back to Dashboard" })}
           </Link>
         </div>
         {/* Header Info Section */}
@@ -4264,7 +4395,7 @@ export function Profile() {
                   }`}
               >
                 <Tractor size={15} className={activeTab === "listings" ? "text-white" : "text-[#E82326]"} />
-                <span><strong className={activeTab === "listings" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.harvesters || 0}</strong> Harvesters</span>
+                <span><strong className={activeTab === "listings" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.harvesters || 0}</strong> {t("profile.harvesterListings", { defaultValue: "Harvesters" })}</span>
               </button>
               <button
                 onClick={() => setActiveTab("operator")}
@@ -4274,17 +4405,17 @@ export function Profile() {
                   }`}
               >
                 <UserCheck size={15} className={activeTab === "operator" ? "text-white" : "text-[#172263]"} />
-                <span><strong className={activeTab === "operator" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.operators || 0}</strong> Operator Profile</span>
+                <span><strong className={activeTab === "operator" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.operators || 0}</strong> {t("profile.operatorProfile", { defaultValue: "Operator Profile" })}</span>
               </button>
             </div>
 
             {/* Bio / Details */}
             <div className="space-y-1.5 w-full text-center md:text-left">
-              <p className="text-sm text-[#57585A] font-semibold uppercase tracking-wider">Tractor Seva Community Member</p>
+              <p className="text-sm text-[#57585A] font-semibold uppercase tracking-wider">{t("profile.communityMember", { defaultValue: "Tractor Seva Community Member" })}</p>
 
               <div className="flex flex-col gap-1 mt-2 text-sm text-[#57585A]">
                 <p className="flex items-center justify-center md:justify-start gap-1.5">
-                  <MapPin size={15} className="text-[#E82326]" /> {user.state || "Maharashtra, India"}
+                  <MapPin size={15} className="text-[#E82326]" /> {t("states." + (user.state || "Maharashtra"), { ns: "static", defaultValue: user.state || "Maharashtra" })}{user.state ? "" : ", India"}
                 </p>
                 <p className="flex items-center justify-center md:justify-start gap-1.5">
                   <Phone size={15} className="text-zinc-400" /> +91-{user.phone}
@@ -4296,7 +4427,7 @@ export function Profile() {
 
               {/* Bio description */}
               <p className="text-sm text-[#57585A] max-w-md mt-3 leading-relaxed italic">
-                "{user.bio || operatorProfile?.description || "Agriculture enthusiast. Verified operator/harvester member of the Tractor Seva network."}"
+                "{user.bio || operatorProfile?.description || t("profile.bioFallback", { defaultValue: "Agriculture enthusiast. Verified operator/harvester member of the Tractor Seva network." })}"
               </p>
 
               {/* Mutual followed details */}
@@ -4307,7 +4438,7 @@ export function Profile() {
                   <div className="w-6 h-6 rounded-full bg-zinc-300 border-2 border-white flex items-center justify-center text-[9px] font-bold text-zinc-700">AG</div>
                 </div>
                 <p className="text-xs text-zinc-500">
-                  Active in <span className="font-semibold text-zinc-750">{user.state || "Maharashtra"}</span> and surrounding agricultural hubs
+                  {t("profile.activeIn", { defaultValue: "Active in" })} <span className="font-semibold text-zinc-750">{t("states." + (user.state || "Maharashtra"), { ns: "static", defaultValue: user.state || "Maharashtra" })}</span> {t("profile.activeInSub", { defaultValue: "and surrounding agricultural hubs" })}
                 </p>
               </div>
             </div>
@@ -4318,21 +4449,21 @@ export function Profile() {
         <div className="flex flex-wrap gap-3 mt-6 w-full justify-center md:justify-start">
           <Link to="/profile/edit" className="flex-1 min-w-[120px]">
             <button className="w-full bg-[#F4F6FA] hover:bg-zinc-200/80 text-[#1A1A1A] text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors border border-zinc-200/80">
-              Edit Profile
+              {t("profile.editProfile", { defaultValue: "Edit Profile" })}
             </button>
           </Link>
 
           <div className="flex-1 min-w-[140px] relative group">
             <button className="w-full bg-[#172263] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-1">
-              Add Listing <ChevronDown size={14} />
+              {t("shared.addListing", { ns: "pages", defaultValue: "Add Listing" })} <ChevronDown size={14} />
             </button>
             <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#ffffff] border border-zinc-200 rounded-lg shadow-2xl py-1 z-30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
               <Link to="/add-harvester" className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
-                Add Harvester
+                {t("shared.addHarvester", { ns: "pages", defaultValue: "Add Harvester" })}
               </Link>
               <div className="h-px bg-zinc-200 my-1" />
               <Link to="/add-operator" className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
-                Register Operator
+                {t("shared.addOperator", { ns: "pages", defaultValue: "Register Operator" })}
               </Link>
             </div>
           </div>
@@ -4340,19 +4471,19 @@ export function Profile() {
           <button
             onClick={logout}
             className="bg-[#E82326] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-            title="Logout"
+            title={t("shared.logout", { ns: "pages", defaultValue: "Logout" })}
           >
-            <LogOut size={16} /> <span>Logout</span>
+            <LogOut size={16} /> <span>{t("shared.logout", { ns: "pages", defaultValue: "Logout" })}</span>
           </button>
         </div>
 
         {/* Quick Actions (Dashboard Action Tiles) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 mt-8 border-b border-zinc-200">
           {[
-            { label: "My Operator", desc: "View operator details", icon: <UserCheck size={18} className="text-[#172263]" />, action: () => setActiveTab("operator") },
-            { label: "My Harvesters", desc: "View listed equipment", icon: <Tractor size={18} className="text-[#E82326]" />, action: () => setActiveTab("listings") },
-            { label: "Add Operator", desc: "List a new operator", icon: <Plus size={18} className="text-[#172263]" />, link: "/add-operator" },
-            { label: "Messages", desc: "Chat with users", icon: <MessageSquare size={18} className="text-[#1A1A1A]" />, link: "/messages" },
+            { label: t("profile.operatorProfile", { defaultValue: "My Operator" }), desc: t("profile.myOperatorDesc", { defaultValue: "View operator details" }), icon: <UserCheck size={18} className="text-[#172263]" />, action: () => setActiveTab("operator") },
+            { label: t("profile.harvesterListings", { defaultValue: "My Harvesters" }), desc: t("profile.myHarvestersDesc", { defaultValue: "View listed equipment" }), icon: <Tractor size={18} className="text-[#E82326]" />, action: () => setActiveTab("listings") },
+            { label: t("shared.addOperator", { ns: "pages", defaultValue: "Add Operator" }), desc: t("profile.addOperatorDesc", { defaultValue: "List a new operator" }), icon: <Plus size={18} className="text-[#172263]" />, link: "/add-operator" },
+            { label: t("messages.title", { ns: "pages", defaultValue: "Messages" }), desc: t("profile.messagesDesc", { defaultValue: "Chat with users" }), icon: <MessageSquare size={18} className="text-[#1A1A1A]" />, link: "/messages" },
           ].map((hl, i) => {
             const cardInner = (
               <div className="flex items-center gap-3 p-3.5 bg-[#F4F6FA] hover:bg-[#EAEFF8] rounded-xl border border-zinc-200/60 hover:border-[#172263]/30 transition-all duration-200 h-full group text-left">
@@ -4389,7 +4520,7 @@ export function Profile() {
                 }`}
             >
               <LayoutGrid size={15} />
-              <span>Listings</span>
+              <span>{t("profile.myListings", { defaultValue: "Listings" })}</span>
             </button>
             <button
               onClick={() => setActiveTab("operator")}
@@ -4399,7 +4530,7 @@ export function Profile() {
                 }`}
             >
               <UserCheck size={15} />
-              <span>Operator Profile</span>
+              <span>{t("profile.operatorProfile", { defaultValue: "Operator Profile" })}</span>
             </button>
           </div>
         </div>
@@ -4425,7 +4556,7 @@ export function Profile() {
                       )}
                       <div className="absolute top-2.5 right-2.5">
                         <span className="px-2 py-0.5 bg-[#E82326]/10 text-[#E82326] border border-[#E82326]/20 rounded text-[9px] font-bold uppercase tracking-wider">
-                          {h.company}
+                          {t("companies." + h.company, { ns: "static", defaultValue: h.company })}
                         </span>
                       </div>
                     </div>
@@ -4436,13 +4567,13 @@ export function Profile() {
                           {h.machineName}
                         </h4>
                         <p className="text-xs text-[#57585A] flex items-center gap-1.5 mt-1.5 font-medium">
-                          <MapPin size={12} className="text-[#E82326]" /> {h.location}, {h.state}
+                          <MapPin size={12} className="text-[#E82326]" /> {h.location}, {t("states." + h.state, { ns: "static", defaultValue: h.state })}
                         </p>
                       </div>
                       <div className="h-px bg-zinc-100 my-3.5" />
                       <div className="flex items-center justify-between text-[11px] text-[#57585A]">
-                        <span>Model: <strong className="text-zinc-700 font-semibold">{h.model || "N/A"}</strong></span>
-                        <span>Year: <strong className="text-zinc-700 font-semibold">{h.year || "N/A"}</strong></span>
+                        <span>{t("exploreHarvesters.model", { defaultValue: "Model" })}: <strong className="text-zinc-700 font-semibold">{h.model || "N/A"}</strong></span>
+                        <span>{t("addHarvester.purchaseYear", { defaultValue: "Year" })}: <strong className="text-zinc-700 font-semibold">{h.year || "N/A"}</strong></span>
                       </div>
                     </div>
                   </Link>
@@ -4453,11 +4584,11 @@ export function Profile() {
                 <div className="w-16 h-16 rounded-2xl border border-zinc-200 bg-[#F4F6FA] flex items-center justify-center mb-4 text-zinc-400">
                   <Camera size={28} />
                 </div>
-                <h3 className="text-xl font-bold text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>No Listings Yet</h3>
-                <p className="text-sm text-zinc-550 max-w-xs mb-6">List your harvester equipment so local farmers can browse and contact you.</p>
+                <h3 className="text-xl font-bold text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>{t("profile.noListingsYet", { defaultValue: "No Listings Yet" })}</h3>
+                <p className="text-sm text-zinc-550 max-w-xs mb-6">{t("exploreHarvesters.noListingsDesc", { defaultValue: "List your harvester equipment so local farmers can browse and contact you." })}</p>
                 <Link to="/add-harvester">
                   <button className="bg-[#172263] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-6 rounded-xl transition-colors shadow-sm">
-                    List Your Harvester
+                    {t("exploreHarvesters.listYourMachine", { defaultValue: "List Your Harvester" })}
                   </button>
                 </Link>
               </div>
@@ -4476,7 +4607,7 @@ export function Profile() {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-[#1A1A1A]">{user.name}</h4>
-                      <p className="text-[10px] text-zinc-400">{operatorProfile.location || "Location not specified"}</p>
+                      <p className="text-[10px] text-zinc-400">{operatorProfile.location || t("profile.noLocation", { defaultValue: "Location not specified" })}</p>
                     </div>
                   </div>
                   <AvailabilityBadge status={operatorProfile.availability || "Available"} />
@@ -4485,34 +4616,34 @@ export function Profile() {
                 <div className="space-y-4 text-sm text-[#57585A]">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-[#F4F6FA] p-3.5 rounded-xl border border-zinc-200/50">
-                      <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1">Experience</span>
-                      <span className="text-[#1A1A1A] font-bold text-base">{operatorProfile.experience} Years</span>
+                      <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1">{t("addOperator.experience", { defaultValue: "Experience" })}</span>
+                      <span className="text-[#1A1A1A] font-bold text-base">{operatorProfile.experience} {t("profile.yearsUnit", { defaultValue: "Years" })}</span>
                     </div>
                     <div className="bg-[#F4F6FA] p-3.5 rounded-xl border border-zinc-200/50">
-                      <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1">WhatsApp Contact</span>
+                      <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1">{t("addOperator.whatsappStat", { defaultValue: "WhatsApp Contact" })}</span>
                       <span className="text-[#1A1A1A] font-semibold text-sm">+91-{operatorProfile.whatsapp || user.phone}</span>
                     </div>
                   </div>
 
                   <div className="bg-[#F4F6FA] p-4 rounded-xl border border-zinc-200/50">
-                    <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1.5">Machine Expertise</span>
+                    <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1.5">{t("exploreOperators.expertise", { defaultValue: "Machine Expertise" })}</span>
                     <div className="flex flex-wrap gap-1.5">
                       {operatorProfile.machineExpertise && operatorProfile.machineExpertise.length > 0 ? (
                         operatorProfile.machineExpertise.map((m: string) => (
                           <span key={m} className="px-2.5 py-0.5 bg-[#ffffff] text-[#172263] border border-[#172263]/25 rounded-full text-xs font-semibold">
-                            {m}
+                            {t("machineTypes." + m, { ns: "static", defaultValue: m })}
                           </span>
                         ))
                       ) : (
-                        <span className="text-zinc-400 text-xs italic">No machines selected</span>
+                        <span className="text-zinc-400 text-xs italic">{t("profile.noMachinesSelected", { defaultValue: "No machines selected" })}</span>
                       )}
                     </div>
                   </div>
 
                   <div className="bg-[#F4F6FA] p-4 rounded-xl border border-zinc-200/50">
-                    <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1.5">Description / About Me</span>
+                    <span className="text-[10px] uppercase text-zinc-400 font-semibold tracking-wider block mb-1.5">{t("addOperator.bioStat", { defaultValue: "Description / About Me" })}</span>
                     <p className="text-xs text-zinc-650 leading-relaxed italic">
-                      "{operatorProfile.description || "Active professional operator listed on Tractor Seva."}"
+                      "{operatorProfile.description || t("profile.activeOperatorDesc", { defaultValue: "Active professional operator listed on Tractor Seva." })}"
                     </p>
                   </div>
                 </div>
@@ -4520,7 +4651,7 @@ export function Profile() {
                 <div className="pt-2 flex justify-end gap-3">
                   <Link to="/profile/edit" className="flex-1">
                     <button className="w-full py-2.5 bg-[#F4F6FA] hover:bg-zinc-200/80 text-[#1A1A1A] text-xs font-semibold rounded-xl border border-zinc-200/80 transition-colors shadow-sm">
-                      Update Operator Details
+                      {t("profile.updateOperatorDetails", { defaultValue: "Update Operator Details" })}
                     </button>
                   </Link>
                 </div>
@@ -4530,11 +4661,11 @@ export function Profile() {
                 <div className="w-16 h-16 rounded-2xl border border-zinc-200 bg-[#F4F6FA] flex items-center justify-center mb-4 text-zinc-400">
                   <UserCheck size={28} />
                 </div>
-                <h3 className="text-xl font-bold text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>Become an Operator</h3>
-                <p className="text-sm text-zinc-550 max-w-xs mb-6">Create your operator profile to specify your experience and machine skills so farmers can hire you.</p>
+                <h3 className="text-xl font-bold text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>{t("profile.becomeOperator", { defaultValue: "Become an Operator" })}</h3>
+                <p className="text-sm text-zinc-550 max-w-xs mb-6">{t("profile.becomeOperatorDesc", { defaultValue: "Create your operator profile to specify your experience and machine skills so farmers can hire you." })}</p>
                 <Link to="/add-operator">
                   <button className="bg-[#172263] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-6 rounded-xl transition-colors shadow-sm">
-                    Register Operator Profile
+                    {t("profile.registerOperatorProfile", { defaultValue: "Register Operator Profile" })}
                   </button>
                 </Link>
               </div>
@@ -4550,6 +4681,7 @@ export function Profile() {
 // MESSAGES
 // ===========================
 export function Messages() {
+  const { t } = useTranslation(["pages", "static"]);
   const [searchParams, setSearchParams] = useSearchParams();
   const userIdParam = searchParams.get("userId");
 
@@ -4702,7 +4834,7 @@ export function Messages() {
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
     if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
+      return t("messages.yesterday", { defaultValue: "Yesterday" });
     }
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
@@ -4717,7 +4849,7 @@ export function Messages() {
           <div className={`w-full md:w-80 border-r border-[#E7E0D5] flex flex-col flex-shrink-0 bg-white ${active ? "hidden md:flex" : "flex"}`}>
             {/* Header */}
             <div className="p-5 border-b border-[#E7E0D5]">
-              <h1 className="text-xl font-extrabold text-[#172263] font-sora tracking-tight">Chats 💬</h1>
+              <h1 className="text-xl font-extrabold text-[#172263] font-sora tracking-tight">{t("messages.title", { defaultValue: "Chats" })} 💬</h1>
             </div>
             
             {/* Conversations */}
@@ -4725,11 +4857,11 @@ export function Messages() {
               {loading ? (
                 <div className="p-8 text-center text-sm text-[#57585A] flex flex-col items-center justify-center gap-2">
                   <div className="w-5 h-5 border-2 border-[#172263] border-t-transparent rounded-full animate-spin" />
-                  Loading chats...
+                  {t("messages.loadingChats", { defaultValue: "Loading chats..." })}
                 </div>
               ) : chatPartners.length === 0 ? (
                 <div className="p-8 text-center text-sm text-[#57585A] italic">
-                  No conversations yet. Open a machine or operator listing to message the owner!
+                  {t("messages.noConversations", { defaultValue: "No conversations yet. Open a machine or operator listing to message the owner!" })}
                 </div>
               ) : (
                 chatPartners.map((m) => (
@@ -4754,7 +4886,7 @@ export function Messages() {
                         <p className="text-sm text-[#1A1A1A] font-extrabold font-sora truncate">{m.name}</p>
                         <span className="text-[10px] font-bold text-[#57585A]/80 shrink-0">{formatTime(m.lastMessageTime)}</span>
                       </div>
-                      <p className="text-xs text-[#57585A] truncate">{m.lastMessage || "No messages yet"}</p>
+                      <p className="text-xs text-[#57585A] truncate">{m.lastMessage || t("messages.noMessages", { defaultValue: "No messages yet" })}</p>
                     </div>
                   </button>
                 ))
@@ -4780,7 +4912,9 @@ export function Messages() {
                   </div>
                   <div>
                     <p className="text-sm text-[#1A1A1A] font-extrabold font-sora">{active.name}</p>
-                    <p className="text-[10px] font-bold text-[#57585A] capitalize tracking-wide">{active.role || "User"}</p>
+                    <p className="text-[10px] font-bold text-[#57585A] capitalize tracking-wide">
+                      {active.role ? t("roles." + active.role.toLowerCase(), { ns: "static", defaultValue: active.role }) : t("roles.user", { ns: "static", defaultValue: "User" })}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -4814,7 +4948,7 @@ export function Messages() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMsg()}
-                  placeholder="Type a message..."
+                  placeholder={t("messages.typeMessage", { defaultValue: "Type a message..." })}
                   className="flex-1 px-4 py-3 border border-[#E7E0D5] rounded-xl text-sm focus:outline-none focus:border-[#172263] bg-[#fcfbf9] transition-all placeholder:text-[#57585A]/60"
                 />
                 <button 
@@ -4832,9 +4966,9 @@ export function Messages() {
                 <div className="w-16 h-16 bg-[#172263]/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#172263]/10">
                   <MessageSquare size={32} className="text-[#172263]" />
                 </div>
-                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora mb-2">Your Messages</h3>
+                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora mb-2">{t("messages.yourMessages", { defaultValue: "Your Messages" })}</h3>
                 <p className="text-xs text-[#57585A] leading-relaxed">
-                  Send private messages to machine owners and operators to negotiate prices, coordinates, and seasonal availability details.
+                  {t("messages.noMessagesSelect", { defaultValue: "Send private messages to machine owners and operators to negotiate prices, coordinates, and seasonal availability details." })}
                 </p>
               </div>
             </div>
@@ -4849,6 +4983,7 @@ export function Messages() {
 // EDIT PROFILE
 // ===========================
 export function EditProfile() {
+  const { t } = useTranslation(["pages", "static"]);
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [state, setState] = useState("");
@@ -4928,14 +5063,14 @@ export function EditProfile() {
     }
 
     if (!/^\d{10}$/.test(finalPhone)) {
-      toast.error("Please enter a valid 10-digit phone number");
+      toast.error(t("editProfile.errorPhone", { defaultValue: "Please enter a valid 10-digit phone number" }));
       return;
     }
 
     let finalWhatsapp = "";
     if (operatorProfile) {
       if (!whatsapp.trim()) {
-        toast.error("Please enter your WhatsApp number");
+        toast.error(t("editProfile.errorWhatsapp", { defaultValue: "Please enter your WhatsApp number" }));
         return;
       }
       const cleanedWhatsapp = whatsapp.replace(/\D/g, "");
@@ -4947,7 +5082,7 @@ export function EditProfile() {
       }
 
       if (!/^\d{10}$/.test(finalWhatsapp)) {
-        toast.error("Please enter a valid 10-digit WhatsApp number");
+        toast.error(t("editProfile.errorWhatsappValid", { defaultValue: "Please enter a valid 10-digit WhatsApp number" }));
         return;
       }
     }
@@ -4966,7 +5101,7 @@ export function EditProfile() {
           const uploadData = await uploadRes.json();
           finalImagePath = uploadData.url;
         } else {
-          toast.error("Failed to upload profile image");
+          toast.error(t("editProfile.errorUploadImage", { defaultValue: "Failed to upload profile image" }));
         }
       }
 
@@ -4991,15 +5126,15 @@ export function EditProfile() {
       });
       if (res.ok) {
         window.dispatchEvent(new Event('user-profile-updated'));
-        toast.success("Profile updated successfully!");
+        toast.success(t("editProfile.successUpdate", { defaultValue: "Profile updated successfully!" }));
         navigate("/profile");
       } else {
         const data = await res.json();
-        toast.error(data.error || "Failed to update profile");
+        toast.error(data.error || t("editProfile.errorUpdate", { defaultValue: "Failed to update profile" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error updating profile");
+      toast.error(t("editProfile.errorGeneric", { defaultValue: "Error updating profile" }));
     } finally {
       setSaving(false);
     }
@@ -5012,9 +5147,9 @@ export function EditProfile() {
       <Navbar variant="auth" />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <Link to="/profile" className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263]">
-          <ArrowLeft size={16} /> Back to Profile
+          <ArrowLeft size={16} /> {t("editProfile.backToProfile", { defaultValue: "Back to Profile" })}
         </Link>
-        <PageHeader title="Edit Profile ✎" />
+        <PageHeader title={t("editProfile.title", { defaultValue: "Edit Profile" }) + " ✎"} />
         <form onSubmit={handleSave} className="bg-white rounded-2xl border border-[#E2E8F0] p-8 space-y-5 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
           {/* Profile Picture Upload preview */}
           <div className="flex flex-col items-center gap-4 p-4 bg-[#F4F6FA] border border-zinc-200/60 rounded-2xl mb-6">
@@ -5043,21 +5178,21 @@ export function EditProfile() {
               </label>
             </div>
             <div className="text-center">
-              <span className="text-xs text-zinc-500 font-bold block">Upload Profile Image</span>
-              <span className="text-[10px] text-zinc-400 block mt-0.5">JPG, PNG, or WEBP up to 5MB</span>
+              <span className="text-xs text-zinc-500 font-bold block">{t("editProfile.uploadAvatar", { defaultValue: "Upload Profile Image" })}</span>
+              <span className="text-[10px] text-zinc-400 block mt-0.5">{t("editProfile.uploadAvatarDesc", { defaultValue: "JPG, PNG, or WEBP up to 5MB" })}</span>
             </div>
           </div>
 
           <div>
-            <label className="text-sm text-[#57585A] block mb-1.5">Full Name</label>
+            <label className="text-sm text-[#57585A] block mb-1.5">{t("editProfile.name", { defaultValue: "Full Name" })}</label>
             <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
           </div>
           <div>
-            <label className="text-sm text-[#57585A] block mb-1.5">Phone</label>
+            <label className="text-sm text-[#57585A] block mb-1.5">{t("editProfile.phone", { defaultValue: "Phone" })}</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} required className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
           </div>
           <div>
-            <label className="text-sm text-[#57585A] block mb-1.5">State</label>
+            <label className="text-sm text-[#57585A] block mb-1.5">{t("editProfile.state", { defaultValue: "State" })}</label>
             <select
               value={state}
               onChange={(e) => {
@@ -5066,16 +5201,16 @@ export function EditProfile() {
               }}
               className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
             >
-              <option value="">Select State</option>
-              {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+              <option value="">{t("addOperator.statePlaceholder", { defaultValue: "Select State" })}</option>
+              {INDIAN_STATES.map((s) => <option key={s} value={s}>{t("states." + s, { ns: "static", defaultValue: s })}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-sm text-[#57585A] block mb-1.5">Bio / Description</label>
+            <label className="text-sm text-[#57585A] block mb-1.5">{t("addOperator.bioStat", { defaultValue: "Bio / Description" })}</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell us about yourself..."
+              placeholder={t("editProfile.bioPlaceholder", { defaultValue: "Tell us about yourself..." })}
               rows={3}
               className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none"
             />
@@ -5083,14 +5218,14 @@ export function EditProfile() {
 
           {operatorProfile && (
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">District / City *</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("editProfile.district", { defaultValue: "District / City *" })}</label>
               <select
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 disabled={!state}
                 className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263] disabled:opacity-50"
               >
-                <option value="">Select District</option>
+                <option value="">{t("addOperator.districtPlaceholder", { defaultValue: "Select District" })}</option>
                 {state &&
                   districtsData.states
                     .find((s) => s.state === state)
@@ -5104,33 +5239,35 @@ export function EditProfile() {
           {operatorProfile && (
             <>
               <div className="h-px bg-[#E2E8F0] my-6" />
-              <h3 className="text-[#1A1A1A] text-base font-semibold" style={{ fontFamily: "'Sora', sans-serif" }}>Operator Profile Details</h3>
+              <h3 className="text-[#1A1A1A] text-base font-semibold" style={{ fontFamily: "'Sora', sans-serif" }}>
+                {t("profile.operatorProfile", { defaultValue: "Operator Profile" })} {t("addOperator.locationDetails", { defaultValue: "Details" })}
+              </h3>
 
               <div>
-                <label className="text-sm text-[#57585A] block mb-1.5">WhatsApp Number</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">{t("addOperator.whatsappStat", { defaultValue: "WhatsApp Number" })}</label>
                 <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} required className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
               </div>
 
               <div>
-                <label className="text-sm text-[#57585A] block mb-1.5">Experience (Years)</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">{t("addOperator.experience", { defaultValue: "Experience (Years)" })}</label>
                 <input type="number" value={experience} onChange={(e) => setExperience(e.target.value)} required className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" />
               </div>
 
               <div>
-                <label className="text-sm text-[#57585A] block mb-1.5">Availability Status</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">{t("exploreOperators.statusStat", { defaultValue: "Availability Status" })}</label>
                 <select
                   value={availability}
                   onChange={(e) => setAvailability(e.target.value)}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                 >
-                  <option value="Available">Available</option>
-                  <option value="Busy">Busy</option>
-                  <option value="Not Available">Not Available</option>
+                  <option value="Available">{t("status.available", { ns: "static", defaultValue: "Available" })}</option>
+                  <option value="Busy">{t("status.busy", { ns: "static", defaultValue: "Busy" })}</option>
+                  <option value="Not Available">{t("status.notAvailable", { ns: "static", defaultValue: "Not Available" })}</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-sm text-[#57585A] block mb-2">Machine Expertise</label>
+                <label className="text-sm text-[#57585A] block mb-2">{t("exploreOperators.expertise", { defaultValue: "Machine Expertise" })}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {MACHINE_TYPES.map((m) => {
                     const isChecked = selectedMachines.includes(m);
@@ -5147,7 +5284,7 @@ export function EditProfile() {
                           }}
                           className="hidden"
                         />
-                        {m}
+                        {t("machineTypes." + m, { ns: "static", defaultValue: m })}
                       </label>
                     );
                   })}
@@ -5155,14 +5292,14 @@ export function EditProfile() {
               </div>
 
               <div>
-                <label className="text-sm text-[#57585A] block mb-1.5">Operator Description</label>
+                <label className="text-sm text-[#57585A] block mb-1.5">{t("addOperator.bioStat", { defaultValue: "Operator Description" })}</label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" />
               </div>
             </>
           )}
 
           <button type="submit" disabled={saving} className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors disabled:opacity-60 flex items-center justify-center gap-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
-            {saving ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "Save Changes"}
+            {saving ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : t("editProfile.save", { defaultValue: "Save Changes" })}
           </button>
         </form>
       </div>
@@ -5187,6 +5324,7 @@ export function EditProfile() {
 // ADMIN CONTROL PORTAL
 // ===========================
 export function AdminPortal() {
+  const { t } = useTranslation(["pages", "static"]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -5413,7 +5551,7 @@ export function AdminPortal() {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load comments.");
+      toast.error(t("admin.failedLoadComments", { defaultValue: "Failed to load comments." }));
     } finally {
       setLoadingComments(false);
     }
@@ -5426,15 +5564,15 @@ export function AdminPortal() {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
-        toast.success("Comment deleted successfully.");
+        toast.success(t("admin.commentDeleted", { defaultValue: "Comment deleted successfully." }));
         setSelectedBlogComments(prev => prev.filter(c => c.id !== commentId));
         fetchAdminBlogs();
       } else {
-        toast.error("Failed to delete comment");
+        toast.error(t("admin.failedDeleteComment", { defaultValue: "Failed to delete comment" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error deleting comment");
+      toast.error(t("admin.errorDeleteComment", { defaultValue: "Error deleting comment" }));
     }
   };
 
@@ -5472,7 +5610,7 @@ export function AdminPortal() {
   const handleBlogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!blogTitle.trim() || !blogCategory.trim() || !blogShortDesc.trim() || !blogContent.trim()) {
-      toast.error("Please fill in all required fields.");
+      toast.error(t("admin.fillRequiredFields", { defaultValue: "Please fill in all required fields." }));
       return;
     }
 
@@ -5490,7 +5628,7 @@ export function AdminPortal() {
           const uploadData = await uploadRes.json();
           uploadedUrl = uploadData.url;
         } else {
-          toast.error("Failed to upload blog image. Using default image.");
+          toast.error(t("admin.failedUploadBlogImage", { defaultValue: "Failed to upload blog image. Using default image." }));
         }
       }
 
@@ -5516,7 +5654,7 @@ export function AdminPortal() {
       });
 
       if (res.ok) {
-        toast.success(editingBlog ? "Blog updated successfully!" : "Blog created successfully!");
+        toast.success(editingBlog ? t("admin.blogUpdated", { defaultValue: "Blog updated successfully!" }) : t("admin.blogCreated", { defaultValue: "Blog created successfully!" }));
         setShowBlogForm(false);
         setEditingBlog(null);
         setBlogTitle("");
@@ -5530,11 +5668,11 @@ export function AdminPortal() {
         refreshAllData();
       } else {
         const err = await res.json();
-        toast.error(err.error || "Failed to save blog post");
+        toast.error(err.error || t("admin.failedSaveBlog", { defaultValue: "Failed to save blog post" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error saving blog post");
+      toast.error(t("admin.errorSaveBlog", { defaultValue: "Error saving blog post" }));
     } finally {
       setSavingBlog(false);
     }
@@ -5554,11 +5692,11 @@ export function AdminPortal() {
         setParsedFilter(data.parsed);
         setSearchResults(data.results);
       } else {
-        toast.error("Failed to parse natural language search");
+        toast.error(t("admin.failedParseSearch", { defaultValue: "Failed to parse natural language search" }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error executing English search query");
+      toast.error(t("admin.errorSearchQuery", { defaultValue: "Error executing English search query" }));
     } finally {
       setSearching(false);
     }
@@ -5579,11 +5717,11 @@ export function AdminPortal() {
           body: JSON.stringify({ block: true })
         });
         if (res.ok) {
-          toast.success("User blocked successfully!");
+          toast.success(t("admin.userBlocked", { defaultValue: "User blocked successfully!" }));
           refreshAllData();
           if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
-          toast.error("Failed to block user");
+          toast.error(t("admin.failedBlock", { defaultValue: "Failed to block user" }));
         }
       } else if (confirmType === 'unblock') {
         const res = await fetch(`/api/admin/users/${confirmTargetId}/block`, {
@@ -5595,11 +5733,11 @@ export function AdminPortal() {
           body: JSON.stringify({ block: false })
         });
         if (res.ok) {
-          toast.success("User unblocked successfully!");
+          toast.success(t("admin.userUnblocked", { defaultValue: "User unblocked successfully!" }));
           refreshAllData();
           if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
-          toast.error("Failed to unblock user");
+          toast.error(t("admin.failedUnblock", { defaultValue: "Failed to unblock user" }));
         }
       } else if (confirmType === 'wipe') {
         const res = await fetch(`/api/admin/users/${confirmTargetId}/data`, {
@@ -5607,11 +5745,11 @@ export function AdminPortal() {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (res.ok) {
-          toast.success("Cleared entire user posts/data and blocked user successfully.");
+          toast.success(t("admin.userWiped", { defaultValue: "Cleared entire user posts/data and blocked user successfully." }));
           refreshAllData();
           if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
-          toast.error("Failed to wipe user data");
+          toast.error(t("admin.failedWipe", { defaultValue: "Failed to wipe user data" }));
         }
       } else if (confirmType === 'deleteHarv') {
         const res = await fetch(`/api/admin/harvesters/${confirmTargetId}`, {
@@ -5619,10 +5757,10 @@ export function AdminPortal() {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (res.ok) {
-          toast.success("Harvester listing deleted successfully.");
+          toast.success(t("admin.harvesterDeleted", { defaultValue: "Harvester listing deleted successfully." }));
           refreshAllData();
         } else {
-          toast.error("Failed to delete machine listing");
+          toast.error(t("admin.failedDeleteHarvester", { defaultValue: "Failed to delete machine listing" }));
         }
       } else if (confirmType === 'deleteReq') {
         const res = await fetch(`/api/admin/requests/${confirmTargetId}`, {
@@ -5630,10 +5768,10 @@ export function AdminPortal() {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (res.ok) {
-          toast.success("Crop requirement deleted successfully.");
+          toast.success(t("admin.requestDeleted", { defaultValue: "Crop requirement deleted successfully." }));
           refreshAllData();
         } else {
-          toast.error("Failed to delete crop request");
+          toast.error(t("admin.failedDeleteRequest", { defaultValue: "Failed to delete crop request" }));
         }
       } else if (confirmType === 'deleteBlog') {
         const res = await fetch(`/api/admin/blogs/${confirmTargetId}`, {
@@ -5641,10 +5779,10 @@ export function AdminPortal() {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (res.ok) {
-          toast.success("Blog post deleted successfully.");
+          toast.success(t("admin.blogDeleted", { defaultValue: "Blog post deleted successfully." }));
           refreshAllData();
         } else {
-          toast.error("Failed to delete blog post");
+          toast.error(t("admin.failedDeleteBlog", { defaultValue: "Failed to delete blog post" }));
         }
       } else if (confirmType === 'deleteOp') {
         const res = await fetch(`/api/admin/operators/${confirmTargetId}`, {
@@ -5652,22 +5790,22 @@ export function AdminPortal() {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (res.ok) {
-          toast.success("Operator listing deleted successfully.");
+          toast.success(t("admin.operatorDeleted", { defaultValue: "Operator listing deleted successfully." }));
           refreshAllData();
         } else {
-          toast.error("Failed to delete operator profile");
+          toast.error(t("admin.failedDeleteOperator", { defaultValue: "Failed to delete operator profile" }));
         }
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error executing administrative operation");
+      toast.error(t("admin.errorGenericOperation", { defaultValue: "Error executing administrative operation" }));
     }
   };
 
   const handleCsvUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!csvFile) {
-      toast.error("Select a valid CSV file first.");
+      toast.error(t("admin.selectValidCsv", { defaultValue: "Select a valid CSV file first." }));
       return;
     }
 
@@ -5686,16 +5824,16 @@ export function AdminPortal() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success("CSV user registration completed successfully.");
+        toast.success(t("admin.csvSuccess", { defaultValue: "CSV user registration completed successfully." }));
         setCsvReport(data);
         setCsvFile(null);
         refreshAllData();
       } else {
-        toast.error(data.error || "Error uploading user data file.");
+        toast.error(data.error || t("admin.csvErrorUpload", { defaultValue: "Error uploading user data file." }));
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error during CSV upload execution");
+      toast.error(t("admin.csvErrorGeneric", { defaultValue: "Error during CSV upload execution" }));
     } finally {
       setUploadingCsv(false);
     }
@@ -5774,7 +5912,7 @@ export function AdminPortal() {
               <button 
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="p-1.5 lg:p-2 text-[#172263] hover:bg-[#e8dfd2] rounded-xl transition flex items-center justify-center shrink-0"
-                title="Toggle Sidebar"
+                title={t("admin.toggleSidebar", { defaultValue: "Toggle Sidebar" })}
               >
                 <Menu size={22} />
               </button>
@@ -5793,7 +5931,7 @@ export function AdminPortal() {
               {isSidebarOpen && (
                 <div className="transition-all animate-in fade-in duration-300">
                   <h4 className="text-[#1A1A1A] font-bold text-base font-sora whitespace-nowrap">{currentUser?.name || "Om"}</h4>
-                  <span className="text-xs text-[#57585A] font-semibold uppercase tracking-wider mt-0.5 whitespace-nowrap">Admin</span>
+                  <span className="text-xs text-[#57585A] font-semibold uppercase tracking-wider mt-0.5 whitespace-nowrap">{t("admin.role", { defaultValue: "Admin" })}</span>
                 </div>
               )}
             </div>
@@ -5801,15 +5939,15 @@ export function AdminPortal() {
             {/* Navigation Menu */}
             <nav className="flex flex-col gap-1.5">
               {[
-                { id: "dashboard", label: "Dashboard", icon: <LayoutGrid size={18} /> },
-                { id: "directory", label: "User Directory", icon: <User size={18} /> },
-                { id: "nlSearch", label: "NL Search", icon: <Search size={18} /> },
-                { id: "csvImport", label: "CSV Import", icon: <Upload size={18} /> },
-                { id: "harvesters", label: "Machines", icon: <Tractor size={18} /> },
-                { id: "operators", label: "Operators", icon: <UserCheck size={18} /> },
-                { id: "requests", label: "Requests", icon: <FileText size={18} /> },
-                { id: "enquiries", label: "Enquiries", icon: <MessageSquare size={18} /> },
-                { id: "blogs", label: "Blogs Management", icon: <BookOpen size={18} /> }
+                { id: "dashboard", label: t("admin.nav.dashboard", { defaultValue: "Dashboard" }), icon: <LayoutGrid size={18} /> },
+                { id: "directory", label: t("admin.nav.directory", { defaultValue: "User Directory" }), icon: <User size={18} /> },
+                { id: "nlSearch", label: t("admin.nav.nlSearch", { defaultValue: "NL Search" }), icon: <Search size={18} /> },
+                { id: "csvImport", label: t("admin.nav.csvImport", { defaultValue: "CSV Import" }), icon: <Upload size={18} /> },
+                { id: "harvesters", label: t("admin.nav.machines", { defaultValue: "Machines" }), icon: <Tractor size={18} /> },
+                { id: "operators", label: t("admin.nav.operators", { defaultValue: "Operators" }), icon: <UserCheck size={18} /> },
+                { id: "requests", label: t("admin.nav.requests", { defaultValue: "Requests" }), icon: <FileText size={18} /> },
+                { id: "enquiries", label: t("admin.nav.enquiries", { defaultValue: "Enquiries" }), icon: <MessageSquare size={18} /> },
+                { id: "blogs", label: t("admin.nav.blogs", { defaultValue: "Blogs Management" }), icon: <BookOpen size={18} /> }
               ].map(item => (
                 <button
                   key={item.id}
@@ -5842,11 +5980,11 @@ export function AdminPortal() {
               localStorage.removeItem("tractorsewa_preview_mode");
               navigate("/login");
             }}
-            title={!isSidebarOpen ? "Log Out" : undefined}
+            title={!isSidebarOpen ? t("shared.logout", { ns: "pages", defaultValue: "Log Out" }) : undefined}
             className={`w-full flex items-center ${isSidebarOpen ? 'gap-3 px-4' : 'justify-center px-0'} py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 transition mt-4`}
           >
             <span className="shrink-0"><LogOut size={18} /></span>
-            {isSidebarOpen && <span className="whitespace-nowrap">Log Out</span>}
+            {isSidebarOpen && <span className="whitespace-nowrap">{t("shared.logout", { ns: "pages", defaultValue: "Log Out" })}</span>}
           </button>
         </div>
         
@@ -5861,14 +5999,14 @@ export function AdminPortal() {
               {/* Header Row */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-extrabold text-[#1A1A1A] font-sora">Dashboard</h1>
-                  <p className="text-[#57585A] text-sm mt-1">Platform analytics and administrative directory highlights.</p>
+                  <h1 className="text-3xl font-extrabold text-[#1A1A1A] font-sora">{t("admin.nav.dashboard", { defaultValue: "Dashboard" })}</h1>
+                  <p className="text-[#57585A] text-sm mt-1">{t("admin.analyticsHighlight", { defaultValue: "Platform analytics and administrative directory highlights." })}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={() => setActiveTab("enquiries")}
                     className="p-2.5 text-[#57585A] hover:text-[#172263] hover:bg-zinc-100 rounded-full transition relative"
-                    title="View Enquiries"
+                    title={t("admin.viewEnquiries", { defaultValue: "View Enquiries" })}
                   >
                     <Bell size={20} />
                     {pendingEnquiriesCount > 0 && (

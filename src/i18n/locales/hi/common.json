@@ -6,7 +6,8 @@
     "profile": "प्रोफाइल",
     "logout": "लॉगआउट",
     "login": "लॉगिन",
-    "register": "पंजीकरण"
+    "register": "पंजीकरण",
+    "contact": "संपर्क"
   },
   "buttons": {
     "save": "सहेजें",
@@ -22,7 +23,8 @@
     "filter": "फ़िल्टर",
     "clear": "साफ़ करें",
     "apply": "लागू करें",
-    "close": "बंद करें"
+    "close": "बंद करें",
+    "viewAll": "सभी देखें"
   },
   "common": {
     "yes": "हाँ",

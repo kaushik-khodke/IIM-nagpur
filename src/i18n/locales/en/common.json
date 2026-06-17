@@ -6,7 +6,8 @@
     "profile": "Profile",
     "logout": "Logout",
     "login": "Login",
-    "register": "Register"
+    "register": "Register",
+    "contact": "Contact"
   },
   "buttons": {
     "save": "Save",
@@ -22,7 +23,8 @@
     "filter": "Filter",
     "clear": "Clear",
     "apply": "Apply",
-    "close": "Close"
+    "close": "Close",
+    "viewAll": "View All"
   },
   "common": {
     "yes": "Yes",

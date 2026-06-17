@@ -47,21 +47,22 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 // ---- Availability Badge ----
 export function AvailabilityBadge({ status }: { status: string }) {
+  const { t } = useTranslation(["static"]);
   if (status === "Available")
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 border border-green-200">
-        <CheckCircle2 size={11} /> Available
+        <CheckCircle2 size={11} /> {t("status.available", { defaultValue: "Available" })}
       </span>
     );
   if (status === "Busy")
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-700 border border-yellow-200">
-        <Clock size={11} /> Busy
+        <Clock size={11} /> {t("status.busy", { defaultValue: "Busy" })}
       </span>
     );
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 border border-red-200">
-      <XCircle size={11} /> Not Available
+      <XCircle size={11} /> {t("status.notAvailable", { defaultValue: "Not Available" })}
     </span>
   );
 }
@@ -124,16 +125,17 @@ export function ErrorState({
   message?: string;
   onRetry?: () => void;
 }) {
+  const { t } = useTranslation(["pages"]);
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <AlertCircle className="text-red-400 mb-4" size={48} />
-      <p className="text-[#57585A] mb-4">{message || "Something went wrong"}</p>
+      <p className="text-[#57585A] mb-4">{message || t("shared.somethingWentWrong", { defaultValue: "Something went wrong" })}</p>
       {onRetry && (
         <button
           onClick={onRetry}
           className="flex items-center gap-2 px-4 py-2 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors"
         >
-          <RefreshCw size={16} /> Retry
+          <RefreshCw size={16} /> {t("shared.retry", { defaultValue: "Retry" })}
         </button>
       )}
     </div>
@@ -279,6 +281,7 @@ export function OperatorCard({
   imagePath?: string;
   isOwner?: boolean;
 }) {
+  const { t } = useTranslation(["pages", "static", "shared"]);
   const isPreview = !localStorage.getItem("tractorsewa_token") && localStorage.getItem("tractorsewa_preview_mode") === "true";
 
   const handleClick = (e: React.MouseEvent) => {
@@ -297,7 +300,7 @@ export function OperatorCard({
         <div className="h-16 bg-gradient-to-r from-[#172263]/5 to-[#E82326]/5 relative shrink-0">
           {isOwner && (
             <span className="absolute top-2.5 left-2.5 text-[10px] px-2 py-0.5 bg-green-50 border border-green-200 text-green-700 rounded-full font-bold shadow-sm z-10">
-              My Listing
+              {t("shared.myListing", { defaultValue: "My Listing" })}
             </span>
           )}
           <WheatWatermark className="right-0 top-0 opacity-40 scale-75" />
@@ -339,7 +342,7 @@ export function OperatorCard({
                   key={i}
                   className="text-[10px] px-2 py-0.5 bg-[#F4F6FA] text-[#172263] border border-[#172263]/10 rounded-full font-medium truncate max-w-[100px]"
                 >
-                  {m}
+                  {t("machineTypes." + m, { ns: "static", defaultValue: m })}
                 </span>
               ))}
               {machineExpertise.length > 2 && (
@@ -354,7 +357,7 @@ export function OperatorCard({
           <div className="flex items-center justify-between pt-2 border-t border-zinc-100 mt-2 shrink-0">
             <AvailabilityBadge status={availability} />
             <span className="text-[10px] text-[#57585A] font-semibold flex items-center gap-1 uppercase tracking-wider">
-              <Award size={12} className="text-amber-500" /> {experience} Yrs Exp
+              <Award size={12} className="text-amber-500" /> {t("exploreOperators.yrsExp", { count: experience, defaultValue: `${experience} Yrs Exp` })}
             </span>
           </div>
         </div>
@@ -386,6 +389,7 @@ export function HarvesterCard({
   imagePath?: string;
   isOwner?: boolean;
 }) {
+  const { t } = useTranslation(["pages", "static", "shared"]);
   const isPreview = !localStorage.getItem("tractorsewa_token") && localStorage.getItem("tractorsewa_preview_mode") === "true";
 
   const handleClick = (e: React.MouseEvent) => {
@@ -408,11 +412,11 @@ export function HarvesterCard({
           )}
           {isOwner && (
             <span className="absolute top-3 left-3 text-xs px-2 py-1 bg-green-100 border border-green-200 text-green-700 rounded-full font-semibold shadow-sm">
-              My Listing
+              {t("shared.myListing", { defaultValue: "My Listing" })}
             </span>
           )}
           <span className="absolute top-3 right-3 text-xs px-2 py-1 bg-white border border-[#E2E8F0] rounded-full text-[#57585A] shadow-sm">
-            {company}
+            {t("companies." + company, { ns: "static", defaultValue: company })}
           </span>
           <WheatWatermark className="left-0 top-0" />
         </div>
@@ -435,7 +439,7 @@ export function HarvesterCard({
                 <span className="text-white text-xs font-bold">{ownerName.charAt(0)}</span>
               )}
             </div>
-            <span className="text-xs text-[#57585A]">Owner: {ownerName}</span>
+            <span className="text-xs text-[#57585A]">{t("exploreHarvesters.owner", { name: ownerName, defaultValue: `Owner: ${ownerName}` })}</span>
           </div>
         </div>
       </div>
@@ -556,7 +560,7 @@ export function AuthChooserDialog({
             className="w-full py-3 border-2 border-[#E2E8F0] bg-white text-[#57585A] hover:bg-blue-50 hover:text-[#172263] transition-colors rounded-xl text-sm font-semibold"
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
-            Maybe Later
+            {t("landing.maybeLater", { ns: "pages", defaultValue: "Maybe Later" })}
           </button>
         </div>
       </DialogContent>
@@ -574,7 +578,7 @@ export function AuthRequiredDialog({
   onClose: () => void;
   targetPath?: string;
 }) {
-  const { t } = useTranslation(["common", "auth"]);
+  const { t } = useTranslation(["common", "auth", "pages"]);
   const navigate = useNavigate();
 
   const handleAction = (mode: "login" | "register") => {
@@ -590,10 +594,10 @@ export function AuthRequiredDialog({
       <DialogContent className="max-w-md bg-[#ffffff] border-[#E2E8F0] p-6 rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl text-[#1A1A1A] text-center" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
-            Authentication Required 🔒
+            {t("shared.authRequired", { ns: "pages", defaultValue: "Authentication Required 🔒" })}
           </DialogTitle>
           <DialogDescription className="text-[#57585A] text-center mt-2 leading-relaxed text-sm">
-            You need an active account to view operator profiles, browse harvesters, view requests, or send messages.
+            {t("shared.authRequiredDesc", { ns: "pages", defaultValue: "You need an active account to view operator profiles, browse harvesters, view requests, or send messages." })}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 mt-4">
@@ -617,7 +621,7 @@ export function AuthRequiredDialog({
             onClick={onClose}
             className="w-full py-2.5 border border-[#E2E8F0] bg-white text-[#57585A] hover:bg-gray-50 transition-colors rounded-xl text-xs font-medium"
           >
-            Back to Preview
+            {t("shared.backToPreview", { ns: "pages", defaultValue: "Back to Preview" })}
           </button>
         </div>
       </DialogContent>
@@ -661,7 +665,7 @@ export function LanguageSwitcher() {
 
 // ---- Navbar ----
 export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "dashboard", "pages"]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userName, setUserName] = useState("User");
   const [userRole, setUserRole] = useState(() => localStorage.getItem("tractorsewa_user_role") || "user");
@@ -773,8 +777,8 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         { to: "/operators", label: t("operators.title", { ns: "dashboard" }) },
         { to: "/messages", label: t("sidebar.messages", { ns: "dashboard" }) },
         { to: "/blogs", label: t("sidebar.blogs", { ns: "dashboard" }) },
-        { to: "/add-harvester", label: t("buttons.add", { ns: "common" }) + " Harvester" },
-        { to: "/add-operator", label: t("buttons.add", { ns: "common" }) + " Operator" },
+        { to: "/add-harvester", label: t("shared.addHarvester", { ns: "pages", defaultValue: "Add Harvester" }) },
+        { to: "/add-operator", label: t("shared.addOperator", { ns: "pages", defaultValue: "Add Operator" }) },
         { to: "/profile", label: t("sidebar.profile", { ns: "dashboard" }) },
         { to: "/requests", label: t("sidebar.requests", { ns: "dashboard" }) },
       ];
@@ -791,10 +795,10 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         {actualVariant === "public" || location.pathname === "/" ? (
           <div className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
             {[
-              { label: "Home", anchor: "top" },
-              { label: "How it Works", anchor: "how-it-works" },
-              { label: "Features", anchor: "features" },
-              { label: "Contact", anchor: "contact" },
+              { label: t("nav.home", { ns: "common", defaultValue: "Home" }), anchor: "top" },
+              { label: t("landing.howItWorks", { ns: "pages", defaultValue: "How It Works" }), anchor: "how-it-works" },
+              { label: t("landing.features", { ns: "pages", defaultValue: "Features" }), anchor: "features" },
+              { label: t("nav.contact", { ns: "common", defaultValue: "Contact" }), anchor: "contact" },
             ].map((item) => (
               <a
                 key={item.anchor}
@@ -852,18 +856,18 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors">
-                      <Plus size={15} /> Add Listing <ChevronDown size={13} />
+                      <Plus size={15} /> {t("shared.addListing", { ns: "pages", defaultValue: "Add Listing" })} <ChevronDown size={13} />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-white border border-[#E2E8F0] rounded-xl">
                     <DropdownMenuItem asChild>
                       <Link to="/add-harvester" className="flex items-center gap-2 cursor-pointer">
-                        <Tractor size={15} /> Add Harvester
+                        <Tractor size={15} /> {t("shared.addHarvester", { ns: "pages", defaultValue: "Add Harvester" })}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/add-operator" className="flex items-center gap-2 cursor-pointer">
-                        <User size={15} /> Add Operator
+                        <User size={15} /> {t("shared.addOperator", { ns: "pages", defaultValue: "Add Operator" })}
                       </Link>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -887,29 +891,29 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                   {userRole === 'admin' ? (
                     <DropdownMenuItem asChild>
                       <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
-                        <Settings size={15} /> Admin Dashboard
+                        <Settings size={15} /> {t("sidebar.admin", { ns: "dashboard", defaultValue: "Admin Dashboard" })}
                       </Link>
                     </DropdownMenuItem>
                   ) : (
                     <>
                       <DropdownMenuItem asChild>
                         <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
-                          <User size={15} /> View Profile
+                          <User size={15} /> {t("shared.viewProfile", { ns: "pages", defaultValue: "View Profile" })}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/harvesters?tab=mine" className="flex items-center gap-2 cursor-pointer">
-                          <Tractor size={15} /> My Harvesters
+                          <Tractor size={15} /> {t("exploreHarvesters.myHarvesters", { ns: "pages", defaultValue: "My Harvesters" })}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/requests" className="flex items-center gap-2 cursor-pointer">
-                          <FileText size={15} /> My Requests
+                          <FileText size={15} /> {t("exploreHarvesters.myRequests", { ns: "pages", defaultValue: "My Requests" })}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
-                          <Settings size={15} /> Settings
+                          <Settings size={15} /> {t("sidebar.settings", { ns: "dashboard", defaultValue: "Settings" })}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
@@ -918,7 +922,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                             <Bell size={15} />
                             <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#172263] rounded-full" />
                           </div>
-                          Messages
+                          {t("sidebar.messages", { ns: "dashboard", defaultValue: "Messages" })}
                         </Link>
                       </DropdownMenuItem>
                     </>
@@ -928,7 +932,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                     onClick={logout}
                     className="text-red-600 flex items-center gap-2 cursor-pointer"
                   >
-                    <LogOut size={15} /> Logout
+                    <LogOut size={15} /> {t("nav.logout", { ns: "common", defaultValue: "Logout" })}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -970,10 +974,10 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
           {location.pathname === "/" && (
             <div className="mb-2 pb-2 border-b border-[#E2E8F0] space-y-2">
               {[
-                { label: "Home", anchor: "top" },
-                { label: "How it Works", anchor: "how-it-works" },
-                { label: "Features", anchor: "features" },
-                { label: "Contact", anchor: "contact" },
+                { label: t("nav.home", { ns: "common", defaultValue: "Home" }), anchor: "top" },
+                { label: t("landing.howItWorks", { ns: "pages", defaultValue: "How It Works" }), anchor: "how-it-works" },
+                { label: t("landing.features", { ns: "pages", defaultValue: "Features" }), anchor: "features" },
+                { label: t("nav.contact", { ns: "common", defaultValue: "Contact" }), anchor: "contact" },
               ].map((item) => (
                 <a
                   key={item.anchor}
@@ -1018,14 +1022,14 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
               })}
               {isAuthenticated && (
                 <button onClick={logout} className="block py-2 text-red-600 w-full text-left">
-                  Logout
+                  {t("nav.logout", { ns: "common", defaultValue: "Logout" })}
                 </button>
               )}
             </>
           ) : (
             <>
-              <Link to="/login" onClick={(e) => { handleNavbarAuthClick(e, "login"); setMobileOpen(false); }} className="block py-2 text-[#57585A]">Login</Link>
-              <Link to="/register" onClick={(e) => { handleNavbarAuthClick(e, "register"); setMobileOpen(false); }} className="block py-2 text-[#172263]">Sign Up</Link>
+              <Link to="/login" onClick={(e) => { handleNavbarAuthClick(e, "login"); setMobileOpen(false); }} className="block py-2 text-[#57585A]">{t("nav.login", { ns: "common", defaultValue: "Login" })}</Link>
+              <Link to="/register" onClick={(e) => { handleNavbarAuthClick(e, "register"); setMobileOpen(false); }} className="block py-2 text-[#172263]">{t("nav.register", { ns: "common", defaultValue: "Sign Up" })}</Link>
             </>
           )}
         </div>

@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 // Register ScrollTrigger safely for React
 if (typeof window !== "undefined") {
@@ -210,17 +211,21 @@ MagneticButton.displayName = "MagneticButton";
 // -------------------------------------------------------------------------
 // 3. MAIN COMPONENT
 // -------------------------------------------------------------------------
-const MarqueeItem = () => (
-  <div className="flex items-center space-x-12 px-6">
-    <span>Connecting Farmers</span> <span className="text-[#E8720C]/80">✦</span>
-    <span>Verified Operators</span> <span className="text-[#E8720C]/80">✦</span>
-    <span>Seamless Booking</span> <span className="text-[#E8720C]/80">✦</span>
-    <span>Nationwide Service</span> <span className="text-[#E8720C]/80">✦</span>
-    <span>Empowering Growth</span> <span className="text-[#E8720C]/80">✦</span>
-  </div>
-);
+const MarqueeItem = () => {
+  const { t } = useTranslation(["pages", "static"]);
+  return (
+    <div className="flex items-center space-x-12 px-6">
+      <span>{t("footer.marquee.connecting", { defaultValue: "Connecting Farmers" })}</span> <span className="text-[#E8720C]/80">✦</span>
+      <span>{t("footer.marquee.operators", { defaultValue: "Verified Operators" })}</span> <span className="text-[#E8720C]/80">✦</span>
+      <span>{t("footer.marquee.booking", { defaultValue: "Seamless Booking" })}</span> <span className="text-[#E8720C]/80">✦</span>
+      <span>{t("footer.marquee.service", { defaultValue: "Nationwide Service" })}</span> <span className="text-[#E8720C]/80">✦</span>
+      <span>{t("footer.marquee.growth", { defaultValue: "Empowering Growth" })}</span> <span className="text-[#E8720C]/80">✦</span>
+    </div>
+  );
+};
 
 export function CinematicFooter() {
+  const { t } = useTranslation(["pages", "static"]);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const giantTextRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -284,7 +289,7 @@ export function CinematicFooter() {
               ref={headingRef}
               className="text-5xl md:text-8xl font-black footer-text-glow tracking-tighter mb-12 text-center"
             >
-              Grow your harvest.
+              {t("footer.growHarvest", { defaultValue: "Grow your harvest." })}
             </h2>
 
             {/* Interactive Magnetic Pills Layout */}
@@ -295,34 +300,34 @@ export function CinematicFooter() {
                   <svg className="w-6 h-6 text-[#172263]/50 group-hover:text-[#172263] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
-                  Register as Farmer
+                  {t("landing.farmerPill.register", { defaultValue: "Register as Farmer" })}
                 </MagneticButton>
                 
                 <MagneticButton as="a" href="/enquiry" className="footer-glass-pill px-10 py-5 rounded-full text-[#172263] font-bold text-sm md:text-base flex items-center gap-3 group">
                   <svg className="w-6 h-6 text-[#172263]/50 group-hover:text-green-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Enquiry
+                  {t("shared.enquiry", { defaultValue: "Enquiry" })}
                 </MagneticButton>
 
                 <MagneticButton as="a" href="/register" className="footer-glass-pill px-10 py-5 rounded-full text-[#172263] font-bold text-sm md:text-base flex items-center gap-3 group">
                   <svg className="w-6 h-6 text-[#172263]/50 group-hover:text-[#E8720C] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  Join as Operator
+                  {t("landing.operatorPill.join", { defaultValue: "Join as Operator" })}
                 </MagneticButton>
               </div>
 
               {/* Secondary Text Links */}
               <div className="flex flex-wrap justify-center gap-3 md:gap-6 w-full mt-2">
                 <MagneticButton as="a" href="#" className="footer-glass-pill px-6 py-3 rounded-full text-[#172263]/70 font-medium text-xs md:text-sm hover:text-[#172263]">
-                  Privacy Policy
+                  {t("footer.privacyPolicy", { defaultValue: "Privacy Policy" })}
                 </MagneticButton>
                 <MagneticButton as="a" href="#" className="footer-glass-pill px-6 py-3 rounded-full text-[#172263]/70 font-medium text-xs md:text-sm hover:text-[#172263]">
-                  Terms of Service
+                  {t("footer.termsOfService", { defaultValue: "Terms of Service" })}
                 </MagneticButton>
                 <MagneticButton as="a" href="#" className="footer-glass-pill px-6 py-3 rounded-full text-[#172263]/70 font-medium text-xs md:text-sm hover:text-[#172263]">
-                  Support
+                  {t("footer.support", { defaultValue: "Support" })}
                 </MagneticButton>
               </div>
             </div>
@@ -333,7 +338,7 @@ export function CinematicFooter() {
             
             {/* Copyright */}
             <div className="text-[#172263]/60 text-[10px] md:text-xs font-semibold tracking-widest uppercase order-2 md:order-1">
-              © 2025 Tractor Seva. Made for Indian Farmers 🇮🇳
+              {t("footer.copyright", { defaultValue: "© 2025 Tractor Seva. Made for Indian Farmers 🇮🇳" })}
             </div>
 
 

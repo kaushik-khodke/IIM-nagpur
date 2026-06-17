@@ -177,75 +177,75 @@ export function Landing() {
   const [expandedStep, setExpandedStep] = useState<number | null>(null);
 
   const steps = [
-    { num: "01", icon: <Users size={24} />, title: "Register", desc: "Create your free account as farmer, operator, or both." },
-    { num: "02", icon: <Star size={24} />, title: "Create Profile", desc: "Add your machine expertise, location, and availability." },
-    { num: "03", icon: <Search size={24} />, title: "Find Match", desc: "Search and filter operators or harvesters near you." },
-    { num: "04", icon: <Wheat size={24} />, title: "Connect & Harvest", desc: "Message directly, agree on terms, and get to work!" },
+    { num: "01", icon: <Users size={24} />, title: t("landing.steps.step1.title"), desc: t("landing.steps.step1.desc") },
+    { num: "02", icon: <Star size={24} />, title: t("landing.steps.step2.title"), desc: t("landing.steps.step2.desc") },
+    { num: "03", icon: <Search size={24} />, title: t("landing.steps.step3.title"), desc: t("landing.steps.step3.desc") },
+    { num: "04", icon: <Wheat size={24} />, title: t("landing.steps.step4.title"), desc: t("landing.steps.step4.desc") },
   ];
 
   const personaSteps = {
     farmer: [
       {
-        num: "01", icon: <Users size={22} />, title: "Register as Farmer",
-        desc: "Create your free account in under 2 minutes.",
-        detail: "Sign up with your phone number, select your state and district. No paperwork, no fees — just a quick profile and you're in.",
+        num: "01", icon: <Users size={22} />, title: t("landing.persona.farmer.s1.title"),
+        desc: t("landing.persona.farmer.s1.desc"),
+        detail: t("landing.persona.farmer.s1.detail"),
         color: "from-blue-600 to-blue-800",
       },
       {
-        num: "02", icon: <MapPin size={22} />, title: "Post Your Requirement",
-        desc: "Tell us what crop, machine type, and dates you need.",
-        detail: "Select your crop type (paddy, wheat, soybean...), pick your harvest start date, and specify how many days you need a harvester. Done in seconds.",
+        num: "02", icon: <MapPin size={22} />, title: t("landing.persona.farmer.s2.title"),
+        desc: t("landing.persona.farmer.s2.desc"),
+        detail: t("landing.persona.farmer.s2.detail"),
         color: "from-amber-500 to-orange-600",
       },
       {
-        num: "03", icon: <Search size={22} />, title: "Browse & Filter Matches",
-        desc: "See verified operators and harvesters near you instantly.",
-        detail: "Filter by district, machine brand, availability, and experience. View full profiles with ratings, past harvests, and contact info before you connect.",
+        num: "03", icon: <Search size={22} />, title: t("landing.persona.farmer.s3.title"),
+        desc: t("landing.persona.farmer.s3.desc"),
+        detail: t("landing.persona.farmer.s3.detail"),
         color: "from-green-500 to-green-700",
       },
       {
-        num: "04", icon: <Wheat size={22} />, title: "Connect & Get Harvested",
-        desc: "WhatsApp or message directly. Agree on terms. Harvest!",
-        detail: "No middlemen. Contact the operator or owner directly via WhatsApp or the in-app message system. Agree on your rate, confirm dates, and your crop is harvested on time.",
+        num: "04", icon: <Wheat size={22} />, title: t("landing.persona.farmer.s4.title"),
+        desc: t("landing.persona.farmer.s4.desc"),
+        detail: t("landing.persona.farmer.s4.detail"),
         color: "from-[#172263] to-[#0f174d]",
       },
     ],
     operator: [
       {
-        num: "01", icon: <Users size={22} />, title: "Register as Operator",
-        desc: "Create your operator profile and showcase your skills.",
-        detail: "Register with your machine type, years of experience, and operating district. Add your photo and certifications to stand out to farmers looking for reliable operators.",
+        num: "01", icon: <Users size={22} />, title: t("landing.persona.operator.s1.title"),
+        desc: t("landing.persona.operator.s1.desc"),
+        detail: t("landing.persona.operator.s1.detail"),
         color: "from-blue-600 to-blue-800",
       },
       {
-        num: "02", icon: <Star size={22} />, title: "List Your Availability",
-        desc: "Set your schedule and service areas so farmers find you.",
-        detail: "Mark which months you're available, which districts you travel to, and what machines you can operate. Update anytime — you're always in control.",
+        num: "02", icon: <Star size={22} />, title: t("landing.persona.operator.s2.title"),
+        desc: t("landing.persona.operator.s2.desc"),
+        detail: t("landing.persona.operator.s2.detail"),
         color: "from-amber-500 to-orange-600",
       },
       {
-        num: "03", icon: <BarChart3 size={22} />, title: "Receive Requests",
-        desc: "Farmers will find and contact you directly.",
-        detail: "When a farmer posts a requirement matching your profile, they'll see you in search results. You'll get direct WhatsApp or in-app messages from interested farmers.",
+        num: "03", icon: <BarChart3 size={22} />, title: t("landing.persona.operator.s3.title"),
+        desc: t("landing.persona.operator.s3.desc"),
+        detail: t("landing.persona.operator.s3.detail"),
         color: "from-green-500 to-green-700",
       },
       {
-        num: "04", icon: <Wheat size={22} />, title: "Work & Earn",
-        desc: "Confirm the job, head to the field, and earn fairly.",
-        detail: "Agree on your daily rate directly with the farmer — no commission cuts, no middlemen. More work, better pay, and a growing reputation on the platform.",
+        num: "04", icon: <Wheat size={22} />, title: t("landing.persona.operator.s4.title"),
+        desc: t("landing.persona.operator.s4.desc"),
+        detail: t("landing.persona.operator.s4.detail"),
         color: "from-[#172263] to-[#0f174d]",
       },
     ],
   };
 
   const features = [
-    { icon: <Search size={22} />, title: "Operator Search", desc: "Find verified operators by location, experience & machine type.", headerComponent: <SearchHeader /> },
-    { icon: <Tractor size={22} />, title: "Harvester Directory", desc: "Browse machines from all major brands across India.", headerComponent: <TractorHeader /> },
-    { icon: <MessageSquare size={22} />, title: "Direct Messaging", desc: "Connect directly without middlemen or brokers.", headerComponent: <ChatHeader /> },
-    { icon: <CheckCircle size={22} />, title: "Availability Tracking", desc: "Real-time availability status for every operator.", headerComponent: <TrackingHeader /> },
-    { icon: <Filter size={22} />, title: "Requirements Board", desc: "Post your seasonal requirements and get applications.", headerComponent: <BoardHeader /> },
-    { icon: <MapPin size={22} />, title: "Location Filters", desc: "Pinpoint operators in your district, state or region.", headerComponent: <LocationHeader /> },
-    { icon: <Globe size={22} />, title: "Multilingual Support", desc: "Access the platform in Hindi, Punjabi, Marathi, and other regional languages.", headerComponent: <GlobeHeader /> },
+    { icon: <Search size={22} />, title: t("landing.featureList.f1.title"), desc: t("landing.featureList.f1.desc"), headerComponent: <SearchHeader /> },
+    { icon: <Tractor size={22} />, title: t("landing.featureList.f2.title"), desc: t("landing.featureList.f2.desc"), headerComponent: <TractorHeader /> },
+    { icon: <MessageSquare size={22} />, title: t("landing.featureList.f3.title"), desc: t("landing.featureList.f3.desc"), headerComponent: <ChatHeader /> },
+    { icon: <CheckCircle size={22} />, title: t("landing.featureList.f4.title"), desc: t("landing.featureList.f4.desc"), headerComponent: <TrackingHeader /> },
+    { icon: <Filter size={22} />, title: t("landing.featureList.f5.title"), desc: t("landing.featureList.f5.desc"), headerComponent: <BoardHeader /> },
+    { icon: <MapPin size={22} />, title: t("landing.featureList.f6.title"), desc: t("landing.featureList.f6.desc"), headerComponent: <LocationHeader /> },
+    { icon: <Globe size={22} />, title: t("landing.featureList.f7.title"), desc: t("landing.featureList.f7.desc"), headerComponent: <GlobeHeader /> },
   ];
 
   return (
@@ -276,7 +276,7 @@ export function Landing() {
             transition={{ duration: 0.7 }}
           >
             <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-sm mb-6">
-              India's Leading Agri-Harvesting Network
+              {t("landing.agriNetworkBadge", { ns: "pages", defaultValue: "India's Leading Agri-Harvesting Network" })}
             </span>
             <h1
               className="text-5xl md:text-6xl leading-[1.1] mb-6"
@@ -293,7 +293,7 @@ export function Landing() {
                   to="/dashboard"
                   className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
                 >
-                  Go to Dashboard <ArrowRight size={18} />
+                  {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={18} />
                 </Link>
               ) : (
                 <>
@@ -301,7 +301,7 @@ export function Landing() {
                     to="/enquiry"
                     className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
                   >
-                    Submit Enquiry <ArrowRight size={18} />
+                    {t("landing.submitEnquiry", { ns: "pages", defaultValue: "Submit Enquiry" })} <ArrowRight size={18} />
                   </Link>
                   <Link
                     to="/dashboard"
@@ -316,9 +316,13 @@ export function Landing() {
               )}
             </div>
             <div className="flex flex-wrap gap-5 text-sm text-[#57585A]">
-              {["Free to Join", "Verified Profiles", "50+ Cities"].map((t) => (
-                <span key={t} className="flex items-center gap-1.5">
-                  <CheckCircle size={14} className="text-green-600" /> {t}
+              {[
+                t("landing.freeToJoin", { ns: "pages", defaultValue: "Free to Join" }),
+                t("landing.verifiedProfiles", { ns: "pages", defaultValue: "Verified Profiles" }),
+                t("landing.cities", { ns: "pages", defaultValue: "50+ Cities" })
+              ].map((badge) => (
+                <span key={badge} className="flex items-center gap-1.5">
+                  <CheckCircle size={14} className="text-green-600" /> {badge}
                 </span>
               ))}
             </div>
@@ -337,8 +341,8 @@ export function Landing() {
                     <CheckCircle size={18} className="text-green-600" />
                   </div>
                   <div>
-                    <p className="text-[#1A1A1A] font-bold text-sm">500+ Operators</p>
-                    <p className="text-[#57585A] text-xs">Online Now</p>
+                    <p className="text-[#1A1A1A] font-bold text-sm">{t("landing.activeOperators", { ns: "pages", defaultValue: "500+ Operators" })}</p>
+                    <p className="text-[#57585A] text-xs">{t("landing.onlineNow", { ns: "pages", defaultValue: "Online Now" })}</p>
                   </div>
                 </motion.div>
 
@@ -353,8 +357,8 @@ export function Landing() {
                 <Star size={18} className="text-blue-600" />
               </div>
               <div>
-                <p className="text-[#1A1A1A] font-bold text-sm">Top Rated</p>
-                <p className="text-[#57585A] text-xs">Verified Profiles</p>
+                <p className="text-[#1A1A1A] font-bold text-sm">{t("landing.topRated", { ns: "pages", defaultValue: "Top Rated" })}</p>
+                <p className="text-[#57585A] text-xs">{t("landing.verifiedProfiles", { ns: "pages", defaultValue: "Verified Profiles" })}</p>
               </div>
             </motion.div>
 
@@ -369,8 +373,8 @@ export function Landing() {
                 <Wheat size={18} className="text-orange-600" />
               </div>
               <div>
-                <p className="text-[#1A1A1A] font-bold text-sm">Multiple Crops</p>
-                <p className="text-[#57585A] text-xs">Wheat, Rice & more</p>
+                <p className="text-[#1A1A1A] font-bold text-sm">{t("landing.multipleCrops", { ns: "pages", defaultValue: "Multiple Crops" })}</p>
+                <p className="text-[#57585A] text-xs">{t("landing.wheatRice", { ns: "pages", defaultValue: "Wheat, Rice & more" })}</p>
               </div>
             </motion.div>
           </div>
@@ -381,10 +385,10 @@ export function Landing() {
       <section className="bg-[#172263] py-3 shrink-0">
         <div className="w-full mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { num: 500, label: "Operators Registered" },
-            { num: 200, label: "Harvesters Listed" },
-            { num: 50, label: "Cities Covered" },
-            { num: 1000, label: "Connections Made" },
+            { num: 500, label: t("landing.stats.operatorsRegistered", { ns: "pages", defaultValue: "Operators Registered" }) },
+            { num: 200, label: t("landing.stats.harvestersListed", { ns: "pages", defaultValue: "Harvesters Listed" }) },
+            { num: 50, label: t("landing.stats.citiesCovered", { ns: "pages", defaultValue: "Cities Covered" }) },
+            { num: 1000, label: t("landing.stats.connectionsMade", { ns: "pages", defaultValue: "Connections Made" }) },
           ].map((s) => (
             <motion.div
               key={s.label}
@@ -414,7 +418,7 @@ export function Landing() {
                 {t("landing.features", { ns: "pages" })}
               </h2>
               <p className="text-[#57585A] max-w-xl mx-auto">
-                Built for the realities of Indian agricultural workflow — field-tested, farmer-approved.
+                {t("landing.featuresSub", { ns: "pages", defaultValue: "Built for the realities of Indian agricultural workflow — field-tested, farmer-approved." })}
               </p>
             </div>
             <BentoGrid className="max-w-6xl mx-auto">
@@ -441,15 +445,18 @@ export function Landing() {
         {/* Header */}
         <div className="text-center mb-10">
           <h2 className="text-4xl text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
-            How It Works
+            {t("landing.howItWorks", { ns: "pages", defaultValue: "How It Works" })}
           </h2>
           <p className="text-[#57585A] max-w-xl mx-auto mb-8">
-            A tailored journey for every person on the platform. Choose your role below.
+            {t("landing.howItWorksSub", { ns: "pages", defaultValue: "A tailored journey for every person on the platform. Choose your role below." })}
           </p>
 
           {/* Persona Toggle */}
           <div className="inline-flex items-center bg-[#F4F6FA] border border-[#E2E8F0] rounded-2xl p-1.5 gap-1">
-            {([['farmer', '🌾 I am a Farmer'], ['operator', '🚜 I am an Operator']] as const).map(([key, label]) => (
+            {([
+              ['farmer', t("landing.persona.farmerTab", { ns: "pages", defaultValue: "🌾 I am a Farmer" })],
+              ['operator', t("landing.persona.operatorTab", { ns: "pages", defaultValue: "🚜 I am an Operator" })]
+            ] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => { setActivePersona(key); setExpandedStep(null); }}
@@ -497,7 +504,7 @@ export function Landing() {
 
                   {/* Hover hint */}
                   <div className="flex items-center justify-center gap-1 mt-auto pt-3 text-xs font-semibold text-zinc-300 group-hover:opacity-0 transition-opacity duration-200 shrink-0">
-                    Hover to learn more ↓
+                    {t("landing.hoverToLearnMore", { ns: "pages", defaultValue: "Hover to learn more ↓" })}
                   </div>
                 </div>
 
@@ -520,12 +527,12 @@ export function Landing() {
           viewport={{ once: true }}
           transition={{ delay: 0.5 }}
         >
-          <p className="text-sm text-zinc-500 mb-4">Ready to get started?</p>
+          <p className="text-sm text-zinc-500 mb-4">{t("landing.readyToGetStarted", { ns: "pages", defaultValue: "Ready to get started?" })}</p>
           <button
             onClick={() => { setChooserMode("register"); setChooserOpen(true); }}
             className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#172263] text-white rounded-xl font-semibold hover:bg-[#11194A] transition-all shadow-[0_4px_14px_rgba(23,34,99,0.3)] hover:shadow-[0_6px_20px_rgba(23,34,99,0.4)] hover:-translate-y-0.5"
           >
-            Join Free — It Takes 2 Minutes <ArrowRight size={16} />
+            {t("landing.joinFree", { ns: "pages", defaultValue: "Join Free — It Takes 2 Minutes" })} <ArrowRight size={16} />
           </button>
         </motion.div>
       </section>
@@ -543,7 +550,7 @@ export function Landing() {
             {t("blogs.title", { ns: "pages" })}
           </h2>
           <Link to="/blogs" className="text-[#172263] text-sm font-medium hover:underline flex items-center gap-1">
-            View All <ArrowRight size={15} />
+            {t("buttons.viewAll", { ns: "common", defaultValue: "View All" })} <ArrowRight size={15} />
           </Link>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">

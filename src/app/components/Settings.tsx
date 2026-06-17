@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   User,
@@ -66,6 +67,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 // ─── Password Strength ───────────────────────────────────────────────────────
 function PasswordStrength({ password }: { password: string }) {
+  const { t } = useTranslation("pages");
   const checks = [
     password.length >= 8,
     /[A-Z]/.test(password),
@@ -75,7 +77,13 @@ function PasswordStrength({ password }: { password: string }) {
   ];
   const score = checks.filter(Boolean).length;
   const colors = ["bg-red-500", "bg-orange-400", "bg-yellow-400", "bg-lime-500", "bg-green-500"];
-  const labels = ["Very Weak", "Weak", "Fair", "Good", "Strong"];
+  const labels = [
+    t("settings.account.passwordStrength.veryWeak", { defaultValue: "Very Weak" }),
+    t("settings.account.passwordStrength.weak", { defaultValue: "Weak" }),
+    t("settings.account.passwordStrength.fair", { defaultValue: "Fair" }),
+    t("settings.account.passwordStrength.good", { defaultValue: "Good" }),
+    t("settings.account.passwordStrength.strong", { defaultValue: "Strong" }),
+  ];
 
   if (!password) return null;
 
@@ -87,10 +95,16 @@ function PasswordStrength({ password }: { password: string }) {
         ))}
       </div>
       <p className={`text-xs font-medium ${score <= 2 ? "text-red-500" : score <= 3 ? "text-yellow-600" : "text-green-600"}`}>
-        {labels[score - 1] || "Very Weak"}
+        {labels[score - 1] || t("settings.account.passwordStrength.veryWeak", { defaultValue: "Very Weak" })}
       </p>
       <ul className="space-y-0.5">
-        {["At least 8 characters", "Uppercase letter", "Lowercase letter", "Number", "Special character"].map((req, i) => (
+        {[
+          t("settings.account.passwordStrength.reqLength", { defaultValue: "At least 8 characters" }),
+          t("settings.account.passwordStrength.reqUpper", { defaultValue: "Uppercase letter" }),
+          t("settings.account.passwordStrength.reqLower", { defaultValue: "Lowercase letter" }),
+          t("settings.account.passwordStrength.reqNumber", { defaultValue: "Number" }),
+          t("settings.account.passwordStrength.reqSpecial", { defaultValue: "Special character" }),
+        ].map((req, i) => (
           <li key={i} className={`flex items-center gap-1.5 text-xs ${checks[i] ? "text-green-600" : "text-zinc-400"}`}>
             {checks[i] ? <CheckCircle2 size={11} /> : <XCircle size={11} />} {req}
           </li>
@@ -142,6 +156,7 @@ function InputField({
 // ─── Main Settings Component ─────────────────────────────────────────────────
 export function Settings() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation("pages");
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("account");
@@ -177,13 +192,13 @@ export function Settings() {
           setPrivacyForm({ visibility: data.profileVisibility || "public", showContact: data.showContactInfo });
         }
       } catch (err) {
-        toast.error("Failed to load settings");
+        toast.error(t("settings.toasts.loadFailed", { defaultValue: "Failed to load settings" }));
       } finally {
         setLoading(false);
       }
     };
     fetch_();
-  }, []);
+  }, [t]);
 
   const saveAccount = async () => {
     setSaving("account");
@@ -193,15 +208,15 @@ export function Settings() {
         body: JSON.stringify(accountForm),
       });
       const data = await res.json();
-      if (res.ok) toast.success("Account updated successfully!");
-      else toast.error(data.error || "Failed to update account");
-    } catch { toast.error("Network error"); }
+      if (res.ok) toast.success(t("settings.toasts.accountSaved", { defaultValue: "Account updated successfully!" }));
+      else toast.error(data.error || t("settings.toasts.accountFailed", { defaultValue: "Failed to update account" }));
+    } catch { toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" })); }
     finally { setSaving(null); }
   };
 
   const savePassword = async () => {
-    if (passwordForm.newPass !== passwordForm.confirm) { toast.error("New passwords do not match"); return; }
-    if (passwordForm.newPass.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (passwordForm.newPass !== passwordForm.confirm) { toast.error(t("settings.toasts.passwordMismatch", { defaultValue: "New passwords do not match" })); return; }
+    if (passwordForm.newPass.length < 8) { toast.error(t("settings.toasts.passwordLength", { defaultValue: "Password must be at least 8 characters" })); return; }
     setSaving("password");
     try {
       const res = await fetch("/api/settings/password", {
@@ -209,9 +224,9 @@ export function Settings() {
         body: JSON.stringify({ currentPassword: passwordForm.current, newPassword: passwordForm.newPass }),
       });
       const data = await res.json();
-      if (res.ok) { toast.success("Password changed successfully!"); setPasswordForm({ current: "", newPass: "", confirm: "" }); }
-      else toast.error(data.error || "Failed to change password");
-    } catch { toast.error("Network error"); }
+      if (res.ok) { toast.success(t("settings.toasts.passwordSaved", { defaultValue: "Password changed successfully!" })); setPasswordForm({ current: "", newPass: "", confirm: "" }); }
+      else toast.error(data.error || t("settings.toasts.passwordFailed", { defaultValue: "Failed to change password" }));
+    } catch { toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" })); }
     finally { setSaving(null); }
   };
 
@@ -227,9 +242,9 @@ export function Settings() {
         }),
       });
       const data = await res.json();
-      if (res.ok) toast.success("Notification preferences saved!");
-      else toast.error(data.error || "Failed to save");
-    } catch { toast.error("Network error"); }
+      if (res.ok) toast.success(t("settings.toasts.notifSaved", { defaultValue: "Notification preferences saved!" }));
+      else toast.error(data.error || t("settings.toasts.notifFailed", { defaultValue: "Failed to save" }));
+    } catch { toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" })); }
     finally { setSaving(null); }
   };
 
@@ -241,14 +256,14 @@ export function Settings() {
         body: JSON.stringify({ profileVisibility: privacyForm.visibility, showContactInfo: privacyForm.showContact }),
       });
       const data = await res.json();
-      if (res.ok) toast.success("Privacy settings saved!");
-      else toast.error(data.error || "Failed to save");
-    } catch { toast.error("Network error"); }
+      if (res.ok) toast.success(t("settings.toasts.privacySaved", { defaultValue: "Privacy settings saved!" }));
+      else toast.error(data.error || t("settings.toasts.privacyFailed", { defaultValue: "Failed to save" }));
+    } catch { toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" })); }
     finally { setSaving(null); }
   };
 
   const deleteAccount = async () => {
-    if (deleteConfirmText !== "DELETE") { toast.error('Type "DELETE" to confirm'); return; }
+    if (deleteConfirmText !== "DELETE") { toast.error(t("settings.toasts.deleteConfirm", { defaultValue: 'Type "DELETE" to confirm' })); return; }
     setSaving("delete");
     try {
       const res = await fetch("/api/settings/account", {
@@ -257,20 +272,20 @@ export function Settings() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success("Account deleted. Goodbye!");
+        toast.success(t("settings.toasts.deletedSuccess", { defaultValue: "Account deleted. Goodbye!" }));
         localStorage.clear();
         setTimeout(() => navigate("/"), 1500);
-      } else toast.error(data.error || "Failed to delete account");
-    } catch { toast.error("Network error"); }
+      } else toast.error(data.error || t("settings.toasts.deletedFailed", { defaultValue: "Failed to delete account" }));
+    } catch { toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" })); }
     finally { setSaving(null); setShowDeleteModal(false); }
   };
 
   const navItems = [
-    { id: "account", label: "Account", icon: <User size={16} /> },
-    { id: "notifications", label: "Notifications", icon: <Bell size={16} /> },
-    { id: "privacy", label: "Privacy", icon: <Eye size={16} /> },
-    { id: "verification", label: "Verification", icon: <ShieldCheck size={16} /> },
-    { id: "support", label: "Support & Help", icon: <HelpCircle size={16} /> },
+    { id: "account", label: t("settings.menu.account", { defaultValue: "Account" }), icon: <User size={16} /> },
+    { id: "notifications", label: t("settings.menu.notifications", { defaultValue: "Notifications" }), icon: <Bell size={16} /> },
+    { id: "privacy", label: t("settings.menu.privacy", { defaultValue: "Privacy" }), icon: <Eye size={16} /> },
+    { id: "verification", label: t("settings.menu.verification", { defaultValue: "Verification" }), icon: <ShieldCheck size={16} /> },
+    { id: "support", label: t("settings.menu.support", { defaultValue: "Support & Help" }), icon: <HelpCircle size={16} /> },
   ];
 
   if (loading) {
@@ -280,7 +295,7 @@ export function Settings() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-[#172263] border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-zinc-500">Loading your settings...</p>
+            <p className="text-sm text-zinc-500">{t("settings.loading", { defaultValue: "Loading your settings..." })}</p>
           </div>
         </div>
       </div>
@@ -290,66 +305,69 @@ export function Settings() {
   // ─── Section renderers ──────────────────────────────────────────────────────
   const renderAccount = () => (
     <div className="space-y-6">
-      <SectionCard title="Basic Information">
+      <SectionCard title={t("settings.account.basicInfo", { defaultValue: "Basic Information" })}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <InputField label="Full Name" value={accountForm.name} onChange={v => setAccountForm(f => ({ ...f, name: v }))} icon={<User size={14} />} hint="Shown on your public profile" />
-          <InputField label="Email Address" value={settings?.email || ""} type="email" disabled hint="Email cannot be changed" icon={<Mail size={14} />} />
-          <InputField label="Phone Number" value={accountForm.phone} onChange={v => setAccountForm(f => ({ ...f, phone: v }))} type="tel" icon={<Phone size={14} />} hint="Shown to potential clients" />
-          <InputField label="WhatsApp Number" value={accountForm.whatsappNumber} onChange={v => setAccountForm(f => ({ ...f, whatsappNumber: v }))} type="tel" icon={<MessageCircle size={14} />} hint="For easier communication" />
+          <InputField label={t("settings.account.fullName", { defaultValue: "Full Name" })} value={accountForm.name} onChange={v => setAccountForm(f => ({ ...f, name: v }))} icon={<User size={14} />} hint={t("settings.account.fullNameHint", { defaultValue: "Shown on your public profile" })} />
+          <InputField label={t("settings.account.emailAddress", { defaultValue: "Email Address" })} value={settings?.email || ""} type="email" disabled hint={t("settings.account.emailHint", { defaultValue: "Email cannot be changed" })} icon={<Mail size={14} />} />
+          <InputField label={t("settings.account.phoneNumber", { defaultValue: "Phone Number" })} value={accountForm.phone} onChange={v => setAccountForm(f => ({ ...f, phone: v }))} type="tel" icon={<Phone size={14} />} hint={t("settings.account.phoneHint", { defaultValue: "Shown to potential clients" })} />
+          <InputField label={t("settings.account.whatsappNumber", { defaultValue: "WhatsApp Number" })} value={accountForm.whatsappNumber} onChange={v => setAccountForm(f => ({ ...f, whatsappNumber: v }))} type="tel" icon={<MessageCircle size={14} />} hint={t("settings.account.whatsappHint", { defaultValue: "For easier communication" })} />
           <div className="sm:col-span-2">
-            <InputField label="State / Region" value={accountForm.state} onChange={v => setAccountForm(f => ({ ...f, state: v }))} icon={<MapPin size={14} />} />
+            <InputField label={t("settings.account.stateRegion", { defaultValue: "State / Region" })} value={accountForm.state} onChange={v => setAccountForm(f => ({ ...f, state: v }))} icon={<MapPin size={14} />} />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold text-[#57585A] mb-1.5">Bio / Description</label>
+            <label className="block text-xs font-semibold text-[#57585A] mb-1.5">{t("settings.account.bio", { defaultValue: "Bio / Description" })}</label>
             <textarea
               value={accountForm.bio}
               onChange={e => setAccountForm(f => ({ ...f, bio: e.target.value }))}
               maxLength={500}
               rows={3}
               className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm text-[#1A1A1A] resize-none focus:outline-none focus:ring-2 focus:ring-[#172263]/20 focus:border-[#172263]"
-              placeholder="Tell others about yourself..."
+              placeholder={t("settings.account.bioPlaceholder", { defaultValue: "Tell others about yourself..." })}
             />
-            <p className="text-xs text-zinc-400 mt-1">{accountForm.bio.length}/500 characters</p>
+            <p className="text-xs text-zinc-400 mt-1">{t("settings.account.charactersCount", { count: accountForm.bio.length, defaultValue: `${accountForm.bio.length}/500 characters` })}</p>
           </div>
         </div>
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-100">
           <div className="flex items-center gap-2 text-xs text-zinc-400">
             <Info size={12} />
-            Account created: {settings?.createdAt ? new Date(settings.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "—"}
+            {t("settings.account.createdDate", {
+              date: settings?.createdAt ? new Date(settings.createdAt).toLocaleDateString(i18n.language === "hi" ? "hi-IN" : i18n.language === "mr" ? "mr-IN" : "en-IN", { day: "numeric", month: "long", year: "numeric" }) : "—",
+              defaultValue: `Account created: ${settings?.createdAt ? new Date(settings.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "—"}`
+            })}
           </div>
           <button onClick={saveAccount} disabled={saving === "account"} className="flex items-center gap-2 bg-[#172263] hover:bg-[#11194A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60">
-            <Save size={14} /> {saving === "account" ? "Saving..." : "Save Changes"}
+            <Save size={14} /> {saving === "account" ? t("settings.saving", { defaultValue: "Saving..." }) : t("settings.saveChanges", { defaultValue: "Save Changes" })}
           </button>
         </div>
       </SectionCard>
 
-      <SectionCard title="Security & Password">
+      <SectionCard title={t("settings.account.securityPassword", { defaultValue: "Security & Password" })}>
         <div className="space-y-4">
-          <InputField label="Current Password" value={passwordForm.current} onChange={v => setPasswordForm(f => ({ ...f, current: v }))} type="password" icon={<KeyRound size={14} />} />
+          <InputField label={t("settings.account.currentPassword", { defaultValue: "Current Password" })} value={passwordForm.current} onChange={v => setPasswordForm(f => ({ ...f, current: v }))} type="password" icon={<KeyRound size={14} />} />
           <div>
-            <InputField label="New Password" value={passwordForm.newPass} onChange={v => setPasswordForm(f => ({ ...f, newPass: v }))} type="password" icon={<KeyRound size={14} />} />
+            <InputField label={t("settings.account.newPassword", { defaultValue: "New Password" })} value={passwordForm.newPass} onChange={v => setPasswordForm(f => ({ ...f, newPass: v }))} type="password" icon={<KeyRound size={14} />} />
             <PasswordStrength password={passwordForm.newPass} />
           </div>
-          <InputField label="Confirm New Password" value={passwordForm.confirm} onChange={v => setPasswordForm(f => ({ ...f, confirm: v }))} type="password" icon={<KeyRound size={14} />} />
+          <InputField label={t("settings.account.confirmPassword", { defaultValue: "Confirm New Password" })} value={passwordForm.confirm} onChange={v => setPasswordForm(f => ({ ...f, confirm: v }))} type="password" icon={<KeyRound size={14} />} />
           {passwordForm.confirm && passwordForm.newPass !== passwordForm.confirm && (
-            <p className="text-xs text-red-500 flex items-center gap-1"><XCircle size={11} /> Passwords do not match</p>
+            <p className="text-xs text-red-500 flex items-center gap-1"><XCircle size={11} /> {t("settings.account.passwordMismatch", { defaultValue: "Passwords do not match" })}</p>
           )}
           <div className="pt-2">
             <button onClick={savePassword} disabled={saving === "password"} className="flex items-center gap-2 bg-[#172263] hover:bg-[#11194A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60">
-              <KeyRound size={14} /> {saving === "password" ? "Updating..." : "Update Password"}
+              <KeyRound size={14} /> {saving === "password" ? t("settings.updating", { defaultValue: "Updating..." }) : t("settings.account.updatePassword", { defaultValue: "Update Password" })}
             </button>
           </div>
         </div>
       </SectionCard>
 
-      <SectionCard title="Danger Zone">
+      <SectionCard title={t("settings.account.dangerZone", { defaultValue: "Danger Zone" })}>
         <div className="flex items-start justify-between gap-4 p-4 bg-red-50 border border-red-200 rounded-xl">
           <div>
-            <h4 className="text-sm font-bold text-red-700">Delete Account</h4>
-            <p className="text-xs text-red-600 mt-0.5">Permanently delete your account and all associated data. This action cannot be undone.</p>
+            <h4 className="text-sm font-bold text-red-700">{t("settings.account.deleteAccount", { defaultValue: "Delete Account" })}</h4>
+            <p className="text-xs text-red-600 mt-0.5">{t("settings.account.deleteDesc", { defaultValue: "Permanently delete your account and all associated data. This action cannot be undone." })}</p>
           </div>
           <button onClick={() => setShowDeleteModal(true)} className="shrink-0 flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">
-            <Trash2 size={13} /> Delete
+            <Trash2 size={13} /> {t("settings.delete", { defaultValue: "Delete" })}
           </button>
         </div>
       </SectionCard>
@@ -358,11 +376,11 @@ export function Settings() {
 
   const renderNotifications = () => (
     <div className="space-y-6">
-      <SectionCard title="Notification Channels">
+      <SectionCard title={t("settings.notifications.channels", { defaultValue: "Notification Channels" })}>
         <div className="space-y-5">
           {[
-            { label: "Email Notifications", desc: "Receive alerts and updates via email", key: "email" as const },
-            { label: "SMS Notifications", desc: "Receive text messages for important alerts", key: "sms" as const },
+            { label: t("settings.notifications.emailLabel", { defaultValue: "Email Notifications" }), desc: t("settings.notifications.emailDesc", { defaultValue: "Receive alerts and updates via email" }), key: "email" as const },
+            { label: t("settings.notifications.smsLabel", { defaultValue: "SMS Notifications" }), desc: t("settings.notifications.smsDesc", { defaultValue: "Receive text messages for important alerts" }), key: "sms" as const },
           ].map(({ label, desc, key }) => (
             <div key={key} className="flex items-center justify-between">
               <div>
@@ -375,24 +393,24 @@ export function Settings() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Do Not Disturb">
+      <SectionCard title={t("settings.notifications.dndTitle", { defaultValue: "Do Not Disturb" })}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-[#1A1A1A]">Enable Do Not Disturb</p>
-              <p className="text-xs text-zinc-500 mt-0.5">Mute all notifications during selected hours</p>
+              <p className="text-sm font-semibold text-[#1A1A1A]">{t("settings.notifications.dndLabel", { defaultValue: "Enable Do Not Disturb" })}</p>
+              <p className="text-xs text-zinc-500 mt-0.5">{t("settings.notifications.dndDesc", { defaultValue: "Mute all notifications during selected hours" })}</p>
             </div>
             <Toggle checked={notifForm.dndEnabled} onChange={v => setNotifForm(f => ({ ...f, dndEnabled: v }))} />
           </div>
           {notifForm.dndEnabled && (
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div>
-                <label className="block text-xs font-semibold text-[#57585A] mb-1.5">From</label>
+                <label className="block text-xs font-semibold text-[#57585A] mb-1.5">{t("settings.notifications.from", { defaultValue: "From" })}</label>
                 <input type="time" value={notifForm.dndStart} onChange={e => setNotifForm(f => ({ ...f, dndStart: e.target.value }))}
                   className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#172263]/20 focus:border-[#172263]" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#57585A] mb-1.5">To</label>
+                <label className="block text-xs font-semibold text-[#57585A] mb-1.5">{t("settings.notifications.to", { defaultValue: "To" })}</label>
                 <input type="time" value={notifForm.dndEnd} onChange={e => setNotifForm(f => ({ ...f, dndEnd: e.target.value }))}
                   className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#172263]/20 focus:border-[#172263]" />
               </div>
@@ -401,7 +419,7 @@ export function Settings() {
         </div>
         <div className="mt-4 pt-4 border-t border-zinc-100 flex justify-end">
           <button onClick={saveNotifications} disabled={saving === "notifications"} className="flex items-center gap-2 bg-[#172263] hover:bg-[#11194A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60">
-            <Save size={14} /> {saving === "notifications" ? "Saving..." : "Save Preferences"}
+            <Save size={14} /> {saving === "notifications" ? t("settings.saving", { defaultValue: "Saving..." }) : t("settings.notifications.savePreferences", { defaultValue: "Save Preferences" })}
           </button>
         </div>
       </SectionCard>
@@ -410,12 +428,12 @@ export function Settings() {
 
   const renderPrivacy = () => (
     <div className="space-y-6">
-      <SectionCard title="Profile Visibility">
+      <SectionCard title={t("settings.privacy.profileVisibility", { defaultValue: "Profile Visibility" })}>
         <div className="space-y-3">
           {([
-            { value: "public", label: "Public Profile", desc: "Visible to all users and appears in search results" },
-            { value: "private", label: "Private Profile", desc: "Only visible to users you've connected with" },
-            { value: "hidden", label: "Hidden Profile", desc: "Not visible in search results or directory" },
+            { value: "public", label: t("settings.privacy.publicLabel", { defaultValue: "Public Profile" }), desc: t("settings.privacy.publicDesc", { defaultValue: "Visible to all users and appears in search results" }) },
+            { value: "private", label: t("settings.privacy.privateLabel", { defaultValue: "Private Profile" }), desc: t("settings.privacy.privateDesc", { defaultValue: "Only visible to users you've connected with" }) },
+            { value: "hidden", label: t("settings.privacy.hiddenLabel", { defaultValue: "Hidden Profile" }), desc: t("settings.privacy.hiddenDesc", { defaultValue: "Not visible in search results or directory" }) },
           ] as { value: "public" | "private" | "hidden"; label: string; desc: string }[]).map(opt => (
             <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${privacyForm.visibility === opt.value ? "border-[#172263] bg-[#172263]/5" : "border-[#E2E8F0] hover:border-zinc-300"}`}>
               <input type="radio" name="visibility" value={opt.value} checked={privacyForm.visibility === opt.value}
@@ -429,19 +447,19 @@ export function Settings() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Contact Information">
+      <SectionCard title={t("settings.privacy.contactInfo", { defaultValue: "Contact Information" })}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-[#1A1A1A]">Show contact details</p>
-              <p className="text-xs text-zinc-500">Allow other users to see your phone number and WhatsApp</p>
+              <p className="text-sm font-semibold text-[#1A1A1A]">{t("settings.privacy.showContactLabel", { defaultValue: "Show contact details" })}</p>
+              <p className="text-xs text-zinc-500">{t("settings.privacy.showContactDesc", { defaultValue: "Allow other users to see your phone number and WhatsApp" })}</p>
             </div>
             <Toggle checked={privacyForm.showContact} onChange={v => setPrivacyForm(f => ({ ...f, showContact: v }))} />
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-zinc-100 flex justify-end">
           <button onClick={savePrivacy} disabled={saving === "privacy"} className="flex items-center gap-2 bg-[#172263] hover:bg-[#11194A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60">
-            <Save size={14} /> {saving === "privacy" ? "Saving..." : "Save Privacy Settings"}
+            <Save size={14} /> {saving === "privacy" ? t("settings.saving", { defaultValue: "Saving..." }) : t("settings.privacy.saveSettings", { defaultValue: "Save Privacy Settings" })}
           </button>
         </div>
       </SectionCard>
@@ -450,12 +468,12 @@ export function Settings() {
 
   const renderVerification = () => (
     <div className="space-y-6">
-      <SectionCard title="Verification Status">
+      <SectionCard title={t("settings.verification.statusTitle", { defaultValue: "Verification Status" })}>
         <div className="space-y-4">
           {[
-            { label: "Email Address", value: settings?.email, verified: true, hint: "Your email is verified on registration" },
-            { label: "Phone Number", value: settings?.phone ? `+91-${settings.phone}` : "Not provided", verified: false, hint: "Phone verification coming soon" },
-            { label: "Identity Verification", value: "Government ID", verified: false, hint: "Upload Aadhaar or PAN to get verified" },
+            { label: t("settings.verification.emailLabel", { defaultValue: "Email Address" }), value: settings?.email, verified: true, hint: t("settings.verification.emailHint", { defaultValue: "Your email is verified on registration" }) },
+            { label: t("settings.verification.phoneLabel", { defaultValue: "Phone Number" }), value: settings?.phone ? `+91-${settings.phone}` : t("settings.verification.phoneFallback", { defaultValue: "Not provided" }), verified: false, hint: t("settings.verification.phoneHint", { defaultValue: "Phone verification coming soon" }) },
+            { label: t("settings.verification.identityLabel", { defaultValue: "Identity Verification" }), value: t("settings.verification.identityValue", { defaultValue: "Government ID" }), verified: false, hint: t("settings.verification.identityHint", { defaultValue: "Upload Aadhaar or PAN to get verified" }) },
           ].map(item => (
             <div key={item.label} className={`flex items-center justify-between p-4 rounded-xl border ${item.verified ? "border-green-200 bg-green-50" : "border-[#E2E8F0] bg-[#F8FAFC]"}`}>
               <div className="flex items-center gap-3">
@@ -469,7 +487,7 @@ export function Settings() {
               </div>
               <div className="text-right">
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${item.verified ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500"}`}>
-                  {item.verified ? "Verified ✓" : "Not Verified"}
+                  {item.verified ? t("settings.verification.verified", { defaultValue: "Verified ✓" }) : t("settings.verification.notVerified", { defaultValue: "Not Verified" })}
                 </span>
                 {!item.verified && <p className="text-[10px] text-zinc-400 mt-1">{item.hint}</p>}
               </div>
@@ -482,13 +500,13 @@ export function Settings() {
 
   const renderSupport = () => (
     <div className="space-y-6">
-      <SectionCard title="Quick Links">
+      <SectionCard title={t("settings.support.quickLinks", { defaultValue: "Quick Links" })}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
-            { label: "View Profile", desc: "Go to your public profile", link: "/profile", icon: <User size={16} className="text-[#172263]" /> },
-            { label: "My Harvesters", desc: "Manage your listings", link: "/harvesters?tab=mine", icon: <ChevronRight size={16} className="text-[#E82326]" /> },
-            { label: "Send Feedback", desc: "Report issues or suggest features", link: "/enquiry", icon: <MessageCircle size={16} className="text-green-600" /> },
-            { label: "Go to Dashboard", desc: "Return to your dashboard", link: "/dashboard", icon: <ChevronRight size={16} className="text-[#172263]" /> },
+            { label: t("settings.support.viewProfile", { defaultValue: "View Profile" }), desc: t("settings.support.viewProfileDesc", { defaultValue: "Go to your public profile" }), link: "/profile", icon: <User size={16} className="text-[#172263]" /> },
+            { label: t("settings.support.myHarvesters", { defaultValue: "My Harvesters" }), desc: t("settings.support.myHarvestersDesc", { defaultValue: "Manage your listings" }), link: "/harvesters?tab=mine", icon: <ChevronRight size={16} className="text-[#E82326]" /> },
+            { label: t("settings.support.sendFeedback", { defaultValue: "Send Feedback" }), desc: t("settings.support.sendFeedbackDesc", { defaultValue: "Report issues or suggest features" }), link: "/enquiry", icon: <MessageCircle size={16} className="text-green-600" /> },
+            { label: t("settings.support.goToDashboard", { defaultValue: "Go to Dashboard" }), desc: t("settings.support.goToDashboardDesc", { defaultValue: "Return to your dashboard" }), link: "/dashboard", icon: <ChevronRight size={16} className="text-[#172263]" /> },
           ].map(item => (
             <Link key={item.label} to={item.link} className="flex items-center gap-3 p-3.5 bg-[#F8FAFC] hover:bg-[#EAEFF8] border border-[#E2E8F0] hover:border-[#172263]/30 rounded-xl transition-all group">
               <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-sm">{item.icon}</div>
@@ -501,12 +519,12 @@ export function Settings() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Legal & Policies">
+      <SectionCard title={t("settings.support.legalPolicies", { defaultValue: "Legal & Policies" })}>
         <div className="space-y-3">
           {[
-            { label: "Terms of Service", desc: "Read our terms and conditions" },
-            { label: "Privacy Policy", desc: "How we handle your data" },
-            { label: "Community Guidelines", desc: "Platform rules and best practices" },
+            { label: t("settings.support.terms", { defaultValue: "Terms of Service" }), desc: t("settings.support.termsDesc", { defaultValue: "Read our terms and conditions" }) },
+            { label: t("settings.support.privacy", { defaultValue: "Privacy Policy" }), desc: t("settings.support.privacyDesc", { defaultValue: "How we handle your data" }) },
+            { label: t("settings.support.community", { defaultValue: "Community Guidelines" }), desc: t("settings.support.communityDesc", { defaultValue: "Platform rules and best practices" }) },
           ].map(item => (
             <div key={item.label} className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F8FAFC] cursor-pointer transition-colors group">
               <div>
@@ -538,17 +556,17 @@ export function Settings() {
         <div className="flex items-center gap-4 mb-8">
           <Link to="/dashboard" className="inline-flex items-center gap-2 text-[#57585A] text-sm hover:text-[#172263] transition-colors group">
             <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
-            Back to Dashboard
+            {t("settings.backToDashboard", { defaultValue: "Back to Dashboard" })}
           </Link>
           <span className="text-zinc-300">|</span>
-          <h1 className="text-xl font-bold text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif" }}>Settings</h1>
+          <h1 className="text-xl font-bold text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif" }}>{t("settings.title", { defaultValue: "Settings" })}</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* ── Desktop Sidebar ── */}
           <aside className="hidden lg:block lg:col-span-2">
             <div className="bg-white border border-[#E2E8F0] rounded-2xl p-3 shadow-sm sticky top-24">
-              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider px-3 mb-2">Settings Menu</p>
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider px-3 mb-2">{t("settings.settingsMenu", { defaultValue: "Settings Menu" })}</p>
               <nav className="space-y-1">
                 {navItems.map(item => (
                   <button key={item.id} onClick={() => setActiveSection(item.id)}
@@ -616,33 +634,35 @@ export function Settings() {
                 <AlertTriangle size={20} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif" }}>Delete Account?</h3>
-                <p className="text-xs text-zinc-400">This action is irreversible</p>
+                <h3 className="text-lg font-bold text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif" }}>{t("settings.account.deleteModal.title", { defaultValue: "Delete Account?" })}</h3>
+                <p className="text-xs text-zinc-400">{t("settings.account.deleteModal.sub", { defaultValue: "This action is irreversible" })}</p>
               </div>
             </div>
-            <p className="text-sm text-[#57585A] mb-5">All your data — harvesters, operator profiles, messages, and requests — will be permanently deleted.</p>
+            <p className="text-sm text-[#57585A] mb-5">{t("settings.account.deleteModal.desc", { defaultValue: "All your data — harvesters, operator profiles, messages, and requests — will be permanently deleted." })}</p>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-[#57585A] mb-1.5">Enter your password</label>
+                <label className="block text-xs font-semibold text-[#57585A] mb-1.5">{t("settings.account.deleteModal.passwordLabel", { defaultValue: "Enter your password" })}</label>
                 <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)}
-                  placeholder="Your current password"
+                  placeholder={t("settings.account.deleteModal.passwordPlaceholder", { defaultValue: "Your current password" })}
                   className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#57585A] mb-1.5">Type <strong className="text-red-600">DELETE</strong> to confirm</label>
+                <label className="block text-xs font-semibold text-[#57585A] mb-1.5">
+                  {t("settings.account.deleteModal.confirmLabel", { defaultValue: "Type DELETE to confirm" })}
+                </label>
                 <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)}
-                  placeholder="DELETE"
+                  placeholder={t("settings.account.deleteModal.confirmPlaceholder", { defaultValue: "DELETE" })}
                   className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400" />
               </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => { setShowDeleteModal(false); setDeletePassword(""); setDeleteConfirmText(""); }}
                 className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-sm font-semibold text-[#57585A] hover:bg-zinc-50 transition-colors">
-                Cancel
+                {t("settings.cancel", { defaultValue: "Cancel" })}
               </button>
               <button onClick={deleteAccount} disabled={saving === "delete" || deleteConfirmText !== "DELETE" || !deletePassword}
                 className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
-                <Trash2 size={14} /> {saving === "delete" ? "Deleting..." : "Delete Forever"}
+                <Trash2 size={14} /> {saving === "delete" ? t("settings.deleting", { defaultValue: "Deleting..." }) : t("settings.account.deleteModal.deleteButton", { defaultValue: "Delete Forever" })}
               </button>
             </div>
           </div>

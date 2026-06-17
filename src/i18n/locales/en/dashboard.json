@@ -31,5 +31,24 @@
     "noResults": "No harvesters found",
     "capacity": "Capacity",
     "rentNow": "Rent Now"
-  }
+  },
+  "previewModeMessage": "You are viewing the dashboard in Guest Preview Mode.",
+  "helloName": "Hello, {{name}}!",
+  "farmerBob": "Farmer Bob",
+  "welcomeSub": "Welcome back to your farming hub",
+  "activeMachines": "Active Machines",
+  "myRating": "My Rating",
+  "rating": "rating",
+  "ratings": "ratings",
+  "noScoreYet": "You are yet to receive any score",
+  "verifiedOperators": "Verified Operators",
+  "messagesActivity": "Messages/Activity",
+  "availableListings": "Available Listings",
+  "recentRequests": "Recent Requests",
+  "noRecentRequests": "No recent requests found.",
+  "pleaseLogIn": "Please log in to view requests.",
+  "noRecentActivity": "No recent activity",
+  "activityHarvesterLive": "Your machine \"{{name}}\" listing is live",
+  "activityRequirementLive": "Your {{type}} requirement in {{location}} is live",
+  "activityNewChat": "New chat with {{name}}"
 }

@@ -32,7 +32,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export function Dashboard() {
-  const { t } = useTranslation(["dashboard"]);
+  const { t } = useTranslation(["dashboard", "common", "pages", "static"]);
   const [operators, setOperators] = useState<any[]>([]);
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
@@ -151,8 +151,10 @@ export function Dashboard() {
           userHarvs.forEach((h: any) => {
             newActivities.push({
               icon: <Tractor size={14} className="text-blue-500" />,
-              text: `Your machine "${h.machineName}" listing is live`,
-              time: "Active",
+              key: "activityHarvesterLive",
+              params: { name: h.machineName },
+              timeKey: "status.active",
+              timeNs: "static",
               timestamp: h.id * 1000,
             });
           });
@@ -166,8 +168,10 @@ export function Dashboard() {
             reqsData.forEach((r: any) => {
               newActivities.push({
                 icon: <FileText size={14} className="text-[#172263]" />,
-                text: `Your ${r.machineType} requirement in ${r.location} is live`,
-                time: "Open",
+                key: "activityRequirementLive",
+                params: { type: r.machineType, location: r.location },
+                timeKey: "status.active",
+                timeNs: "static",
                 timestamp: r.id * 1000,
               });
             });
@@ -183,7 +187,8 @@ export function Dashboard() {
               if (p.lastMessage) {
                 newActivities.push({
                   icon: <MessageSquare size={14} className="text-blue-500" />,
-                  text: `New chat with ${p.name}`,
+                  key: "activityNewChat",
+                  params: { name: p.name },
                   time: "Recent",
                   timestamp: p.lastMessageTime ? new Date(p.lastMessageTime).getTime() : 0,
                 });
@@ -211,12 +216,12 @@ export function Dashboard() {
 
       {isPreview && (
         <div className="bg-blue-50 border-b border-blue-200 text-orange-800 px-4 py-3 text-center text-sm font-medium flex items-center justify-center gap-2">
-          <span>You are viewing the dashboard in Guest Preview Mode.</span>
+          <span>{t("previewModeMessage", { defaultValue: "You are viewing the dashboard in Guest Preview Mode." })}</span>
           <button
             onClick={() => setChooserOpen(true)}
             className="px-3 py-1 bg-[#172263] text-white hover:bg-[#11194A] transition-colors rounded-lg text-xs font-semibold cursor-pointer"
           >
-            Log In / Sign Up
+            {t("nav.login", { ns: "common", defaultValue: "Log In" })} / {t("nav.register", { ns: "common", defaultValue: "Sign Up" })}
           </button>
         </div>
       )}
@@ -234,9 +239,9 @@ export function Dashboard() {
               </Avatar>
               <div>
                 <h1 className="text-xl font-bold text-[#1A1A1A] font-sora">
-                  Hello, {currentUser?.name || "Farmer Bob"}!
+                  {t("helloName", { name: currentUser?.name || t("farmerBob", { defaultValue: "Farmer Bob" }), defaultValue: `Hello, ${currentUser?.name || "Farmer Bob"}!` })}
                 </h1>
-                <p className="text-xs text-[#57585A]">Welcome back to your farming hub</p>
+                <p className="text-xs text-[#57585A]">{t("welcomeSub", { defaultValue: "Welcome back to your farming hub" })}</p>
               </div>
             </div>
           </div>
@@ -250,7 +255,7 @@ export function Dashboard() {
               <Activity size={18} />
             </div>
             <div>
-              <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">Active Machines</span>
+              <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">{t("activeMachines", { defaultValue: "Active Machines" })}</span>
               <span className="text-2xl font-black text-[#172263] font-sora">{harvesters.length || 0}</span>
             </div>
             <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0 text-[#172263]" />
@@ -262,16 +267,16 @@ export function Dashboard() {
               <Star size={18} />
             </div>
             <div>
-              <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">My Rating</span>
+              <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">{t("myRating", { defaultValue: "My Rating" })}</span>
               {userScore !== null ? (
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-black text-[#172263] font-sora">{userScore}</span>
                   <span className="text-[#D97706] text-sm font-bold">★</span>
-                  <span className="text-[#57585A] text-xs">({scoreCount} {scoreCount === 1 ? 'rating' : 'ratings'})</span>
+                  <span className="text-[#57585A] text-xs">({scoreCount} {scoreCount === 1 ? t("rating", { defaultValue: "rating" }) : t("ratings", { defaultValue: "ratings" })})</span>
                 </div>
               ) : (
                 <span className="text-xs font-semibold text-[#57585A] block leading-snug">
-                  You are yet to receive any score
+                  {t("noScoreYet", { defaultValue: "You are yet to receive any score" })}
                 </span>
               )}
             </div>
@@ -284,7 +289,7 @@ export function Dashboard() {
               <UserCheck size={18} />
             </div>
             <div>
-              <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">Verified Operators</span>
+              <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">{t("verifiedOperators", { defaultValue: "Verified Operators" })}</span>
               <span className="text-2xl font-black text-[#172263] font-sora">{operators.length || 0}</span>
             </div>
             <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0 text-[#172263]" />
@@ -296,7 +301,7 @@ export function Dashboard() {
               <Inbox size={18} />
             </div>
             <div>
-              <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">Messages/Activity</span>
+              <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">{t("messagesActivity", { defaultValue: "Messages/Activity" })}</span>
               <span className="text-2xl font-black text-[#172263] font-sora">{activities.length || 0}</span>
             </div>
             <WheatWatermark className="opacity-[0.03] scale-50 bottom-0 right-0 text-[#172263]" />
@@ -309,8 +314,8 @@ export function Dashboard() {
           {/* Left Column (Available Listings) */}
           <div className="lg:col-span-8 space-y-4 order-2 lg:order-1">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-bold text-[#1A1A1A] font-sora">Available Listings</h2>
-              <Link to="/harvesters" className="text-xs font-bold text-[#172263] hover:underline">View All</Link>
+              <h2 className="text-lg font-bold text-[#1A1A1A] font-sora">{t("availableListings", { defaultValue: "Available Listings" })}</h2>
+              <Link to="/harvesters" className="text-xs font-bold text-[#172263] hover:underline">{t("buttons.viewAll", { ns: "common", defaultValue: "View All" })}</Link>
             </div>
 
             {loading ? (
@@ -319,7 +324,7 @@ export function Dashboard() {
               </div>
             ) : harvesters.length === 0 ? (
               <div className="bg-white rounded-3xl p-8 text-center border border-[#E2E8F0] text-sm text-[#57585A]">
-                No harvesters found in your area. Be the first to add one!
+                {t("exploreHarvesters.noResults", { ns: "pages", defaultValue: "No harvesters found in your area. Be the first to add one!" })}
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 gap-6">
@@ -337,18 +342,18 @@ export function Dashboard() {
                       {/* Info area */}
                       <div className="p-4 space-y-2">
                         <span className="text-[8px] uppercase font-black tracking-wider text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                          {h.company}
+                          {t("companies." + h.company, { ns: "static", defaultValue: h.company })}
                         </span>
                         <h3 className="text-sm font-bold text-[#1A1A1A] font-sora truncate">{h.machineName}</h3>
 
                         <p className="text-[10px] text-[#57585A] flex items-center gap-1">
-                          <MapPin size={10} className="text-[#172263]" /> {h.location}, {h.state}
+                          <MapPin size={10} className="text-[#172263]" /> {h.location}, {t("states." + h.state, { ns: "static", defaultValue: h.state })}
                         </p>
                       </div>
                     </div>
                     <div className="p-4 pt-0">
                       <Link to={`/harvesters/${h.id}`} className="w-full py-2 bg-[#172263] hover:bg-[#11194A] text-white text-xs font-bold rounded-xl flex items-center justify-center transition-colors">
-                        Book Now
+                        {t("exploreHarvesters.bookNow", { ns: "pages", defaultValue: "Book Now" })}
                       </Link>
                     </div>
                   </div>
@@ -363,8 +368,8 @@ export function Dashboard() {
 
               {/* Aligning Header (Matches Left Column) */}
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-bold text-[#1A1A1A] font-sora">Recent Requests</h2>
-                <Link to="/requests" className="text-xs font-bold text-[#172263] hover:underline">View All</Link>
+                <h2 className="text-lg font-bold text-[#1A1A1A] font-sora">{t("recentRequests", { defaultValue: "Recent Requests" })}</h2>
+                <Link to="/requests" className="text-xs font-bold text-[#172263] hover:underline">{t("buttons.viewAll", { ns: "common", defaultValue: "View All" })}</Link>
               </div>
 
               {/* Requests List Card */}
@@ -378,11 +383,11 @@ export function Dashboard() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex justify-between items-start mb-1">
-                            <h4 className="text-sm font-semibold text-[#1A1A1A] truncate pr-2 group-hover:text-[#172263] transition-colors">{req.type} - {req.machineType}</h4>
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">{req.status || "Open"}</span>
+                            <h4 className="text-sm font-semibold text-[#1A1A1A] truncate pr-2 group-hover:text-[#172263] transition-colors">{t("enquiry.options." + (req.type?.toLowerCase() || "harvester"), { ns: "pages", defaultValue: req.type })} - {t("machineTypes." + req.machineType, { ns: "static", defaultValue: req.machineType })}</h4>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">{t("status." + (req.status?.toLowerCase() || "active"), { ns: "static", defaultValue: req.status || "Open" })}</span>
                           </div>
                           <p className="text-xs text-[#57585A] flex items-center gap-1 truncate">
-                            <MapPin size={10} className="text-[#E82326]" /> {req.location}, {req.state}
+                            <MapPin size={10} className="text-[#E82326]" /> {req.location}, {t("states." + req.state, { ns: "static", defaultValue: req.state })}
                           </p>
                         </div>
                       </Link>
@@ -390,14 +395,14 @@ export function Dashboard() {
                   </div>
                 ) : (
                   <div className="py-8 text-center text-sm text-[#57585A]">
-                    {localStorage.getItem("tractorsewa_token") ? "No recent requests found." : "Please log in to view requests."}
+                    {localStorage.getItem("tractorsewa_token") ? t("noRecentRequests", { defaultValue: "No recent requests found." }) : t("pleaseLogIn", { defaultValue: "Please log in to view requests." })}
                   </div>
                 )}
               </div>
 
               {/* Recent Activity Card */}
               <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 shadow-sm flex flex-col flex-1">
-                <h3 className="text-base font-bold text-[#1A1A1A] font-sora border-b border-[#E2E8F0] pb-4 mb-6">Recent Activity</h3>
+                <h3 className="text-base font-bold text-[#1A1A1A] font-sora border-b border-[#E2E8F0] pb-4 mb-6">{t("dashboard.recentActivity", { defaultValue: "Recent Activity" })}</h3>
                 {activities.length > 0 ? (
                   <div className="space-y-6">
                     {activities.map((act, i) => (
@@ -406,15 +411,19 @@ export function Dashboard() {
                           {act.icon}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-[#1A1A1A]">{act.text}</p>
-                          <p className="text-xs text-[#57585A] mt-1">{act.time}</p>
+                          <p className="text-sm font-medium text-[#1A1A1A]">
+                            {act.key ? t(act.key, { ...act.params, defaultValue: act.text }) : act.text}
+                          </p>
+                          <p className="text-xs text-[#57585A] mt-1">
+                            {act.timeKey ? t(act.timeKey, { ns: act.timeNs, defaultValue: act.time }) : act.time}
+                          </p>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-sm text-[#57585A] text-center">No recent activity</p>
+                    <p className="text-sm text-[#57585A] text-center">{t("noRecentActivity", { defaultValue: "No recent activity" })}</p>
                   </div>
                 )}
               </div>

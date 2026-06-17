@@ -31,5 +31,24 @@
     "noResults": "कोणती कटणी मशीन मिळाली नाही",
     "capacity": "क्षमता",
     "rentNow": "आता भाडे घ्या"
-  }
+  },
+  "previewModeMessage": "तुम्ही अतिथी पूर्वावलोकन मोडमध्ये डॅशबोर्ड पाहत आहात.",
+  "helloName": "नमस्कार, {{name}}!",
+  "farmerBob": "शेतकरी बंधू",
+  "welcomeSub": "आपल्या कृषी केंद्रामध्ये आपले स्वागत आहे",
+  "activeMachines": "सक्रिय मशिन्स",
+  "myRating": "माझे रेटिंग",
+  "rating": "रेटिंग",
+  "ratings": "रेटिंग",
+  "noScoreYet": "तुम्हाला अद्याप कोणताही स्कोअर मिळालेला नाही",
+  "verifiedOperators": "सत्यापित ऑपरेटर",
+  "messagesActivity": "संदेश/कृती",
+  "availableListings": "उपलब्ध लिस्टिंग्स",
+  "recentRequests": "अलीकडील विनंत्या",
+  "noRecentRequests": "कोणतीही अलीकडील विनंती आढळली नाही.",
+  "pleaseLogIn": "विनंत्या पाहण्यासाठी कृपया लॉग इन करा.",
+  "noRecentActivity": "कोणतीही अलीकडील कृती नाही",
+  "activityHarvesterLive": "तुमची मशीन \"{{name}}\" लिस्टिंग लाईव्ह आहे",
+  "activityRequirementLive": "“{{location}} मधील आपली {{type}} ची आवश्यकता लाईव्ह आहे",
+  "activityNewChat": "{{name}} सोबत नवीन चॅट"
 }

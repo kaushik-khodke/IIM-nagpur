@@ -6,7 +6,8 @@
     "profile": "प्रोफाइल",
     "logout": "लॉगआउट",
     "login": "लॉगिन",
-    "register": "नोंदणी"
+    "register": "नोंदणी",
+    "contact": "संपर्क"
   },
   "buttons": {
     "save": "जतन करा",
@@ -22,7 +23,8 @@
     "filter": "फिल्टर",
     "clear": "साफ करा",
     "apply": "लागू करा",
-    "close": "बंद करा"
+    "close": "बंद करा",
+    "viewAll": "सर्व पहा"
   },
   "common": {
     "yes": "हो",
