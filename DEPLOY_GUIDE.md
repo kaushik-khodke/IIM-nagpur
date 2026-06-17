@@ -27,10 +27,10 @@ Provide the following settings in the Render creation wizard:
 - **Environment**: `Node`
 - **Region**: Select the region closest to your users.
 - **Branch**: `main`
-- **Root Directory**: `server` 
-  *(⚠️ IMPORTANT: This tells Render to build and run commands inside the `server` directory)*
-- **Build Command**: `pnpm install` (or `npm install` depending on your package manager)
-- **Start Command**: `node server.js`
+- **Root Directory**: *Keep empty (Default)*
+- **Build Command**: `pnpm install` (or `npm install`)
+  *(Note: The root-level postinstall script will automatically install backend dependencies inside the `/server` directory)*
+- **Start Command**: `node server/server.js`
 - **Instance Type**: **Free** (or any tier of your choice)
 
 ### Step 3: Add Environment Variables
