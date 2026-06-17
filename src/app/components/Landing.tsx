@@ -151,8 +151,8 @@ export function Landing() {
           const blogsData = await blogsRes.json();
           setBlogs(blogsData);
         }
-      } catch (err) {
-        console.error("Error fetching landing page data:", err);
+      } catch {
+        /* network error – server likely unreachable */
       } finally {
         setLoading(false);
       }

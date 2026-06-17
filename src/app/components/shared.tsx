@@ -710,12 +710,13 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         .then(res => {
           if (!res.ok) {
             logout();
-            throw new Error("Session invalid");
+            return null;
           }
           return res.json();
         })
         .then(data => {
-          if (data && data.name) {
+          if (!data) return;
+          if (data.name) {
             setUserName(data.name);
             setUserRole(data.role || "user");
             localStorage.setItem("tractorsewa_user_role", data.role || "user");
@@ -724,7 +725,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
             logout();
           }
         })
-        .catch(err => console.error("Error fetching user in Navbar:", err));
+        .catch(() => { /* silently handle – token likely expired */ });
     }
   };
 
