@@ -3393,8 +3393,10 @@ export function Blogs() {
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
 
-  // States for Reels/Shorts Infinite Scroll Feed
-  const [visibleCount, setVisibleCount] = useState(2);
+  // States for Reels/Shorts Infinite Scroll Feed (Backend Paginated)
+  const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1000000));
+  const [hasMore, setHasMore] = useState(true);
+  const [autoScrollPaused, setAutoScrollPaused] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [likedBlogs, setLikedBlogs] = useState<Record<string | number, boolean>>({});
   const [likesCounts, setLikesCounts] = useState<Record<string | number, number>>({});
@@ -3412,9 +3414,16 @@ export function Blogs() {
   const likeTimeoutRef = useRef<any>(null);
   const currentBlogIdRef = useRef<string | number | null>(null);
 
+  // Sync initial loading
   useEffect(() => {
-    const fetchBlogs = async () => {
+    const fetchInitialBlogs = async () => {
       setLoading(true);
+      const newSeed = Math.floor(Math.random() * 1000000);
+      setSeed(newSeed);
+      setBlogs([]);
+      setHasMore(true);
+      setAutoScrollPaused(false);
+
       try {
         const token = localStorage.getItem("tractorsewa_token");
         const headers: Record<string, string> = {};
@@ -3424,30 +3433,34 @@ export function Blogs() {
 
         const catParam = category === "All" ? "" : `category=${encodeURIComponent(category)}`;
         const searchParam = search ? `search=${encodeURIComponent(search)}` : "";
-        const params = [catParam, searchParam].filter(Boolean).join("&");
+        const limitParam = "limit=2";
+        const offsetParam = "offset=0";
+        const seedParam = `seed=${newSeed}`;
+        const params = [catParam, searchParam, limitParam, offsetParam, seedParam].filter(Boolean).join("&");
+
         const res = await fetch(`/api/blogs?${params}`, { headers });
         if (res.ok) {
           const data = await res.json();
-          // Fisher-Yates Shuffle for random order
-          const shuffled = [...data];
-          for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-          }
-          setBlogs(shuffled);
+          setBlogs(data);
+          setHasMore(data.length === 2);
 
           // Initialize states from dynamic database values
           const initialLiked: Record<string | number, boolean> = {};
           const counts: Record<string | number, number> = {};
           const comms: Record<string | number, number> = {};
-          shuffled.forEach((b: any) => {
+          data.forEach((b: any) => {
             initialLiked[b.id] = !!b.has_liked;
             counts[b.id] = b.likes_count || 0;
             comms[b.id] = b.comments_count || 0;
           });
-          setLikedBlogs(initialLiked);
-          setLikesCounts(counts);
-          setCommentsCounts(comms);
+          setLikedBlogs(prev => ({ ...prev, ...initialLiked }));
+          setLikesCounts(prev => ({ ...prev, ...counts }));
+          setCommentsCounts(prev => ({ ...prev, ...comms }));
+
+          // Reset scroll to top
+          if (feedRef.current) {
+            feedRef.current.scrollTop = 0;
+          }
         }
       } catch (err) {
         console.error(err);
@@ -3457,19 +3470,120 @@ export function Blogs() {
     };
 
     const delay = setTimeout(() => {
-      fetchBlogs();
+      fetchInitialBlogs();
     }, 300);
 
     return () => clearTimeout(delay);
   }, [search, category]);
 
-  // Reset feed visible count and scroll to top when category/search or blogs change
-  useEffect(() => {
-    setVisibleCount(Math.min(blogs.length, 2));
-    if (feedRef.current) {
-      feedRef.current.scrollTop = 0;
+  const loadMoreBlogs = async () => {
+    if (loadingMore || !hasMore || autoScrollPaused) return;
+    setLoadingMore(true);
+
+    try {
+      const token = localStorage.getItem("tractorsewa_token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const catParam = category === "All" ? "" : `category=${encodeURIComponent(category)}`;
+      const searchParam = search ? `search=${encodeURIComponent(search)}` : "";
+      const limitParam = "limit=2";
+      const offsetParam = `offset=${blogs.length}`;
+      const seedParam = `seed=${seed}`;
+      const params = [catParam, searchParam, limitParam, offsetParam, seedParam].filter(Boolean).join("&");
+
+      const res = await fetch(`/api/blogs?${params}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.length > 0) {
+          const existingIds = new Set(blogs.map(b => b.id));
+          const filteredNewData = data.filter((b: any) => !existingIds.has(b.id));
+
+          setBlogs(prev => [...prev, ...filteredNewData]);
+          setHasMore(data.length === 2);
+
+          const initialLiked: Record<string | number, boolean> = {};
+          const counts: Record<string | number, number> = {};
+          const comms: Record<string | number, number> = {};
+          data.forEach((b: any) => {
+            initialLiked[b.id] = !!b.has_liked;
+            counts[b.id] = b.likes_count || 0;
+            comms[b.id] = b.comments_count || 0;
+          });
+          setLikedBlogs(prev => ({ ...prev, ...initialLiked }));
+          setLikesCounts(prev => ({ ...prev, ...counts }));
+          setCommentsCounts(prev => ({ ...prev, ...comms }));
+
+          // Pause after 6 blogs loaded (Initial 2 + 2 scrolls = 6 blogs)
+          if (blogs.length + filteredNewData.length >= 6) {
+            setAutoScrollPaused(true);
+          }
+        } else {
+          setHasMore(false);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMore(false);
     }
-  }, [category, search, blogs.length]);
+  };
+
+  const handleResumeLoading = () => {
+    setAutoScrollPaused(false);
+    setLoadingMore(true);
+    setTimeout(() => {
+      const fetchNext = async () => {
+        try {
+          const token = localStorage.getItem("tractorsewa_token");
+          const headers: Record<string, string> = {};
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+
+          const catParam = category === "All" ? "" : `category=${encodeURIComponent(category)}`;
+          const searchParam = search ? `search=${encodeURIComponent(search)}` : "";
+          const limitParam = "limit=2";
+          const offsetParam = `offset=${blogs.length}`;
+          const seedParam = `seed=${seed}`;
+          const params = [catParam, searchParam, limitParam, offsetParam, seedParam].filter(Boolean).join("&");
+
+          const res = await fetch(`/api/blogs?${params}`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.length > 0) {
+              const existingIds = new Set(blogs.map(b => b.id));
+              const filteredNewData = data.filter((b: any) => !existingIds.has(b.id));
+
+              setBlogs(prev => [...prev, ...filteredNewData]);
+              setHasMore(data.length === 2);
+
+              const initialLiked: Record<string | number, boolean> = {};
+              const counts: Record<string | number, number> = {};
+              const comms: Record<string | number, number> = {};
+              data.forEach((b: any) => {
+                initialLiked[b.id] = !!b.has_liked;
+                counts[b.id] = b.likes_count || 0;
+                comms[b.id] = b.comments_count || 0;
+              });
+              setLikedBlogs(prev => ({ ...prev, ...initialLiked }));
+              setLikesCounts(prev => ({ ...prev, ...counts }));
+              setCommentsCounts(prev => ({ ...prev, ...comms }));
+            } else {
+              setHasMore(false);
+            }
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoadingMore(false);
+        }
+      };
+      fetchNext();
+    }, 50);
+  };
 
   // IntersectionObserver for Infinite Scroll
   useEffect(() => {
@@ -3477,12 +3591,8 @@ export function Blogs() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loadingMore && visibleCount < blogs.length) {
-          setLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount((prev) => Math.min(blogs.length, prev + 2));
-            setLoadingMore(false);
-          }, 1000); // 1s mock delay for premium loading experience
+        if (entries[0].isIntersecting && !loadingMore && hasMore && !autoScrollPaused) {
+          loadMoreBlogs();
         }
       },
       { threshold: 0.1 }
@@ -3490,7 +3600,7 @@ export function Blogs() {
 
     observer.observe(loaderRef.current);
     return () => observer.disconnect();
-  }, [loaderRef.current, loadingMore, visibleCount, blogs.length]);
+  }, [loaderRef.current, loadingMore, hasMore, autoScrollPaused, blogs.length]);
 
   // Sync likes function
   const syncPendingLikes = async () => {
@@ -3793,7 +3903,7 @@ export function Blogs() {
             </div>
           ) : (
             <>
-              {blogs.slice(0, visibleCount).map((blog) => {
+              {blogs.map((blog) => {
                 const imgIndex =
                   typeof blog.id === "number"
                     ? blog.id % fallbackImages.length
@@ -3968,23 +4078,41 @@ export function Blogs() {
               })}
 
               {/* Loader Slide (Visible when scrolling to retrieve more blogs) */}
-              {visibleCount < blogs.length && (
+              {hasMore && (
                 <div
                   ref={loaderRef}
                   className="h-[calc(100vh-178px)] md:h-[calc(100vh-64px)] w-full flex items-center justify-center shrink-0 snap-start p-4 md:p-6"
                 >
                   <div className="bg-white rounded-3xl border border-[#E2E8F0] w-full max-w-lg md:max-w-4xl h-[92%] md:h-[84%] flex flex-col justify-center items-center p-8 relative shadow-sm text-center">
-                    <Loader2 size={36} className="text-[#172263] animate-spin mb-4" />
-                    <p className="text-sm font-semibold text-[#1A1A1A]">{t("blogs.fetchingUpdates", { defaultValue: "Fetching fresh updates..." })}</p>
-                    <p className="text-xs text-[#57585A] mt-1">
-                      {t("blogs.bestGuides", { defaultValue: "Bringing you the best harvesting guides" })}
-                    </p>
+                    {autoScrollPaused ? (
+                      <>
+                        <BookOpen size={40} className="text-[#172263] mb-4 animate-bounce" />
+                        <h4 className="text-sm font-semibold text-[#1A1A1A]">Ready for more?</h4>
+                        <p className="text-xs text-[#57585A] mt-1 mb-6">
+                          We paused loading to optimize performance. Click below to continue loading.
+                        </p>
+                        <button
+                          onClick={handleResumeLoading}
+                          className="px-6 py-3 bg-[#172263] hover:bg-[#11194A] text-white text-xs md:text-sm font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                        >
+                          Keep Loading Blogs
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Loader2 size={36} className="text-[#172263] animate-spin mb-4" />
+                        <p className="text-sm font-semibold text-[#1A1A1A]">{t("blogs.fetchingUpdates", { defaultValue: "Fetching fresh updates..." })}</p>
+                        <p className="text-xs text-[#57585A] mt-1">
+                          {t("blogs.bestGuides", { defaultValue: "Bringing you the best harvesting guides" })}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
 
               {/* End of Feed Card */}
-              {blogs.length > 0 && visibleCount >= blogs.length && (
+              {blogs.length > 0 && !hasMore && (
                 <div className="h-[calc(100vh-178px)] md:h-[calc(100vh-64px)] w-full flex items-center justify-center shrink-0 snap-start p-4 md:p-6">
                   <div className="bg-white rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] border border-[#E2E8F0] overflow-hidden w-full max-w-lg md:max-w-4xl h-[92%] md:h-[84%] flex flex-col justify-center items-center p-8 relative text-center">
                     {/* Animated Check Circle */}
