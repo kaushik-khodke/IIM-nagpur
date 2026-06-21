@@ -1206,9 +1206,9 @@ export function Landing() {
         </section>
 
         {/* ---- FAQ SECTION ---- */}
-        <section id="faq" className="py-20 w-full mx-auto px-4 sm:px-6 bg-slate-50/50 border-t border-slate-100/80">
+        <section id="faq" className="pt-16 pb-12 scroll-mt-20 w-full mx-auto px-4 sm:px-6 bg-slate-50/50 border-t border-slate-100/80">
           <div className="w-full max-w-4xl mx-auto">
-            <div className="text-center mb-12">
+            <div className="text-center mb-8">
               <h2 
                 className="text-4xl text-[#1A1A1A] mb-3"
                 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
@@ -1220,7 +1220,7 @@ export function Landing() {
               </p>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               {(showAllFaqs ? allFaqs : allFaqs.slice(0, 6)).map((faq, idx) => {
                 const isOpen = activeFaqIndex === idx;
                 return (
@@ -1236,7 +1236,7 @@ export function Landing() {
                   >
                     <button
                       onClick={() => setActiveFaqIndex(isOpen ? null : idx)}
-                      className={`flex items-center justify-between w-full py-5 px-6 font-semibold text-left cursor-pointer transition-colors duration-300 ${
+                      className={`flex items-center justify-between w-full py-4 px-5 font-semibold text-left cursor-pointer transition-colors duration-300 ${
                         isOpen ? 'text-[#172263]' : 'text-slate-800 hover:text-[#172263]'
                       }`}
                       style={{ fontFamily: "'Sora', sans-serif" }}
@@ -1252,7 +1252,7 @@ export function Landing() {
                         isOpen ? 'max-h-48 border-t border-slate-100 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
                       }`}
                     >
-                      <div className="p-6 text-sm text-[#57585A] leading-relaxed bg-slate-50/50">
+                      <div className="p-5 text-sm text-[#57585A] leading-relaxed bg-slate-50/50">
                         {faq.a}
                       </div>
                     </div>
@@ -1262,7 +1262,7 @@ export function Landing() {
             </div>
 
             {allFaqs.length > 6 && (
-              <div className="text-center mt-6">
+              <div className="text-center mt-4">
                 <button
                   onClick={() => setShowAllFaqs(!showAllFaqs)}
                   className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-[#172263] hover:text-[#11194A] rounded-xl text-sm font-semibold transition-all cursor-pointer border border-[#E2E8F0] shadow-sm hover:border-[#172263]/20"
@@ -1277,10 +1277,10 @@ export function Landing() {
             )}
 
             {/* Ask a Question CTA */}
-            <div className="text-center mt-10">
+            <div className="text-center mt-6">
               <Link
                 to="/ask-question"
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#172263] text-white rounded-xl font-semibold hover:bg-[#11194A] transition-all shadow-[0_4px_14px_rgba(23,34,99,0.2)] hover:-translate-y-0.5 cursor-pointer"
+                className="inline-flex items-center gap-2 px-8 py-3 bg-[#172263] text-white rounded-xl font-semibold hover:bg-[#11194A] transition-all shadow-[0_4px_14px_rgba(23,34,99,0.2)] hover:-translate-y-0.5 cursor-pointer"
               >
                 {t("landing.faq.askButton", { ns: "pages", defaultValue: "Ask a Question" })} <ArrowRight size={16} />
               </Link>
