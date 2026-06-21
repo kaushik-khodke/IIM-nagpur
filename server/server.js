@@ -10,7 +10,11 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const winston = require('winston');
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+// Try loading .env from root directory first, then fallback to current directory
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -414,33 +418,38 @@ app.get('/api/users/:id', authenticateToken, async (req, res) => {
 // 4. Operator Routes
 app.get('/api/operators', async (req, res) => {
   const { search, location, state, availability, limit, userId } = req.query;
-  let queryStr = 'SELECT * FROM operators WHERE 1=1';
+  let queryStr = `
+    SELECT o.*,
+           COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'operator' AND target_id = o.id), 0) as avgRating,
+           (SELECT COUNT(*) FROM ratings WHERE target_type = 'operator' AND target_id = o.id) as ratingCount
+    FROM operators o
+    WHERE 1=1
+  `;
   const queryParams = [];
 
   if (userId) {
-    queryStr += ' AND user_id = ?';
+    queryStr += ' AND o.user_id = ?';
     queryParams.push(userId);
   }
 
   if (search) {
-    queryStr += ' AND name LIKE ?';
+    queryStr += ' AND o.name LIKE ?';
     queryParams.push(`%${search}%`);
   }
   if (location) {
-    queryStr += ' AND location LIKE ?';
+    queryStr += ' AND o.location LIKE ?';
     queryParams.push(`%${location}%`);
   }
   if (state) {
-    queryStr += ' AND state = ?';
+    queryStr += ' AND o.state = ?';
     queryParams.push(state);
   }
   if (availability) {
-    queryStr += ' AND availability = ?';
+    queryStr += ' AND o.availability = ?';
     queryParams.push(availability);
   }
 
-  queryStr += ' ORDER BY id DESC';
-
+  queryStr += ' ORDER BY o.id DESC';
 
   if (limit) {
     queryStr += ' LIMIT ?';
@@ -452,6 +461,8 @@ app.get('/api/operators', async (req, res) => {
     // Parse machine expertise array back to array object
     const parsedRows = rows.map(r => ({
       ...r,
+      avgRating: parseFloat(r.avgRating || 0).toFixed(1),
+      ratingCount: parseInt(r.ratingCount || 0),
       machineExpertise: JSON.parse(r.machine_expertise || '[]')
     }));
     res.json(parsedRows);
@@ -528,7 +539,14 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
 // 5. Harvester Routes
 app.get('/api/harvesters', async (req, res) => {
   const { search, location, state, company, limit, operatorId } = req.query;
-  let queryStr = 'SELECT h.*, u.name as ownerName, u.image_path as ownerProfilePic FROM harvesters h JOIN users u ON h.user_id = u.id WHERE 1=1';
+  let queryStr = `
+    SELECT h.*, u.name as ownerName, u.image_path as ownerProfilePic,
+           COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'machine' AND target_id = h.id), 0) as avgRating,
+           (SELECT COUNT(*) FROM ratings WHERE target_type = 'machine' AND target_id = h.id) as ratingCount
+    FROM harvesters h 
+    JOIN users u ON h.user_id = u.id 
+    WHERE 1=1
+  `;
   const queryParams = [];
 
   if (search) {
@@ -577,7 +595,9 @@ app.get('/api/harvesters', async (req, res) => {
       description: r.description,
       imagePath: r.image_path,
       ownerName: r.ownerName,
-      ownerProfilePic: r.ownerProfilePic
+      ownerProfilePic: r.ownerProfilePic,
+      avgRating: parseFloat(r.avgRating || 0).toFixed(1),
+      ratingCount: parseInt(r.ratingCount || 0)
     }));
     res.json(formattedRows);
   } catch (error) {
@@ -959,7 +979,7 @@ app.put('/api/messages/unread/mark-read', authenticateToken, async (req, res) =>
 
 // 8. Blog Routes
 app.get('/api/blogs', async (req, res) => {
-  const { category, search } = req.query;
+  const { category, search, limit, offset, seed } = req.query;
   const user = getOptionalUser(req);
   const currentUserId = user ? user.id : null;
 
@@ -982,7 +1002,21 @@ app.get('/api/blogs', async (req, res) => {
     queryParams.push(`%${search}%`, `%${search}%`);
   }
 
-  queryStr += ' ORDER BY b.id DESC';
+  if (seed) {
+    const parsedSeed = parseInt(seed) || 42;
+    queryStr += ` ORDER BY RAND(${parsedSeed})`;
+  } else {
+    queryStr += ' ORDER BY b.id DESC';
+  }
+
+  if (limit) {
+    queryStr += ' LIMIT ?';
+    queryParams.push(parseInt(limit));
+    if (offset) {
+      queryStr += ' OFFSET ?';
+      queryParams.push(parseInt(offset));
+    }
+  }
 
   try {
     const [rows] = await db.query(queryStr, queryParams);

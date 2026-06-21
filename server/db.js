@@ -1,8 +1,11 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
-
 const fs = require('fs');
 const path = require('path');
+const dotenv = require('dotenv');
+
+// Try loading .env from root directory first, then fallback to current directory
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
 
 const dbConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
