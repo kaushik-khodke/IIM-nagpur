@@ -7,7 +7,8 @@
     "logout": "Logout",
     "login": "Login",
     "register": "Register",
-    "contact": "Contact"
+    "contact": "Contact",
+    "faq": "FAQ"
   },
   "buttons": {
     "save": "Save",
