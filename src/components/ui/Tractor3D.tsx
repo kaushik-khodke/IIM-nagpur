@@ -1,7 +1,7 @@
 import { useRef, useEffect, useMemo } from "react";
 import { useGLTF, Environment, OrbitControls, ContactShadows } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
+import { KTX2Loader } from "three-stdlib";
 import * as THREE from "three";
 
 // Singleton KTX2Loader (shared across all instances)

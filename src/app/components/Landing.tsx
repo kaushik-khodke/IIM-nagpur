@@ -21,15 +21,10 @@ import { useTranslation } from "react-i18next";
 import CountUp from "@/components/ui/CountUp";
 import {
   Navbar,
-  OperatorCard,
-  HarvesterCard,
-  BlogCard,
-  TractorIllustration,
   WheatWatermark,
   SkeletonCard,
   AuthChooserDialog,
 } from "./shared";
-import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
 import { Canvas } from "@react-three/fiber";
 import { TractorModel } from "@/components/ui/Tractor3D";
 import { CinematicFooter } from "@/components/motion-footer";
@@ -48,20 +43,7 @@ import districtsData from "./districts.json";
 
 const INDIAN_STATES = districtsData.states.map((s: any) => s.state);
 
-function generateDeterministicChartBars(id: number, type: string) {
-  const bars = [];
-  const labels = ["W1", "W2", "W3", "W4"];
-  let seed = id;
-  for (let i = 0; i < 4; i++) {
-    seed = (seed * 1664525 + 1013904223) % 4294967296;
-    const value = 2 + (seed % 13);
-    bars.push({
-      label: labels[i],
-      value: value
-    });
-  }
-  return bars;
-}
+
 
 function DirectorySkeletonCard() {
   return (
@@ -275,15 +257,7 @@ export function Landing() {
     }
   }, [dirSearch]);
 
-  const handleBookingClick = (ownerId: number | string) => {
-    const token = localStorage.getItem("tractorsewa_token");
-    if (!token) {
-      setChooserMode("login");
-      setChooserOpen(true);
-    } else {
-      navigate(`/messages?userId=${ownerId}`);
-    }
-  };
+
 
   useEffect(() => {
     const fetchDirectory = async () => {
@@ -426,14 +400,9 @@ export function Landing() {
 
 
   const [activePersona, setActivePersona] = useState<'farmer' | 'operator'>('farmer');
-  const [expandedStep, setExpandedStep] = useState<number | null>(null);
+  const [, setExpandedStep] = useState<number | null>(null);
 
-  const steps = [
-    { num: "01", icon: <Users size={24} />, title: t("landing.steps.step1.title"), desc: t("landing.steps.step1.desc") },
-    { num: "02", icon: <Star size={24} />, title: t("landing.steps.step2.title"), desc: t("landing.steps.step2.desc") },
-    { num: "03", icon: <Search size={24} />, title: t("landing.steps.step3.title"), desc: t("landing.steps.step3.desc") },
-    { num: "04", icon: <Wheat size={24} />, title: t("landing.steps.step4.title"), desc: t("landing.steps.step4.desc") },
-  ];
+
 
   const personaSteps = {
     farmer: [
