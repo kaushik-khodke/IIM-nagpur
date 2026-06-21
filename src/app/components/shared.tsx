@@ -802,6 +802,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
               { label: t("nav.home", { ns: "common", defaultValue: "Home" }), anchor: "top" },
               { label: t("landing.howItWorks", { ns: "pages", defaultValue: "How It Works" }), anchor: "how-it-works" },
               { label: t("landing.features", { ns: "pages", defaultValue: "Features" }), anchor: "features" },
+              { label: t("nav.faq", { ns: "common", defaultValue: "FAQ" }), anchor: "faq" },
               { label: t("nav.contact", { ns: "common", defaultValue: "Contact" }), anchor: "contact" },
             ].map((item) => (
               <a
@@ -981,6 +982,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                 { label: t("nav.home", { ns: "common", defaultValue: "Home" }), anchor: "top" },
                 { label: t("landing.howItWorks", { ns: "pages", defaultValue: "How It Works" }), anchor: "how-it-works" },
                 { label: t("landing.features", { ns: "pages", defaultValue: "Features" }), anchor: "features" },
+                { label: t("nav.faq", { ns: "common", defaultValue: "FAQ" }), anchor: "faq" },
                 { label: t("nav.contact", { ns: "common", defaultValue: "Contact" }), anchor: "contact" },
               ].map((item) => (
                 <a
