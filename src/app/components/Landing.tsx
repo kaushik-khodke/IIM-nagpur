@@ -1,5 +1,5 @@
 
-import { useState, useEffect, Suspense, memo, useRef } from "react";
+import { useState, useEffect, Suspense, memo, useRef, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion, useInView } from "motion/react";
 import {
@@ -185,6 +185,47 @@ export function Landing() {
   const [loading, setLoading] = useState(true);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
   const [customFaqs, setCustomFaqs] = useState<any[]>([]);
+  const [showAllFaqs, setShowAllFaqs] = useState(false);
+
+  // Shuffle default FAQs once on component mount or when translation function updates
+  const defaultFaqs = useMemo(() => {
+    const list = [
+      {
+        q: t("landing.faq.q1.question", { ns: "pages", defaultValue: "What is Tractor Seva?" }),
+        a: t("landing.faq.q1.answer", { ns: "pages", defaultValue: "Tractor Seva is a digital platform connecting Indian farmers with harvester owners and tractor operators to easily rent agricultural machinery and hire skilled help." })
+      },
+      {
+        q: t("landing.faq.q2.question", { ns: "pages", defaultValue: "How do I book a harvester or hire an operator?" }),
+        a: t("landing.faq.q2.answer", { ns: "pages", defaultValue: "You can browse our verified directory of machines and operators, filter by your state or district, and contact the listings directly via our integrated real-time chat or WhatsApp." })
+      },
+      {
+        q: t("landing.faq.q3.question", { ns: "pages", defaultValue: "Is it free to list my machine or register as an operator?" }),
+        a: t("landing.faq.q3.answer", { ns: "pages", defaultValue: "Yes! Registering your profile as a tractor operator or listing your harvester is completely free. We do not charge any registration fees or listing fees." })
+      },
+      {
+        q: t("landing.faq.q4.question", { ns: "pages", defaultValue: "How does the service requests portal work?" }),
+        a: t("landing.faq.q4.answer", { ns: "pages", defaultValue: "If you are a farmer looking for specific machinery or help, you can post a Service Request. Operators and machine owners can browse these requests and contact you directly to offer their services." })
+      },
+      {
+        q: t("landing.faq.q5.question", { ns: "pages", defaultValue: "How are operators and machines verified?" }),
+        a: t("landing.faq.q5.answer", { ns: "pages", defaultValue: "We encourage community trust through our Rating & Review system. Users can rate operators and machines based on their direct experience. Always inspect machinery and discuss terms before finalizing payments." })
+      },
+      {
+        q: t("landing.faq.q6.question", { ns: "pages", defaultValue: "Can I use Tractor Seva in my local language?" }),
+        a: t("landing.faq.q6.answer", { ns: "pages", defaultValue: "Absolutely! Tractor Seva has complete multilingual localization support. You can switch between English, Marathi, and other regional languages using the language toggle in the navigation bar." })
+      }
+    ];
+    return [...list].sort(() => Math.random() - 0.5);
+  }, [t]);
+
+  // Combine custom FAQs (recent first) and default static FAQs
+  const allFaqs = useMemo(() => {
+    const customList = customFaqs.map((cf: any) => ({
+      q: cf.question,
+      a: cf.answer
+    }));
+    return [...customList, ...defaultFaqs];
+  }, [customFaqs, defaultFaqs]);
 
   // Dialog State
   const [chooserOpen, setChooserOpen] = useState(false);
@@ -357,7 +398,7 @@ export function Landing() {
           setBlogs(blogsData);
         }
 
-        const faqsRes = await fetch('/api/faqs/active');
+        const faqsRes = await fetch('/api/faqs/active', { cache: 'no-store' });
         if (faqsRes.ok) {
           const faqsData = await faqsRes.json();
           setCustomFaqs(faqsData);
@@ -1180,36 +1221,7 @@ export function Landing() {
             </div>
             
             <div className="space-y-4">
-              {[
-                {
-                  q: t("landing.faq.q1.question", { ns: "pages", defaultValue: "What is Tractor Seva?" }),
-                  a: t("landing.faq.q1.answer", { ns: "pages", defaultValue: "Tractor Seva is a digital platform connecting Indian farmers with harvester owners and tractor operators to easily rent agricultural machinery and hire skilled help." })
-                },
-                {
-                  q: t("landing.faq.q2.question", { ns: "pages", defaultValue: "How do I book a harvester or hire an operator?" }),
-                  a: t("landing.faq.q2.answer", { ns: "pages", defaultValue: "You can browse our verified directory of machines and operators, filter by your state or district, and contact the listings directly via our integrated real-time chat or WhatsApp." })
-                },
-                {
-                  q: t("landing.faq.q3.question", { ns: "pages", defaultValue: "Is it free to list my machine or register as an operator?" }),
-                  a: t("landing.faq.q3.answer", { ns: "pages", defaultValue: "Yes! Registering your profile as a tractor operator or listing your harvester is completely free. We do not charge any registration fees or listing fees." })
-                },
-                {
-                  q: t("landing.faq.q4.question", { ns: "pages", defaultValue: "How does the service requests portal work?" }),
-                  a: t("landing.faq.q4.answer", { ns: "pages", defaultValue: "If you are a farmer looking for specific machinery or help, you can post a Service Request. Operators and machine owners can browse these requests and contact you directly to offer their services." })
-                },
-                {
-                  q: t("landing.faq.q5.question", { ns: "pages", defaultValue: "How are operators and machines verified?" }),
-                  a: t("landing.faq.q5.answer", { ns: "pages", defaultValue: "We encourage community trust through our Rating & Review system. Users can rate operators and machines based on their direct experience. Always inspect machinery and discuss terms before finalizing payments." })
-                },
-                {
-                  q: t("landing.faq.q6.question", { ns: "pages", defaultValue: "Can I use Tractor Seva in my local language?" }),
-                  a: t("landing.faq.q6.answer", { ns: "pages", defaultValue: "Absolutely! Tractor Seva has complete multilingual localization support. You can switch between English, Marathi, and other regional languages using the language toggle in the navigation bar." })
-                },
-                ...customFaqs.map((cf: any) => ({
-                  q: cf.question,
-                  a: cf.answer
-                }))
-              ].map((faq, idx) => {
+              {(showAllFaqs ? allFaqs : allFaqs.slice(0, 6)).map((faq, idx) => {
                 const isOpen = activeFaqIndex === idx;
                 return (
                   <div 
@@ -1248,6 +1260,21 @@ export function Landing() {
                 );
               })}
             </div>
+
+            {allFaqs.length > 6 && (
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => setShowAllFaqs(!showAllFaqs)}
+                  className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-[#172263] hover:text-[#11194A] rounded-xl text-sm font-semibold transition-all cursor-pointer border border-[#E2E8F0] shadow-sm hover:border-[#172263]/20"
+                >
+                  {showAllFaqs ? (
+                    <>Show Less <ChevronDown className="rotate-180 transition-transform duration-300" size={16} /></>
+                  ) : (
+                    <>View More Questions ({allFaqs.length - 6}) <ChevronDown className="transition-transform duration-300" size={16} /></>
+                  )}
+                </button>
+              </div>
+            )}
 
             {/* Ask a Question CTA */}
             <div className="text-center mt-10">
