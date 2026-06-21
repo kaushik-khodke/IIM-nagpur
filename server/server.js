@@ -1831,6 +1831,87 @@ app.get('/api/ratings', async (req, res) => {
 });
 
 // 9. Admin Blog Management Routes
+app.post('/api/admin/blogs/generate', authenticateToken, isAdmin, async (req, res) => {
+  const { title, keywords, category } = req.body;
+  
+  if (!title || !category) {
+    return res.status(400).json({ error: 'Title and Category are required' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your server/.env file.' });
+  }
+
+  const prompt = `You are a professional blog writer for the Tractor Sewa platform (a marketplace and community for tractors, harvesters, operators, and farmers).
+Write a blog post in English based on the following inputs:
+- Title: "${title}"
+- Keywords: "${keywords || 'none'}"
+- Category: "${category}"
+
+Return your response ONLY as a JSON object matching this exact structure:
+{
+  "title": "A compelling final title based on the input",
+  "category": "${category}",
+  "short_description": "A short summary (1-2 sentences) of the blog post.",
+  "content": "The full blog content in Markdown format. Use clear headings (##, ###), bullet points, and paragraphs. Make it around 400-600 words, practical, informative, and engaging for agricultural stakeholders."
+}
+
+Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('Gemini API Error: ' + errorText);
+      return res.status(502).json({ error: 'Failed to generate content from Gemini API' });
+    }
+
+    const data = await response.json();
+    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!generatedText) {
+      return res.status(502).json({ error: 'Invalid response structure from Gemini API' });
+    }
+
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(generatedText.trim());
+    } catch (e) {
+      logger.error('Failed to parse Gemini output as JSON. Output was: ' + generatedText);
+      return res.status(502).json({ error: 'AI output could not be parsed as valid JSON' });
+    }
+
+    res.json(parsedResult);
+  } catch (error) {
+    logger.error('Error generating blog post: ' + error.stack);
+    res.status(500).json({ error: 'Internal Server Error during blog generation' });
+  }
+});
+
 app.post('/api/admin/blogs', authenticateToken, isAdmin, async (req, res) => {
   const { title, category, short_description, content, date, image_url } = req.body;
   if (!title || !category || !short_description || !content) {
@@ -1864,7 +1945,7 @@ app.post('/api/admin/blogs', authenticateToken, isAdmin, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error creating blog:', error);
+    logger.error('Error creating blog: ' + error.stack);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -1895,7 +1976,7 @@ app.put('/api/admin/blogs/:id', authenticateToken, isAdmin, async (req, res) => 
       message: 'Blog updated successfully'
     });
   } catch (error) {
-    console.error('Error updating blog:', error);
+    logger.error('Error updating blog: ' + error.stack);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -1921,7 +2002,7 @@ app.delete('/api/admin/blogs/:id', authenticateToken, isAdmin, async (req, res) 
       message: 'Blog deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting blog:', error);
+    logger.error('Error deleting blog: ' + error.stack);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
