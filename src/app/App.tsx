@@ -9,6 +9,7 @@ const AuthPage = lazy(() => import("./components/Auth").then(m => ({ default: m.
 const Dashboard = lazy(() => import("./components/Dashboard").then(m => ({ default: m.Dashboard })));
 const Settings = lazy(() => import("./components/Settings").then(m => ({ default: m.Settings })));
 const EnquiryPage = lazy(() => import("./components/Enquiry").then(m => ({ default: m.EnquiryPage })));
+const AskQuestion = lazy(() => import("./components/AskQuestion").then(m => ({ default: m.AskQuestion })));
 
 // Lazy-loaded components from Pages.tsx
 const ExploreHarvesters = lazy(() => import("./components/Pages").then(m => ({ default: m.ExploreHarvesters })));
@@ -113,6 +114,7 @@ export default function App() {
           <Route path="/blogs" element={<Blogs />} />
           <Route path="/blogs/:id" element={<BlogDetail />} />
           <Route path="/enquiry" element={<EnquiryPage />} />
+          <Route path="/ask-question" element={<AskQuestion />} />
 
           {/* Protected */}
           <Route

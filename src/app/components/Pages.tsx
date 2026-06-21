@@ -40,6 +40,7 @@ import {
   Send,
   Menu,
   Sparkles,
+  HelpCircle,
 } from "lucide-react";
 import {
   Navbar,
@@ -5497,6 +5498,9 @@ export function AdminPortal() {
   const [enquiries, setEnquiries] = useState<any[]>([]);
   const [adminBlogs, setAdminBlogs] = useState<any[]>([]);
   const [adminOperators, setAdminOperators] = useState<any[]>([]);
+  const [adminFaqs, setAdminFaqs] = useState<any[]>([]);
+  const [answeringFaqId, setAnsweringFaqId] = useState<string | null>(null);
+  const [faqAnswerText, setFaqAnswerText] = useState("");
 
   // Detailed Listing Viewer States
   const [selectedListingDetail, setSelectedListingDetail] = useState<any | null>(null);
@@ -5588,6 +5592,7 @@ export function AdminPortal() {
     fetchEnquiries();
     fetchAdminBlogs();
     fetchAdminOperators();
+    fetchAdminFaqs();
   };
 
   const fetchStats = async () => {
@@ -5679,6 +5684,69 @@ export function AdminPortal() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const fetchAdminFaqs = async () => {
+    try {
+      const res = await fetch("/api/admin/faqs", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAdminFaqs(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAnswerFaqSubmit = async (faqId: string) => {
+    if (!faqAnswerText.trim()) {
+      toast.error("Please enter an answer.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/faqs/${faqId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ answer: faqAnswerText.trim(), status: 'Answered' })
+      });
+
+      if (res.ok) {
+        toast.success("Question answered successfully!");
+        setAnsweringFaqId(null);
+        setFaqAnswerText("");
+        fetchAdminFaqs();
+      } else {
+        toast.error("Failed to submit answer.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error answering question.");
+    }
+  };
+
+  const handleDeleteFaq = async (faqId: string) => {
+    try {
+      const res = await fetch(`/api/admin/faqs/${faqId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        toast.success("FAQ deleted successfully.");
+        fetchAdminFaqs();
+      } else {
+        toast.error("Failed to delete FAQ.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error deleting FAQ.");
     }
   };
 
@@ -6113,11 +6181,10 @@ export function AdminPortal() {
   return (
     <div className="h-screen w-full bg-white font-sans overflow-hidden">
       <div className="w-full h-full flex flex-col md:flex-row">
-        {/* LEFT SIDEBAR */}
-        <div className={`bg-[#f5eee5] border-r border-[#e8dfd2] flex flex-col justify-between shrink-0 transition-all duration-300 ${isSidebarOpen ? 'w-full md:w-[280px] p-5 lg:p-6' : 'w-0 md:w-[88px] p-4 md:py-6 md:px-4'}`}>
-          <div className="space-y-8 overflow-hidden">
+        <div className={`bg-[#f5eee5] border-r border-[#e8dfd2] flex flex-col justify-between shrink-0 transition-all duration-300 h-full ${isSidebarOpen ? 'w-full md:w-[280px] p-5 lg:p-6' : 'w-0 md:w-[88px] p-4 md:py-6 md:px-4'}`}>
+          <div className="flex flex-col flex-1 min-h-0 space-y-6 overflow-hidden">
             {/* Logo */}
-            <div className={`flex items-center ${isSidebarOpen ? 'justify-between gap-3' : 'justify-center'} w-full`}>
+            <div className={`flex items-center ${isSidebarOpen ? 'justify-between gap-3' : 'justify-center'} w-full shrink-0`}>
               {isSidebarOpen && (
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="p-2 bg-[#172263] rounded-xl text-white flex items-center justify-center shrink-0">
@@ -6136,7 +6203,7 @@ export function AdminPortal() {
             </div>
             
             {/* Profile info */}
-            <div className="flex flex-col items-center text-center py-4 border-b border-[#e8dfd2]/60">
+            <div className="flex flex-col items-center text-center py-4 border-b border-[#e8dfd2]/60 shrink-0">
               <div className={`${isSidebarOpen ? 'w-20 h-20' : 'w-12 h-12'} rounded-full p-0.5 shadow-md mb-3 transition-all duration-300 shrink-0`}>
                 <Avatar className="w-full h-full rounded-full border-2 border-transparent bg-gradient-to-br from-[#172263] to-[#D97706] bg-clip-border">
                   {currentUser?.image_path ? <AvatarImage src={currentUser.image_path} alt={currentUser.name} /> : null}
@@ -6154,7 +6221,7 @@ export function AdminPortal() {
             </div>
             
             {/* Navigation Menu */}
-            <nav className="flex flex-col gap-1.5">
+            <nav className="flex flex-col gap-1.5 overflow-y-auto flex-1 pr-1 scrollbar-thin">
               {[
                 { id: "dashboard", label: t("admin.nav.dashboard", { defaultValue: "Dashboard" }), icon: <LayoutGrid size={18} /> },
                 { id: "directory", label: t("admin.nav.directory", { defaultValue: "User Directory" }), icon: <User size={18} /> },
@@ -6164,7 +6231,8 @@ export function AdminPortal() {
                 { id: "operators", label: t("admin.nav.operators", { defaultValue: "Operators" }), icon: <UserCheck size={18} /> },
                 { id: "requests", label: t("admin.nav.requests", { defaultValue: "Requests" }), icon: <FileText size={18} /> },
                 { id: "enquiries", label: t("admin.nav.enquiries", { defaultValue: "Enquiries" }), icon: <MessageSquare size={18} /> },
-                { id: "blogs", label: t("admin.nav.blogs", { defaultValue: "Blogs Management" }), icon: <BookOpen size={18} /> }
+                { id: "blogs", label: t("admin.nav.blogs", { defaultValue: "Blogs Management" }), icon: <BookOpen size={18} /> },
+                { id: "faqs", label: "FAQ Management", icon: <HelpCircle size={18} /> }
               ].map(item => (
                 <button
                   key={item.id}
@@ -7497,6 +7565,143 @@ export function AdminPortal() {
                         )}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ================================== */}
+          {/* TAB: FAQS (FAQ MANAGEMENT)        */}
+          {/* ================================== */}
+          {activeTab === "faqs" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0]">
+                <div>
+                  <h2 className="text-2xl font-bold text-[#1A1A1A] font-sora" style={{ fontFamily: "'Sora', sans-serif" }}>FAQ Management</h2>
+                  <p className="text-xs text-[#57585A] mt-0.5">Answer submitted questions or manage existing FAQs</p>
+                </div>
+              </div>
+
+              {/* FAQs Listing & Actions */}
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-[#57585A]">
+                    <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                      <tr>
+                        <th className="px-6 py-3.5">Question</th>
+                        <th className="px-6 py-3.5">Answer</th>
+                        <th className="px-6 py-3.5">Status</th>
+                        <th className="px-6 py-3.5">Date Asked</th>
+                        <th className="px-6 py-3.5 text-right font-bold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]/50 bg-white font-medium font-sora">
+                      {adminFaqs.length > 0 ? (
+                        adminFaqs.map((faq) => (
+                          <tr key={faq.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 max-w-xs font-semibold text-[#1A1A1A] break-words">
+                              {faq.question}
+                            </td>
+                            <td className="px-6 py-4 max-w-sm text-xs break-words">
+                              {faq.answer ? (
+                                <p className="leading-relaxed">{faq.answer}</p>
+                              ) : (
+                                <span className="text-amber-600 font-bold italic">Unanswered</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                faq.status === 'Answered'
+                                  ? 'bg-green-50 text-green-700 border border-green-200'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}>
+                                {faq.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-xs text-[#57585A]">
+                              {new Date(faq.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex justify-end gap-2">
+                                {faq.status === 'Pending' ? (
+                                  <button
+                                    onClick={() => {
+                                      setAnsweringFaqId(faq.id);
+                                      setFaqAnswerText("");
+                                    }}
+                                    className="px-3 py-1.5 bg-[#172263] text-white hover:bg-[#11194A] text-xs font-bold rounded-xl transition cursor-pointer"
+                                  >
+                                    Answer
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      setAnsweringFaqId(faq.id);
+                                      setFaqAnswerText(faq.answer || "");
+                                    }}
+                                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                                  >
+                                    Edit Answer
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteFaq(faq.id)}
+                                  className="p-1.5 hover:bg-red-50 text-red-600 border border-transparent hover:border-red-100 rounded-xl transition cursor-pointer"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-[#57585A]/70">
+                            No FAQ questions found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Answering Form Modal / Expandable Panel */}
+              {answeringFaqId && (
+                <div className="bg-slate-50/50 border border-[#E2E8F0] rounded-3xl p-6 shadow-sm space-y-4 animate-in fade-in duration-200">
+                  <h3 className="text-base font-bold text-[#1A1A1A] font-sora" style={{ fontFamily: "'Sora', sans-serif" }}>
+                    {adminFaqs.find(f => f.id === answeringFaqId)?.answer ? 'Edit Answer for Question' : 'Provide Answer for Question'}
+                  </h3>
+                  <div className="p-4 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-[#57585A] leading-relaxed italic">
+                    "{adminFaqs.find(f => f.id === answeringFaqId)?.question}"
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs text-[#57585A] font-bold uppercase tracking-wider block">Your Answer *</label>
+                    <textarea
+                      value={faqAnswerText}
+                      onChange={(e) => setFaqAnswerText(e.target.value)}
+                      rows={4}
+                      className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none"
+                      placeholder="Type your answer here..."
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAnswerFaqSubmit(answeringFaqId)}
+                      className="px-4 py-2.5 bg-[#172263] hover:bg-[#11194A] text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      Save and Approve
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAnsweringFaqId(null);
+                        setFaqAnswerText("");
+                      }}
+                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
               )}
