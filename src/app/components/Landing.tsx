@@ -1268,9 +1268,9 @@ export function Landing() {
                   className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-[#172263] hover:text-[#11194A] rounded-xl text-sm font-semibold transition-all cursor-pointer border border-[#E2E8F0] shadow-sm hover:border-[#172263]/20"
                 >
                   {showAllFaqs ? (
-                    <>Show Less <ChevronDown className="rotate-180 transition-transform duration-300" size={16} /></>
+                    <>{t("landing.faq.showLess", { ns: "pages", defaultValue: "Show Less" })} <ChevronDown className="rotate-180 transition-transform duration-300" size={16} /></>
                   ) : (
-                    <>View More Questions ({allFaqs.length - 6}) <ChevronDown className="transition-transform duration-300" size={16} /></>
+                    <>{t("landing.faq.viewMore", { ns: "pages", defaultValue: "View More Questions" })} ({allFaqs.length - 6}) <ChevronDown className="transition-transform duration-300" size={16} /></>
                   )}
                 </button>
               </div>
