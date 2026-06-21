@@ -190,56 +190,77 @@ const validateYear = (year) => {
 // --- API ROUTES ---
 
 // 1. Image Upload Endpoint
-app.post('/api/upload', upload.single('image'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-
-  const localPath = req.file.path;
-  const mimeType = req.file.mimetype;
-  const fileName = req.file.filename;
-
-  try {
-    const fileBuffer = fs.readFileSync(localPath);
-    
-    // Supabase project constants
-    const ref = 'nwlhjvthqggfzvnukagg';
-    const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53bGhqdnRocWdnZnp2bnVrYWdnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTYyMDY4OCwiZXhwIjoyMDg1MTk2Njg4fQ.P3aSVSC5zhDCDMxfHnpPkUFqFYTunjrEZ5AsyXkpt14';
-    const bucket = 'TractorSeva';
-    
-    const uploadUrl = `https://${ref}.supabase.co/storage/v1/object/${bucket}/${fileName}`;
-    
-    const response = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'apikey': key,
-        'Content-Type': mimeType
-      },
-      body: fileBuffer
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Supabase upload error:', response.status, errorText);
-      return res.status(500).json({ error: 'Failed to upload image to Supabase storage.' });
+app.post('/api/upload', (req, res) => {
+  upload.single('image')(req, res, async (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ error: 'File size too large. Maximum limit is 5MB.' });
+        }
+        return res.status(400).json({ error: `Multer upload error: ${err.message}` });
+      }
+      return res.status(400).json({ error: err.message || 'File upload error.' });
     }
 
-    const publicUrl = `https://${ref}.supabase.co/storage/v1/object/public/${bucket}/${fileName}`;
-    
-    // Delete local temp file
-    fs.unlink(localPath, (err) => {
-      if (err) console.error('Failed to delete temporary local file:', err);
-    });
-
-    res.json({ url: publicUrl });
-  } catch (error) {
-    console.error('Upload handler error:', error);
-    if (fs.existsSync(localPath)) {
-      fs.unlinkSync(localPath);
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
     }
-    res.status(500).json({ error: 'Internal Server Error during upload.' });
-  }
+
+    const localPath = req.file.path;
+    const mimeType = req.file.mimetype;
+    const fileName = req.file.filename;
+
+    try {
+      const fileBuffer = fs.readFileSync(localPath);
+      
+      // Supabase project constants
+      const ref = 'nwlhjvthqggfzvnukagg';
+      const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53bGhqdnRocWdnZnp2bnVrYWdnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTYyMDY4OCwiZXhwIjoyMDg1MTk2Njg4fQ.P3aSVSC5zhDCDMxfHnpPkUFqFYTunjrEZ5AsyXkpt14';
+      const bucket = 'TractorSeva';
+      
+      const uploadUrl = `https://${ref}.supabase.co/storage/v1/object/${bucket}/${fileName}`;
+      
+      // Map image/webp to image/png for the Supabase upload call
+      // because the Supabase bucket configuration excludes image/webp from its whitelist.
+      const supabaseMimeType = mimeType === 'image/webp' ? 'image/png' : mimeType;
+
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'apikey': key,
+          'Content-Type': supabaseMimeType
+        },
+        body: fileBuffer
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Supabase upload error:', response.status, errorText);
+        let parsedError = errorText;
+        try {
+          const jsonErr = JSON.parse(errorText);
+          parsedError = jsonErr.message || jsonErr.error || errorText;
+        } catch (e) {}
+        return res.status(500).json({ error: `Supabase upload failed: ${parsedError}` });
+      }
+
+      const publicUrl = `https://${ref}.supabase.co/storage/v1/object/public/${bucket}/${fileName}`;
+      
+      // Delete local temp file
+      fs.unlink(localPath, (err) => {
+        if (err) console.error('Failed to delete temporary local file:', err);
+      });
+
+      res.json({ url: publicUrl });
+    } catch (error) {
+      console.error('Upload handler error:', error);
+      if (fs.existsSync(localPath)) {
+        fs.unlinkSync(localPath);
+      }
+      res.status(500).json({ error: `Internal Server Error during upload: ${error.message}` });
+    }
+  });
 });
 
 // 2. Auth Routes
@@ -1973,7 +1994,16 @@ app.put('/api/admin/blogs/:id', authenticateToken, isAdmin, async (req, res) => 
 
     res.json({
       success: true,
-      message: 'Blog updated successfully'
+      message: 'Blog updated successfully',
+      blog: {
+        id: parseInt(blogId),
+        title,
+        category,
+        short_description,
+        content,
+        date: blogDate,
+        image_url: image_url || null
+      }
     });
   } catch (error) {
     logger.error('Error updating blog: ' + error.stack);

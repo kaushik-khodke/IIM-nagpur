@@ -3905,11 +3905,7 @@ export function Blogs() {
           ) : (
             <>
               {blogs.map((blog) => {
-                const imgIndex =
-                  typeof blog.id === "number"
-                    ? blog.id % fallbackImages.length
-                    : String(blog.id).length % fallbackImages.length;
-                const finalImageUrl = blog.image_url || blog.imageUrl || fallbackImages[imgIndex];
+                const finalImageUrl = blog.image_url || blog.imageUrl || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
                 const hasImageError = !!imageErrors[blog.id];
 
                 return (
@@ -4195,14 +4191,10 @@ export function Blogs() {
                     src={
                       activeBlog.image_url ||
                       activeBlog.imageUrl ||
-                      fallbackImages[
-                      typeof activeBlog.id === "number"
-                        ? activeBlog.id % fallbackImages.length
-                        : String(activeBlog.id).length % fallbackImages.length
-                      ]
+                      "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>"
                     }
                     onError={(e) => {
-                      e.currentTarget.src = "/blog-punjab-farmers.png";
+                      e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
                     }}
                     alt={activeBlog.title}
                     className="w-full h-full object-cover"
@@ -4347,8 +4339,15 @@ export function BlogDetail() {
           <span className="truncate">{blog.title}</span>
         </nav>
 
-        <div className="h-64 bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl flex items-center justify-center mb-8 border border-[#E2E8F0]">
-          <BookOpen size={64} className="text-blue-300" />
+        <div className="h-64 bg-zinc-100 rounded-2xl overflow-hidden mb-8 border border-[#E2E8F0] relative">
+          <img
+            src={blog.image_url || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>"}
+            alt={blog.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
+            }}
+          />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -5523,6 +5522,8 @@ export function AdminPortal() {
   const [aiPromptKeywords, setAiPromptKeywords] = useState("");
   const [aiPromptCategory, setAiPromptCategory] = useState("Machine Maintenance");
   const [generatingBlog, setGeneratingBlog] = useState(false);
+  const [aiBlogImageFile, setAiBlogImageFile] = useState<File | null>(null);
+  const [aiBlogImagePreview, setAiBlogImagePreview] = useState("");
 
   // Confirmation modal states
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -5747,6 +5748,8 @@ export function AdminPortal() {
     setAiPromptTitle("");
     setAiPromptKeywords("");
     setAiPromptCategory("Machine Maintenance");
+    setAiBlogImageFile(null);
+    setAiBlogImagePreview("");
     setShowAiBlogForm(true);
   };
 
@@ -5783,8 +5786,8 @@ export function AdminPortal() {
         setBlogContent(data.content || "");
         setBlogDate("");
         setBlogImageUrl("");
-        setBlogImageFile(null);
-        setBlogImagePreview("");
+        setBlogImageFile(aiBlogImageFile);
+        setBlogImagePreview(aiBlogImagePreview);
         
         // Switch modals
         setShowAiBlogForm(false);
@@ -5823,7 +5826,7 @@ export function AdminPortal() {
           const uploadData = await uploadRes.json();
           uploadedUrl = uploadData.url;
         } else {
-          toast.error(t("admin.failedUploadBlogImage", { defaultValue: "Failed to upload blog image. Using default image." }));
+          toast.error(t("admin.failedUploadBlogImage", { defaultValue: "Failed to upload blog image." }));
         }
       }
 
@@ -7258,9 +7261,11 @@ export function AdminPortal() {
                           onChange={(e) => setBlogCategory(e.target.value)}
                           className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                         >
+                          <option value="Harvesting Tips">Harvesting Tips</option>
                           <option value="Machine Maintenance">Machine Maintenance</option>
                           <option value="Success Stories">Success Stories</option>
-                          <option value="Harvesting Tips">Harvesting Tips</option>
+                          <option value="Agri News">Agri News</option>
+                          <option value="Weather & Season">Weather & Season</option>
                           <option value="Other">Other</option>
                         </select>
                       </div>
@@ -7412,11 +7417,11 @@ export function AdminPortal() {
                               <tr key={blog.id} className="hover:bg-slate-50/50 transition-colors">
                                 <td className="px-6 py-4">
                                   <img
-                                    src={blog.image_url || "/blog-placeholder.png"}
+                                    src={blog.image_url || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>"}
                                     alt="cover"
                                     className="w-10 h-10 object-cover rounded-lg border border-[#E2E8F0]"
                                     onError={(e) => {
-                                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=80";
+                                      (e.target as HTMLImageElement).src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
                                     }}
                                   />
                                 </td>
@@ -7792,11 +7797,11 @@ export function AdminPortal() {
             {/* Image Banner header */}
             <div className="h-64 bg-zinc-100 relative shrink-0">
               <img
-                src={activeBlogPreview.image_url || "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800"}
+                src={activeBlogPreview.image_url || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>"}
                 alt={activeBlogPreview.title}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800";
+                  (e.target as HTMLImageElement).src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6">
@@ -7930,11 +7935,55 @@ export function AdminPortal() {
                   className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                   disabled={generatingBlog}
                 >
+                  <option value="Harvesting Tips">Harvesting Tips</option>
                   <option value="Machine Maintenance">Machine Maintenance</option>
                   <option value="Success Stories">Success Stories</option>
-                  <option value="Harvesting Tips">Harvesting Tips</option>
+                  <option value="Agri News">Agri News</option>
+                  <option value="Weather & Season">Weather & Season</option>
                   <option value="Other">Other</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="text-xs text-[#57585A] block mb-1.5 font-bold uppercase tracking-wider">Blog Cover Image</label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setAiBlogImageFile(file);
+                        setAiBlogImagePreview(URL.createObjectURL(file));
+                      }
+                    }}
+                    className="hidden"
+                    id="ai-blog-image-picker"
+                    disabled={generatingBlog}
+                  />
+                  <label
+                    htmlFor="ai-blog-image-picker"
+                    className="px-4 py-2.5 border border-[#E2E8F0] hover:bg-zinc-50 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-2"
+                  >
+                    <Camera size={14} /> Upload Image
+                  </label>
+                  {aiBlogImagePreview && (
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-[#E2E8F0]">
+                      <img src={aiBlogImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiBlogImageFile(null);
+                          setAiBlogImagePreview("");
+                        }}
+                        className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                        disabled={generatingBlog}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Actions */}
