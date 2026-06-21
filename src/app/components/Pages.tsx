@@ -5536,8 +5536,6 @@ export function AdminPortal() {
   const [aiPromptKeywords, setAiPromptKeywords] = useState("");
   const [aiPromptCategory, setAiPromptCategory] = useState("Machine Maintenance");
   const [generatingBlog, setGeneratingBlog] = useState(false);
-  const [aiBlogImageFile, setAiBlogImageFile] = useState<File | null>(null);
-  const [aiBlogImagePreview, setAiBlogImagePreview] = useState("");
 
   // Confirmation modal states
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -5762,8 +5760,6 @@ export function AdminPortal() {
     setAiPromptTitle("");
     setAiPromptKeywords("");
     setAiPromptCategory("Machine Maintenance");
-    setAiBlogImageFile(null);
-    setAiBlogImagePreview("");
     setShowAiBlogForm(true);
   };
 
@@ -5800,8 +5796,8 @@ export function AdminPortal() {
         setBlogContent(data.content || "");
         setBlogDate("");
         setBlogImageUrl("");
-        setBlogImageFile(aiBlogImageFile);
-        setBlogImagePreview(aiBlogImagePreview);
+        setBlogImageFile(null);
+        setBlogImagePreview("");
         
         // Switch modals
         setShowAiBlogForm(false);
@@ -5840,7 +5836,16 @@ export function AdminPortal() {
           const uploadData = await uploadRes.json();
           uploadedUrl = uploadData.url;
         } else {
-          toast.error(t("admin.failedUploadBlogImage", { defaultValue: "Failed to upload blog image." }));
+          let errorMsg = "Failed to upload blog image.";
+          try {
+            const errData = await uploadRes.json();
+            if (errData && errData.error) {
+              errorMsg = errData.error;
+            }
+          } catch (_) {}
+          toast.error(errorMsg);
+          setSavingBlog(false);
+          return;
         }
       }
 
@@ -7958,47 +7963,7 @@ export function AdminPortal() {
                 </select>
               </div>
 
-              <div>
-                <label className="text-xs text-[#57585A] block mb-1.5 font-bold uppercase tracking-wider">Blog Cover Image</label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setAiBlogImageFile(file);
-                        setAiBlogImagePreview(URL.createObjectURL(file));
-                      }
-                    }}
-                    className="hidden"
-                    id="ai-blog-image-picker"
-                    disabled={generatingBlog}
-                  />
-                  <label
-                    htmlFor="ai-blog-image-picker"
-                    className="px-4 py-2.5 border border-[#E2E8F0] hover:bg-zinc-50 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-2"
-                  >
-                    <Camera size={14} /> Upload Image
-                  </label>
-                  {aiBlogImagePreview && (
-                    <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-[#E2E8F0]">
-                      <img src={aiBlogImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAiBlogImageFile(null);
-                          setAiBlogImagePreview("");
-                        }}
-                        className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-                        disabled={generatingBlog}
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+
 
               {/* Actions */}
               <div className="pt-4 flex justify-end gap-3 border-t border-[#E2E8F0] mt-6">
