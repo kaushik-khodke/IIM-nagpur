@@ -39,6 +39,7 @@ import {
   Star,
   Send,
   Menu,
+  Sparkles,
 } from "lucide-react";
 import {
   Navbar,
@@ -5529,6 +5530,13 @@ export function AdminPortal() {
   const [blogImagePreview, setBlogImagePreview] = useState("");
   const [savingBlog, setSavingBlog] = useState(false);
   const [adminBlogsSearch, setAdminBlogsSearch] = useState("");
+  
+  // AI blog generator states
+  const [showAiBlogForm, setShowAiBlogForm] = useState(false);
+  const [aiPromptTitle, setAiPromptTitle] = useState("");
+  const [aiPromptKeywords, setAiPromptKeywords] = useState("");
+  const [aiPromptCategory, setAiPromptCategory] = useState("Machine Maintenance");
+  const [generatingBlog, setGeneratingBlog] = useState(false);
 
   // Confirmation modal states
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -5747,6 +5755,65 @@ export function AdminPortal() {
     setBlogImageFile(null);
     setBlogImagePreview("");
     setShowBlogForm(true);
+  };
+
+  const startAiGenerateBlog = () => {
+    setAiPromptTitle("");
+    setAiPromptKeywords("");
+    setAiPromptCategory("Machine Maintenance");
+    setShowAiBlogForm(true);
+  };
+
+  const handleAiGenerate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiPromptTitle.trim()) {
+      toast.error("Please enter a title or topic.");
+      return;
+    }
+
+    setGeneratingBlog(true);
+    try {
+      const res = await fetch("/api/admin/blogs/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: aiPromptTitle.trim(),
+          keywords: aiPromptKeywords.trim(),
+          category: aiPromptCategory
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        
+        // Prefill the standard blog form with the AI generated content
+        setEditingBlog(null);
+        setBlogTitle(data.title || aiPromptTitle.trim());
+        setBlogCategory(data.category || aiPromptCategory);
+        setBlogShortDesc(data.short_description || "");
+        setBlogContent(data.content || "");
+        setBlogDate("");
+        setBlogImageUrl("");
+        setBlogImageFile(null);
+        setBlogImagePreview("");
+        
+        // Switch modals
+        setShowAiBlogForm(false);
+        setShowBlogForm(true);
+        toast.success("Blog content generated successfully! Please review and save.");
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to generate blog content.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error connecting to generator service.");
+    } finally {
+      setGeneratingBlog(false);
+    }
   };
 
   const handleBlogSubmit = async (e: React.FormEvent) => {
@@ -7323,6 +7390,12 @@ export function AdminPortal() {
                         />
                       </div>
                       <button
+                        onClick={startAiGenerateBlog}
+                        className="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Sparkles size={14} /> Generate with AI
+                      </button>
+                      <button
                         onClick={startCreateBlog}
                         className="px-4 py-2 bg-[#172263] hover:bg-[#11194A] text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
                       >
@@ -7807,6 +7880,104 @@ export function AdminPortal() {
               </div>
             </div>
             
+          </div>
+        </div>
+      )}
+
+      {/* AI Blog Generator Modal */}
+      {showAiBlogForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white border border-[#E2E8F0] max-w-lg w-full rounded-[28px] overflow-hidden shadow-2xl flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-[#E2E8F0] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-600 to-amber-500 flex items-center justify-center text-white">
+                  <Sparkles size={16} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Generate Blog with AI</h3>
+                  <p className="text-xs text-[#57585A] mt-0.5">Let AI write a formatted blog post in seconds</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAiBlogForm(false)}
+                className="p-1.5 hover:bg-zinc-100 text-zinc-500 rounded-full transition cursor-pointer"
+                disabled={generatingBlog}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleAiGenerate} className="p-6 space-y-4">
+              <div>
+                <label className="text-xs text-[#57585A] block mb-1.5 font-bold uppercase tracking-wider">Blog Title / Topic *</label>
+                <input
+                  type="text"
+                  required
+                  value={aiPromptTitle}
+                  onChange={(e) => setAiPromptTitle(e.target.value)}
+                  placeholder="e.g. Tractor Maintenance Tips for Rainy Season"
+                  className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                  disabled={generatingBlog}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#57585A] block mb-1.5 font-bold uppercase tracking-wider">Keywords / Focus Areas (Comma separated)</label>
+                <input
+                  type="text"
+                  value={aiPromptKeywords}
+                  onChange={(e) => setAiPromptKeywords(e.target.value)}
+                  placeholder="e.g. rust prevention, battery care, lubrication"
+                  className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                  disabled={generatingBlog}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#57585A] block mb-1.5 font-bold uppercase tracking-wider">Category *</label>
+                <select
+                  value={aiPromptCategory}
+                  onChange={(e) => setAiPromptCategory(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
+                  disabled={generatingBlog}
+                >
+                  <option value="Machine Maintenance">Machine Maintenance</option>
+                  <option value="Success Stories">Success Stories</option>
+                  <option value="Harvesting Tips">Harvesting Tips</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-4 flex justify-end gap-3 border-t border-[#E2E8F0] mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowAiBlogForm(false)}
+                  className="px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-bold transition cursor-pointer"
+                  disabled={generatingBlog}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={generatingBlog}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white rounded-xl text-xs font-bold transition disabled:opacity-60 flex items-center gap-1.5 cursor-pointer shadow-md"
+                >
+                  {generatingBlog ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={14} /> Generate Article
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
