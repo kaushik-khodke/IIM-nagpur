@@ -15,6 +15,7 @@ import {
   Star,
   Wheat,
   Globe,
+  ChevronDown,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import CountUp from "@/components/ui/CountUp";
@@ -182,6 +183,8 @@ export function Landing() {
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
+  const [customFaqs, setCustomFaqs] = useState<any[]>([]);
 
   // Dialog State
   const [chooserOpen, setChooserOpen] = useState(false);
@@ -352,6 +355,12 @@ export function Landing() {
         if (blogsRes.ok) {
           const blogsData = await blogsRes.json();
           setBlogs(blogsData);
+        }
+
+        const faqsRes = await fetch('/api/faqs/active');
+        if (faqsRes.ok) {
+          const faqsData = await faqsRes.json();
+          setCustomFaqs(faqsData);
         }
       } catch {
         /* network error – server likely unreachable */
@@ -1155,6 +1164,102 @@ export function Landing() {
           )}
         </section>
 
+        {/* ---- FAQ SECTION ---- */}
+        <section id="faq" className="py-20 w-full mx-auto px-4 sm:px-6 bg-slate-50/50 border-t border-slate-100/80">
+          <div className="w-full max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 
+                className="text-4xl text-[#1A1A1A] mb-3"
+                style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
+              >
+                {t("landing.faq.title", { ns: "pages", defaultValue: "Frequently Asked Questions" })}
+              </h2>
+              <p className="text-[#57585A] max-w-xl mx-auto text-base">
+                {t("landing.faq.subtitle", { ns: "pages", defaultValue: "Have questions? We have answers to help you get the most out of Tractor Seva." })}
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              {[
+                {
+                  q: t("landing.faq.q1.question", { ns: "pages", defaultValue: "What is Tractor Seva?" }),
+                  a: t("landing.faq.q1.answer", { ns: "pages", defaultValue: "Tractor Seva is a digital platform connecting Indian farmers with harvester owners and tractor operators to easily rent agricultural machinery and hire skilled help." })
+                },
+                {
+                  q: t("landing.faq.q2.question", { ns: "pages", defaultValue: "How do I book a harvester or hire an operator?" }),
+                  a: t("landing.faq.q2.answer", { ns: "pages", defaultValue: "You can browse our verified directory of machines and operators, filter by your state or district, and contact the listings directly via our integrated real-time chat or WhatsApp." })
+                },
+                {
+                  q: t("landing.faq.q3.question", { ns: "pages", defaultValue: "Is it free to list my machine or register as an operator?" }),
+                  a: t("landing.faq.q3.answer", { ns: "pages", defaultValue: "Yes! Registering your profile as a tractor operator or listing your harvester is completely free. We do not charge any registration fees or listing fees." })
+                },
+                {
+                  q: t("landing.faq.q4.question", { ns: "pages", defaultValue: "How does the service requests portal work?" }),
+                  a: t("landing.faq.q4.answer", { ns: "pages", defaultValue: "If you are a farmer looking for specific machinery or help, you can post a Service Request. Operators and machine owners can browse these requests and contact you directly to offer their services." })
+                },
+                {
+                  q: t("landing.faq.q5.question", { ns: "pages", defaultValue: "How are operators and machines verified?" }),
+                  a: t("landing.faq.q5.answer", { ns: "pages", defaultValue: "We encourage community trust through our Rating & Review system. Users can rate operators and machines based on their direct experience. Always inspect machinery and discuss terms before finalizing payments." })
+                },
+                {
+                  q: t("landing.faq.q6.question", { ns: "pages", defaultValue: "Can I use Tractor Seva in my local language?" }),
+                  a: t("landing.faq.q6.answer", { ns: "pages", defaultValue: "Absolutely! Tractor Seva has complete multilingual localization support. You can switch between English, Marathi, and other regional languages using the language toggle in the navigation bar." })
+                },
+                ...customFaqs.map((cf: any) => ({
+                  q: cf.question,
+                  a: cf.answer
+                }))
+              ].map((faq, idx) => {
+                const isOpen = activeFaqIndex === idx;
+                return (
+                  <div 
+                    key={idx}
+                    onMouseEnter={() => setActiveFaqIndex(idx)}
+                    onMouseLeave={() => setActiveFaqIndex(null)}
+                    className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden transform ${
+                      isOpen 
+                        ? 'border-[#172263]/30 shadow-[0_12px_32px_rgba(23,34,99,0.08)] -translate-y-0.5' 
+                        : 'border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-[#172263]/20'
+                    }`}
+                  >
+                    <button
+                      onClick={() => setActiveFaqIndex(isOpen ? null : idx)}
+                      className={`flex items-center justify-between w-full py-5 px-6 font-semibold text-left cursor-pointer transition-colors duration-300 ${
+                        isOpen ? 'text-[#172263]' : 'text-slate-800 hover:text-[#172263]'
+                      }`}
+                      style={{ fontFamily: "'Sora', sans-serif" }}
+                    >
+                      <span>{faq.q}</span>
+                      <span className={`transition-transform duration-300 text-slate-400 ${isOpen ? 'rotate-180 text-[#172263]' : ''}`}>
+                        <ChevronDown size={20} />
+                      </span>
+                    </button>
+                    
+                    <div 
+                      className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                        isOpen ? 'max-h-48 border-t border-slate-100 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
+                      }`}
+                    >
+                      <div className="p-6 text-sm text-[#57585A] leading-relaxed bg-slate-50/50">
+                        {faq.a}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Ask a Question CTA */}
+            <div className="text-center mt-10">
+              <Link
+                to="/ask-question"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#172263] text-white rounded-xl font-semibold hover:bg-[#11194A] transition-all shadow-[0_4px_14px_rgba(23,34,99,0.2)] hover:-translate-y-0.5 cursor-pointer"
+              >
+                {t("landing.faq.askButton", { ns: "pages", defaultValue: "Ask a Question" })} <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </section>
 
       </main>
 

@@ -346,6 +346,17 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create FAQs Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS faqs (
+        id VARCHAR(36) PRIMARY KEY,
+        question TEXT NOT NULL,
+        answer TEXT DEFAULT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     try {
       await activePool.query('ALTER TABLE blogs ADD COLUMN image_url VARCHAR(255) DEFAULT NULL AFTER date');
       console.log('Successfully added image_url column to blogs table.');
