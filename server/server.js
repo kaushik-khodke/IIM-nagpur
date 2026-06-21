@@ -2071,6 +2071,92 @@ app.delete('/api/admin/blogs/comments/:commentId', authenticateToken, isAdmin, a
   }
 });
 
+// FAQ Routes
+app.post('/api/faqs', async (req, res) => {
+  const { question } = req.body;
+  if (!question || !question.trim()) {
+    return res.status(400).json({ error: 'Question is required' });
+  }
+
+  try {
+    const faqId = require('crypto').randomUUID();
+    await db.query(
+      'INSERT INTO faqs (id, question) VALUES (?, ?)',
+      [faqId, question.trim()]
+    );
+    res.status(201).json({ message: 'Question submitted successfully. It will be displayed after admin answers it.' });
+  } catch (error) {
+    console.error('Error submitting FAQ:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/faqs/active', async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT id, question, answer FROM faqs WHERE status = 'Answered' ORDER BY created_at DESC");
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching active FAQs:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/admin/faqs', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM faqs ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching admin FAQs:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/admin/faqs/:id', authenticateToken, isAdmin, async (req, res) => {
+  const faqId = req.params.id;
+  const { answer, status } = req.body;
+
+  try {
+    const [existing] = await db.query('SELECT * FROM faqs WHERE id = ?', [faqId]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    await db.query(
+      'UPDATE faqs SET answer = ?, status = ? WHERE id = ?',
+      [answer !== undefined ? answer : null, status || 'Answered', faqId]
+    );
+
+    res.json({
+      success: true,
+      message: 'FAQ updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating FAQ:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/admin/faqs/:id', authenticateToken, isAdmin, async (req, res) => {
+  const faqId = req.params.id;
+
+  try {
+    const [existing] = await db.query('SELECT * FROM faqs WHERE id = ?', [faqId]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    await db.query('DELETE FROM faqs WHERE id = ?', [faqId]);
+
+    res.json({
+      success: true,
+      message: 'FAQ deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting FAQ:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // Start Server and Initialize Database
 db.initializeDatabase().then(() => {
   app.listen(PORT, () => {
