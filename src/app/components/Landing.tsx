@@ -206,6 +206,18 @@ export function Landing() {
   const [dirLoading, setDirLoading] = useState(true);
   const [dirLimit, setDirLimit] = useState(8);
 
+  // Current user id for own-listing detection
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  useEffect(() => {
+    const token = localStorage.getItem("tractorsewa_token");
+    if (token) {
+      fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => { if (data) setCurrentUserId(data.id); })
+        .catch(() => {});
+    }
+  }, []);
+
   // Sync debounced search term
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -942,17 +954,27 @@ export function Landing() {
                       </div>
 
                       {/* Footer Button */}
-                      <button 
-                        onClick={() => handleBookingClick(item.ownerId)}
-                        className={`w-full py-3.5 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 ${
-                          item.type === "harvester"
-                            ? "bg-[#172263] hover:bg-[#11194A] text-white"
-                            : "bg-amber-500 hover:bg-amber-600 text-white"
-                        }`}
-                      >
-                        <MessageSquare size={16} />
-                        {item.type === "harvester" ? t("landing.directory.bookNow", { ns: "pages" }) : t("landing.directory.hireNow", { ns: "pages" })}
-                      </button>
+                      {currentUserId && item.ownerId === currentUserId ? (
+                        <Link
+                          to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
+                          className="w-full py-3.5 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 bg-slate-100 hover:bg-slate-200 text-[#172263]"
+                        >
+                          <Search size={16} />
+                          {t("landing.directory.viewDetails", { ns: "pages", defaultValue: "View Details" })}
+                        </Link>
+                      ) : (
+                        <Link 
+                          to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
+                          className={`w-full py-3.5 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 ${
+                            item.type === "harvester"
+                              ? "bg-[#172263] hover:bg-[#11194A] text-white"
+                              : "bg-amber-500 hover:bg-amber-600 text-white"
+                          }`}
+                        >
+                          <MessageSquare size={16} />
+                          {item.type === "harvester" ? t("landing.directory.bookNow", { ns: "pages" }) : t("landing.directory.hireNow", { ns: "pages" })}
+                        </Link>
+                      )}
                     </div>
                   ))}
                 </div>

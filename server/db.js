@@ -239,13 +239,13 @@ async function initializeDatabase() {
 
     // Seed hardcoded administrator account if not exists
     try {
-      const [admins] = await activePool.query("SELECT id FROM users WHERE email = 'admin@123'");
+      const [admins] = await activePool.query("SELECT id FROM users WHERE email = 'admin@gmail.com'");
       if (admins.length === 0) {
         const adminId = require('crypto').randomUUID();
-        const hashedAdminPassword = await require('bcryptjs').hash('123admin@', 10);
+        const hashedAdminPassword = await require('bcryptjs').hash('123123pass', 10);
         await activePool.query(
           "INSERT INTO users (id, name, email, password, role, state, phone, is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          [adminId, 'System Administrator', 'admin@123', hashedAdminPassword, 'admin', 'Maharashtra', '9999999999', 0]
+          [adminId, 'System Administrator', 'admin@gmail.com', hashedAdminPassword, 'admin', 'Maharashtra', '9999999999', 0]
         );
         console.log('Successfully seeded hardcoded administrator account.');
       }

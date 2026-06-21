@@ -768,6 +768,7 @@ app.get('/api/requests', authenticateToken, async (req, res) => {
       userId: r.user_id,
       type: r.type,
       location: r.location,
+      state: r.state,
       machineType: r.machine_type,
       duration: r.duration,
       startDate: r.start_date,

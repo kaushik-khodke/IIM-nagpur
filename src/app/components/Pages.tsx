@@ -586,44 +586,53 @@ export function HarvesterDetail() {
 
               <div className="mt-auto">
                 <div className="space-y-3">
-                  {isOwner && (
-                    <button
-                      onClick={() => navigate(`/harvesters/${id}/edit`)}
-                      className="w-full py-3 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 font-medium"
-                    >
-                      <Pencil size={18} /> {t("harvesterDetail.editHarvester", { defaultValue: "Edit Harvester" })}
-                    </button>
-                  )}
-                  <a
-                    href={`https://wa.me/91${harvester.whatsapp || harvester.phone}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-3 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
-                  >
-                    <MessageSquare size={18} /> {isOwner ? t("harvesterDetail.whatsApp", { defaultValue: "WhatsApp" }) : t("harvesterDetail.whatsAppOwner", { defaultValue: "WhatsApp Owner" })}
-                  </a>
-                  <button
-                    onClick={() => {
-                      if (!currentUser) {
-                        toast.error(t("harvesterDetail.errorLoginRate", { defaultValue: "Please log in to send a message" }));
-                        navigate("/login");
-                      } else {
-                        navigate(`/messages?userId=${harvester.userId}`);
-                      }
-                    }}
-                    className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors font-medium"
-                  >
-                    {t("harvesterDetail.messageOwner", { defaultValue: "Message Owner" })}
-                  </button>
-                  {!isOwner && (
-                    <button
-                      onClick={() => {
-                        document.getElementById("ratings-section")?.scrollIntoView({ behavior: "smooth" });
-                      }}
-                      className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-semibold cursor-pointer"
-                    >
-                      <Star size={18} fill="currentColor" /> {t("harvesterDetail.rateMachine", { defaultValue: "Rate Machine" })}
-                    </button>
+                  {isOwner ? (
+                    <>
+                      <button
+                        onClick={() => navigate(`/harvesters/${id}/edit`)}
+                        className="w-full py-3 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 font-medium"
+                      >
+                        <Pencil size={18} /> {t("harvesterDetail.editHarvester", { defaultValue: "Edit Harvester" })}
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="w-full py-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2 font-medium"
+                      >
+                        <Trash2 size={18} /> {t("harvesterDetail.deleteListing", { defaultValue: "Delete Listing" })}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <a
+                        href={`https://wa.me/91${harvester.whatsapp || harvester.phone}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-3 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                      >
+                        <MessageSquare size={18} /> {t("harvesterDetail.whatsAppOwner", { defaultValue: "WhatsApp Owner" })}
+                      </a>
+                      <button
+                        onClick={() => {
+                          if (!currentUser) {
+                            toast.error(t("harvesterDetail.errorLoginRate", { defaultValue: "Please log in to send a message" }));
+                            navigate("/login");
+                          } else {
+                            navigate(`/messages?userId=${harvester.userId}`);
+                          }
+                        }}
+                        className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors font-medium"
+                      >
+                        {t("harvesterDetail.messageOwner", { defaultValue: "Message Owner" })}
+                      </button>
+                      <button
+                        onClick={() => {
+                          document.getElementById("ratings-section")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-semibold cursor-pointer"
+                      >
+                        <Star size={18} fill="currentColor" /> {t("harvesterDetail.rateMachine", { defaultValue: "Rate Machine" })}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -800,16 +809,7 @@ export function HarvesterDetail() {
               </div>
             </div>
 
-            {isOwner && (
-              <div className="flex justify-end mb-8">
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm hover:bg-red-100 hover:text-red-700 transition-colors flex items-center justify-center gap-2 font-semibold"
-                >
-                  <Trash2 size={18} /> {t("harvesterDetail.deleteListing", { defaultValue: "Delete Listing" })}
-                </button>
-              </div>
-            )}
+
           </div>
         </div>
       </div>
@@ -4810,6 +4810,7 @@ export function Profile() {
 // ===========================
 export function Messages() {
   const { t } = useTranslation(["pages", "static"]);
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const userIdParam = searchParams.get("userId");
 
@@ -4853,26 +4854,39 @@ export function Messages() {
           setChatPartners(partners);
         }
 
-        if (userIdParam && meData && userIdParam !== meData.id) {
+        if (userIdParam && meData) {
+          if (userIdParam === meData.id) {
+            // User tried to message themselves (e.g. clicked Book Now on own listing)
+            toast.error(t("messages.cannotMessageSelf", { defaultValue: "You cannot message yourself. This is your own listing." }));
+            navigate("/dashboard", { replace: true });
+            return;
+          }
           const existingPartner = partners.find((p: any) => p.id === userIdParam);
           if (existingPartner) {
             setActive(existingPartner);
           } else {
-            const partnerRes = await fetch(`/api/users/${userIdParam}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (partnerRes.ok) {
-              const partnerData = await partnerRes.json();
-              const newPartner = {
-                id: partnerData.id,
-                name: partnerData.name,
-                role: partnerData.role,
-                imagePath: partnerData.imagePath,
-                lastMessage: "",
-                lastMessageTime: null
-              };
-              setChatPartners((prev) => [newPartner, ...prev]);
-              setActive(newPartner);
+            try {
+              const partnerRes = await fetch(`/api/users/${userIdParam}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (partnerRes.ok) {
+                const partnerData = await partnerRes.json();
+                const newPartner = {
+                  id: partnerData.id,
+                  name: partnerData.name,
+                  role: partnerData.role,
+                  imagePath: partnerData.imagePath,
+                  lastMessage: "",
+                  lastMessageTime: null
+                };
+                setChatPartners((prev) => [newPartner, ...prev]);
+                setActive(newPartner);
+              } else {
+                toast.error(t("messages.userNotFound", { defaultValue: "Could not find this user. They may no longer exist." }));
+              }
+            } catch (partnerErr) {
+              console.error("Failed to load chat partner:", partnerErr);
+              toast.error(t("messages.loadPartnerFailed", { defaultValue: "Failed to load chat partner. Please try again." }));
             }
           }
         }
