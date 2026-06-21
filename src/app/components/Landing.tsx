@@ -458,8 +458,17 @@ export function Landing() {
         {/* ---- HERO & STATS WRAPPER ---- */}
         <div className="flex flex-col min-h-[calc(100vh-64px)]">
           {/* ---- HERO ---- */}
-          <section className="relative flex-1 overflow-hidden bg-gradient-to-br from-[#ffffff] via-[#F4F6FA] to-[#F4F6FA] pt-4 pb-12 md:pt-6 md:pb-16 flex items-center">
-            <div ref={hero3DRef} className="absolute inset-y-0 right-0 w-full md:w-1/2 z-0 opacity-80">
+          <section className="relative flex-1 overflow-hidden pt-4 pb-12 md:pt-6 md:pb-16 flex items-center">
+            {/* Background Image with elegant overlay */}
+            <div 
+              className="absolute inset-0 z-0 bg-[url('/landing-bg.jpg')] bg-cover bg-center bg-no-repeat" 
+            />
+            {/* Soft responsive gradient overlay to blend and keep text legible */}
+            <div 
+              className="absolute inset-0 z-0 bg-gradient-to-b md:bg-gradient-to-r from-white/95 via-white/90 to-white/70 md:to-transparent" 
+            />
+
+            <div ref={hero3DRef} className="absolute inset-y-0 right-0 md:translate-x-12 w-full md:w-1/2 z-0 opacity-80">
               {isHero3DInView ? <Tractor3DCanvas /> : <div className="w-full h-full bg-transparent" />}
             </div>
 

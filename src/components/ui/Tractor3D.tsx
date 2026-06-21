@@ -1,5 +1,5 @@
 import { useRef, useEffect, useMemo } from "react";
-import { useGLTF, Environment, Center, OrbitControls, ContactShadows } from "@react-three/drei";
+import { useGLTF, Environment, OrbitControls, ContactShadows } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import * as THREE from "three";
@@ -11,13 +11,8 @@ let ktx2LoaderInstance: KTX2Loader | null = null;
  * Loads the paddyHarvester GLB model (meshopt-compressed + KTX2/Basis textures)
  * using MeshoptDecoder and KTX2Loader, and scales it to match the original
  * tractor model's visual footprint.
- *
- * Original tractor: scale=0.028, bbox max dim ~114 → rendered ~3.19 world units
- * Harvester model: bbox max dim ~15.01 → to get ~3.19 world units: scale ≈ 0.213
- * But the harvester is proportionally much wider/taller than the tractor,
- * so we use a slightly smaller scale for a similar visual fit.
  */
-const HARVESTER_SCALE = 0.29;
+const HARVESTER_SCALE = 0.26;
 
 export function TractorModel() {
   const { gl } = useThree();
@@ -65,26 +60,30 @@ export function TractorModel() {
       <OrbitControls
         enableZoom={false}
         enablePan={false}
-        target={[0, 0, 0]}
+        target={[0, -0.2, 0]}
         autoRotate={true}
-        autoRotateSpeed={0.6}
+        autoRotateSpeed={1.5}
         minPolarAngle={Math.PI / 2}
         maxPolarAngle={Math.PI / 2}
       />
 
-      <Center position={[-0.1, -0.2, 0]}>
+      <group
+        position={[0, -0.2, 0]}
+        scale={HARVESTER_SCALE}
+        rotation={[0, -Math.PI / 3, 0]}
+      >
         <primitive
           ref={modelRef}
           object={scene}
-          scale={HARVESTER_SCALE}
-          rotation={[0, -Math.PI / 3, 0]}
+          position={[1.7110, 0, 1.1106]}
+          
         />
-      </Center>
+      </group>
 
       {/* Soft shadow on the floor */}
       <ContactShadows
         position={[0, -1.2, 0]}
-        opacity={0.6}
+        opacity={0.7}
         scale={8}
         blur={2}
         far={4.5}
