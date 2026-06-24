@@ -755,34 +755,50 @@ app.delete('/api/harvesters/:id', authenticateToken, async (req, res) => {
 
 // 6. Request Routes
 app.get('/api/requests', authenticateToken, async (req, res) => {
-  const { tab, userId, location, state, limit } = req.query;
-  let queryStr = 'SELECT r.*, u.name as requesterName, u.phone as requesterPhone, u.image_path as requesterProfilePic FROM requests r JOIN users u ON r.user_id = u.id WHERE 1=1';
-  const queryParams = [];
-
-  if (tab) {
-    queryStr += ' AND r.type = ?';
-    queryParams.push(tab);
-  }
-  if (userId === 'me') {
-    queryStr += ' AND r.user_id = ?';
-    queryParams.push(req.user.id);
-  }
-  if (location) {
-    queryStr += ' AND r.location LIKE ?';
-    queryParams.push(`%${location}%`);
-  }
-  if (state) {
-    queryStr += ' AND r.state = ?';
-    queryParams.push(state);
-  }
-
-  queryStr += ' ORDER BY r.id DESC';
-
-  if (limit) {
-    queryStr += ' LIMIT ?';
-    queryParams.push(parseInt(limit));
-  }
   try {
+    // Check requester role
+    const [userRows] = await db.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
+    const userRole = userRows.length > 0 ? userRows[0].role : 'user';
+
+    const { tab, userId, location, state, limit } = req.query;
+    let queryStr = 'SELECT r.*, u.name as requesterName, u.phone as requesterPhone, u.image_path as requesterProfilePic FROM requests r JOIN users u ON r.user_id = u.id WHERE 1=1';
+    const queryParams = [];
+
+    if (userRole !== 'admin') {
+      // Force non-admins to only see their own requests
+      queryStr += ' AND r.user_id = ?';
+      queryParams.push(req.user.id);
+    } else {
+      // Admins can filter by userId query parameter
+      if (userId === 'me') {
+        queryStr += ' AND r.user_id = ?';
+        queryParams.push(req.user.id);
+      } else if (userId && userId !== 'all') {
+        queryStr += ' AND r.user_id = ?';
+        queryParams.push(userId);
+      }
+    }
+
+    if (tab) {
+      queryStr += ' AND r.type = ?';
+      queryParams.push(tab);
+    }
+    if (location) {
+      queryStr += ' AND r.location LIKE ?';
+      queryParams.push(`%${location}%`);
+    }
+    if (state) {
+      queryStr += ' AND r.state = ?';
+      queryParams.push(state);
+    }
+
+    queryStr += ' ORDER BY r.id DESC';
+
+    if (limit) {
+      queryStr += ' LIMIT ?';
+      queryParams.push(parseInt(limit));
+    }
+
     const [rows] = await db.query(queryStr, queryParams);
     const formattedRows = rows.map(r => ({
       id: r.id,
@@ -839,7 +855,21 @@ app.get('/api/requests/:id', authenticateToken, async (req, res) => {
 
 app.post('/api/requests', authenticateToken, async (req, res) => {
   const { type, location, state, machineType, duration, startDate, description } = req.body;
-  if (!type || !location || !state || !machineType || !startDate) {
+
+  // Look up user role to enforce harvester-only requests for non-admin users
+  let userRole = 'user';
+  try {
+    const [userRows] = await db.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
+    if (userRows.length > 0) {
+      userRole = userRows[0].role;
+    }
+  } catch (err) {
+    console.error('Error fetching user role for post request:', err);
+  }
+
+  const finalType = userRole === 'admin' ? (type || 'harvester') : 'harvester';
+
+  if (!finalType || !location || !state || !machineType || !startDate) {
     return res.status(400).json({ error: 'Please fill out all required fields' });
   }
 
@@ -860,7 +890,7 @@ app.post('/api/requests', authenticateToken, async (req, res) => {
   try {
     await db.query(
       'INSERT INTO requests (id, user_id, type, location, state, machine_type, duration, start_date, status, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [require('crypto').randomUUID(), req.user.id, type, location, state, machineType, duration || null, formattedDate, 'Open', description || null]
+      [require('crypto').randomUUID(), req.user.id, finalType, location, state, machineType, duration || null, formattedDate, 'Pending', description || null]
     );
     res.status(201).json({ message: 'Requirement posted successfully' });
   } catch (error) {
@@ -1354,6 +1384,21 @@ app.delete('/api/admin/requests/:id', authenticateToken, isAdmin, async (req, re
   try {
     await db.query('DELETE FROM requests WHERE id = ?', [req.params.id]);
     res.json({ message: 'Request deleted by administrator.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 7. Admin Update Request Status (Accept/Reject/Pending)
+app.put('/api/admin/requests/:id/status', authenticateToken, isAdmin, async (req, res) => {
+  const { status } = req.body;
+  if (!['Pending', 'Accepted', 'Rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status. Status must be Pending, Accepted, or Rejected.' });
+  }
+  try {
+    await db.query('UPDATE requests SET status = ? WHERE id = ?', [status, req.params.id]);
+    res.json({ message: `Request status updated to ${status} successfully.` });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
@@ -2745,8 +2745,8 @@ export function Requests() {
   const { t } = useTranslation(["pages", "static"]);
   const [requests, setRequests] = useState<any[]>([]);
   const [showDialog, setShowDialog] = useState(false);
-  const [reqType, setReqType] = useState<"operator" | "harvester">("operator");
-  const [tab, setTab] = useState<"operator" | "harvester">("operator");
+  const [reqType, setReqType] = useState<"operator" | "harvester">("harvester");
+  const [activeReqTab, setActiveReqTab] = useState<"pending" | "history">("pending");
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [selectedState, setSelectedState] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
@@ -2823,7 +2823,7 @@ export function Requests() {
     setLoading(true);
     try {
       const token = localStorage.getItem("tractorsewa_token");
-      const res = await fetch(`/api/requests?tab=${tab}&location=${encodeURIComponent(selectedDistrict)}&state=${encodeURIComponent(selectedState)}`, {
+      const res = await fetch(`/api/requests?location=${encodeURIComponent(selectedDistrict)}&state=${encodeURIComponent(selectedState)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2839,7 +2839,7 @@ export function Requests() {
 
   useEffect(() => {
     fetchRequests();
-  }, [tab, selectedState, selectedDistrict]);
+  }, [selectedState, selectedDistrict]);
 
   // Handle auto-detect for Dialog
   const handleDialogDetectLocation = async () => {
@@ -2877,7 +2877,7 @@ export function Requests() {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          type: reqType,
+          type: "harvester",
           ...newReq
         })
       });
@@ -2919,14 +2919,16 @@ export function Requests() {
     }
   };
 
-  const filtered = requests;
+  const pendingRequests = requests.filter((r) => r.status === "Pending" || r.status === "Open");
+  const historyRequests = requests.filter((r) => r.status === "Accepted" || r.status === "Rejected");
+  const filtered = activeReqTab === "pending" ? pendingRequests : historyRequests;
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader
-          title={t("requests.title", { defaultValue: "Browse Requirements" })}
+          title={t("requests.title", { defaultValue: "My Crop Requirements" })}
           action={
             <button
               onClick={() => {
@@ -2952,16 +2954,26 @@ export function Requests() {
         {/* Tabs and filters */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex gap-2">
-            {(["operator", "harvester"] as const).map((tVal) => (
-              <button
-                key={tVal}
-                onClick={() => setTab(tVal)}
-                className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${tab === tVal ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
-                  }`}
-              >
-                {tVal === "operator" ? t("requests.needOperator", { defaultValue: "Need Operator" }) : t("requests.needHarvester", { defaultValue: "Need Harvester" })}
-              </button>
-            ))}
+            <button
+              onClick={() => setActiveReqTab("pending")}
+              className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${
+                activeReqTab === "pending"
+                  ? "border-[#172263] bg-blue-50 text-[#172263] font-semibold"
+                  : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
+              }`}
+            >
+              {t("requests.pendingTab", { defaultValue: "Pending Requests" })} ({pendingRequests.length})
+            </button>
+            <button
+              onClick={() => setActiveReqTab("history")}
+              className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${
+                activeReqTab === "history"
+                  ? "border-[#172263] bg-blue-50 text-[#172263] font-semibold"
+                  : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
+              }`}
+            >
+              {t("requests.historyTab", { defaultValue: "Request History" })} ({historyRequests.length})
+            </button>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -3011,20 +3023,52 @@ export function Requests() {
           {loading ? (
             <LoadingSpinner />
           ) : filtered.length === 0 ? (
-            <EmptyState title={t("requests.emptyTitle", { defaultValue: "No requirements posted" })} description={t("requests.emptyDescription", { defaultValue: "Post your first requirement to find operators or harvesters." })} />
+            <EmptyState
+              title={
+                activeReqTab === "pending"
+                  ? t("requests.emptyTitlePending", { defaultValue: "No pending requests" })
+                  : t("requests.emptyTitleHistory", { defaultValue: "No request history" })
+              }
+              description={
+                activeReqTab === "pending"
+                  ? t("requests.emptyDescriptionPending", { defaultValue: "Post a harvester requirement to get started." })
+                  : t("requests.emptyDescriptionHistory", { defaultValue: "Your accepted and rejected requests will appear here." })
+              }
+            />
           ) : (
             filtered.map((req) => {
               const isOwner = currentUser && req.userId === currentUser.id;
               return (
-                <div key={req.id} className={`bg-white rounded-2xl border border-[#E2E8F0] p-5 flex gap-4 items-start shadow-[0_2px_16px_rgba(232,114,12,0.06)] border-l-4 ${req.type === "operator" ? "border-l-[#172263]" : "border-l-[#15803D]"}`}>
+                <div
+                  key={req.id}
+                  className={`bg-white rounded-2xl border border-[#E2E8F0] p-5 flex gap-4 items-start shadow-[0_2px_16px_rgba(232,114,12,0.06)] border-l-4 ${
+                    req.status === "Accepted"
+                      ? "border-l-emerald-500"
+                      : req.status === "Rejected"
+                      ? "border-l-rose-500"
+                      : "border-l-amber-500"
+                  }`}
+                >
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${req.type === "operator" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"}`}>
-                        {req.type === "operator" ? t("requests.needOperator", { defaultValue: "Need Operator" }) : t("requests.needHarvester", { defaultValue: "Need Harvester" })}
+                      <span className="text-xs px-2 py-0.5 rounded-full border bg-green-50 text-green-700 border-green-200 capitalize">
+                        {req.type === "harvester" ? t("requests.harvesterType", { defaultValue: "Harvester" }) : req.type}
                       </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${req.status === "Open" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                        {t("requests.status." + req.status.toLowerCase(), { defaultValue: req.status })}
-                      </span>
+                      {req.status === "Accepted" && (
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold flex items-center gap-1 shadow-sm">
+                          <CheckCircle2 size={12} /> {t("requests.status.accepted", { defaultValue: "Accepted" })}
+                        </span>
+                      )}
+                      {req.status === "Rejected" && (
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold flex items-center gap-1 shadow-sm">
+                          <XCircle size={12} /> {t("requests.status.rejected", { defaultValue: "Rejected" })}
+                        </span>
+                      )}
+                      {(req.status === "Pending" || req.status === "Open") && (
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold flex items-center gap-1 animate-pulse shadow-sm">
+                          <Clock size={12} /> {t("requests.status.pending", { defaultValue: "Pending" })}
+                        </span>
+                      )}
                       {isOwner && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-semibold shadow-sm">
                           {t("requests.myRequirement", { defaultValue: "My Requirement" })}
@@ -3066,7 +3110,7 @@ export function Requests() {
             animate={{ opacity: 1, scale: 1 }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{t("requests.postTitle", { defaultValue: "Post a Requirement" })}</h3>
+              <h3 className="text-xl text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{t("requests.postTitleHarvester", { defaultValue: "Post Harvester Requirement" })}</h3>
               <button
                 type="button"
                 onClick={handleDialogDetectLocation}
@@ -3075,13 +3119,7 @@ export function Requests() {
                 <MapPin size={12} /> {t("requests.autoDetect", { defaultValue: "Auto-detect Location" })}
               </button>
             </div>
-            <div className="flex gap-2 mb-4">
-              {(["operator", "harvester"] as const).map((tVal) => (
-                <button key={tVal} onClick={() => setNewReq((prev) => ({ ...prev, type: tVal }) as any) || setReqType(tVal)} className={`flex-1 py-2 rounded-xl text-sm border-2 transition-all ${reqType === tVal ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A]"}`}>
-                  {tVal === "operator" ? t("requests.needOperator", { defaultValue: "Need Operator" }) : t("requests.needHarvester", { defaultValue: "Need Harvester" })}
-                </button>
-              ))}
-            </div>
+            
             <div className="space-y-3">
               {/* State Dropdown */}
               <div>
@@ -5616,6 +5654,8 @@ export function AdminPortal() {
   const [stats, setStats] = useState<any>({ totalUsers: 0, totalOperators: 0, totalHarvesters: 0, totalRequests: 0, blockedUsers: 0, loginHistory: [], performers: [] });
   const [activeTab, setActiveTab] = useState("dashboard");
   const [performerFilter, setPerformerFilter] = useState("highest_machine");
+  const [adminRequestsTab, setAdminRequestsTab] = useState<"pending" | "processed">("pending");
+  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Users listing states
@@ -5908,6 +5948,29 @@ export function AdminPortal() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleUpdateRequestStatus = async (requestId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/admin/requests/${requestId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        toast.success(`Request status updated to ${newStatus} successfully.`);
+        fetchRequests();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to update request status.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error updating request status.");
     }
   };
 
@@ -7067,55 +7130,196 @@ export function AdminPortal() {
           {/* TAB: REQUESTS MODERATION           */}
           {/* ================================== */}
           {activeTab === "requests" && (
-            <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
-              <div className="p-6 border-b border-[#E2E8F0]">
-                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Posted Crop Requirements ({requests.length})</h3>
+            <div className="space-y-6">
+              {/* Request Sub-Tabs Switcher */}
+              <div className="flex gap-2 p-1 bg-gray-50 border border-[#E2E8F0] rounded-2xl w-fit">
+                <button
+                  type="button"
+                  onClick={() => setAdminRequestsTab("pending")}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    adminRequestsTab === "pending"
+                      ? "bg-white text-[#172263] shadow-sm"
+                      : "text-[#57585A] hover:bg-white/50"
+                  }`}
+                >
+                  Pending Action ({requests.filter(r => r.status === "Pending" || r.status === "Open").length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminRequestsTab("processed")}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    adminRequestsTab === "processed"
+                      ? "bg-white text-[#172263] shadow-sm"
+                      : "text-[#57585A] hover:bg-white/50"
+                  }`}
+                >
+                  Processed History ({requests.filter(r => r.status === "Accepted" || r.status === "Rejected").length})
+                </button>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-[#57585A]">
-                  <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
-                    <tr>
-                      <th className="px-6 py-3.5">Crop Type</th>
-                      <th className="px-6 py-3.5">Listing Category</th>
-                      <th className="px-6 py-3.5">Location</th>
-                      <th className="px-6 py-3.5">Duration</th>
-                      <th className="px-6 py-3.5">Date Added</th>
-                      <th className="px-6 py-3.5">Requester</th>
-                      <th className="px-6 py-3.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
-                    {requests.length > 0 ? (
-                      requests.map((r) => (
-                        <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{r.machineType}</td>
-                          <td className="px-6 py-4 capitalize">{r.type}</td>
-                          <td className="px-6 py-4">{r.location}, {r.state}</td>
-                          <td className="px-6 py-4">{r.duration || "Not specified"}</td>
-                          <td className="px-6 py-4">
-                            {r.startDate ? new Date(r.startDate).toLocaleDateString() : "-"}
-                          </td>
-                          <td className="px-6 py-4">{r.requesterName}</td>
-                          <td className="px-6 py-4 text-right">
-                            <button
-                              onClick={() => openConfirmModal("deleteReq", r.id, `${r.machineType} requirement`)}
-                              className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition"
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-[#E2E8F0]">
+                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">
+                    {adminRequestsTab === "pending" ? "Pending Crop Requirements" : "Processed Crop Requirements"}
+                  </h3>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-[#57585A]">
+                    <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                      <tr>
+                        <th className="px-6 py-3.5">Crop Type</th>
+                        <th className="px-6 py-3.5">Listing Category</th>
+                        <th className="px-6 py-3.5">Location</th>
+                        <th className="px-6 py-3.5">Duration</th>
+                        <th className="px-6 py-3.5">Date Added</th>
+                        <th className="px-6 py-3.5">Requester</th>
+                        {adminRequestsTab === "processed" && <th className="px-6 py-3.5">Status</th>}
+                        <th className="px-6 py-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                      {(adminRequestsTab === "pending"
+                        ? requests.filter(r => r.status === "Pending" || r.status === "Open")
+                        : requests.filter(r => r.status === "Accepted" || r.status === "Rejected")
+                      ).length > 0 ? (
+                        (adminRequestsTab === "pending"
+                          ? requests.filter(r => r.status === "Pending" || r.status === "Open")
+                          : requests.filter(r => r.status === "Accepted" || r.status === "Rejected")
+                        ).map((r) => (
+                          <Fragment key={r.id}>
+                            <tr
+                              onClick={() => setExpandedRequestId(expandedRequestId === r.id ? null : r.id)}
+                              className="hover:bg-slate-50/50 transition-colors cursor-pointer"
                             >
-                              Delete Request
-                            </button>
+                              <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">
+                                <div className="flex items-center gap-1.5 hover:text-blue-700 transition-colors">
+                                  <ChevronDown size={14} className={`shrink-0 transition-transform ${expandedRequestId === r.id ? "rotate-180 text-blue-600" : "text-slate-400"}`} />
+                                  <span>{r.machineType}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 capitalize">{r.type}</td>
+                              <td className="px-6 py-4">{r.location}, {r.state}</td>
+                              <td className="px-6 py-4">{r.duration || "Not specified"} days</td>
+                              <td className="px-6 py-4">
+                                {r.startDate ? new Date(r.startDate).toLocaleDateString() : "-"}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex flex-col">
+                                  <span className="font-semibold text-slate-700">{r.requesterName}</span>
+                                  <span className="text-xs text-slate-500">{r.requesterPhone || "No phone"}</span>
+                                </div>
+                              </td>
+                              {adminRequestsTab === "processed" && (
+                                <td className="px-6 py-4">
+                                  {r.status === "Accepted" ? (
+                                    <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold inline-flex items-center gap-1">
+                                      <CheckCircle2 size={12} /> Accepted
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold inline-flex items-center gap-1">
+                                      <XCircle size={12} /> Rejected
+                                    </span>
+                                  )}
+                                </td>
+                              )}
+                              <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex justify-end items-center gap-2">
+                                  {adminRequestsTab === "pending" ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateRequestStatus(r.id, "Accepted")}
+                                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                                      >
+                                        Accept
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateRequestStatus(r.id, "Rejected")}
+                                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                                      >
+                                        Reject
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateRequestStatus(r.id, "Pending")}
+                                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-[#57585A] border border-[#E2E8F0] rounded-xl text-xs font-bold transition"
+                                    >
+                                      Reset to Pending
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => openConfirmModal("deleteReq", r.id, `${r.machineType} requirement`)}
+                                    className="px-3 py-1.5 bg-white text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-50 transition"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            {expandedRequestId === r.id && (
+                              <tr className="bg-slate-50/30">
+                                <td colSpan={adminRequestsTab === "processed" ? 8 : 7} className="px-6 py-4">
+                                  <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm space-y-4 text-left">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                      <div>
+                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Requester Information</span>
+                                        <div className="flex items-center gap-3">
+                                          {r.requesterProfilePic ? (
+                                            <img src={r.requesterProfilePic} className="w-12 h-12 rounded-full border border-slate-200 object-cover" alt="" />
+                                          ) : (
+                                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-[#172263] font-bold border border-slate-200 text-lg">
+                                              {r.requesterName ? r.requesterName.charAt(0).toUpperCase() : "U"}
+                                            </div>
+                                          )}
+                                          <div>
+                                            <div className="text-sm font-bold text-slate-800">{r.requesterName}</div>
+                                            <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                              <Phone size={12} className="text-slate-400" /> {r.requesterPhone || "No phone listed"}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Requirement Schedule</span>
+                                        <div className="space-y-1.5 text-sm text-slate-700">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="text-slate-400 font-medium">Start Date:</span>
+                                            <span className="font-semibold text-slate-800">{r.startDate ? new Date(r.startDate).toLocaleDateString() : "Immediate"}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="text-slate-400 font-medium">Duration:</span>
+                                            <span className="font-semibold text-slate-800">{r.duration ? `${r.duration} Days` : "Not specified"}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="pt-3 border-t border-slate-100">
+                                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Detailed Description</span>
+                                      <p className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50/60 p-4 rounded-xl border border-slate-100 font-medium leading-relaxed">
+                                        {r.description || "No description provided by the user."}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={adminRequestsTab === "processed" ? 8 : 7} className="px-6 py-12 text-center text-[#57585A]/70">
+                            {adminRequestsTab === "pending" ? "No pending crop requirements in the database." : "No processed crop requirements in the database."}
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-[#57585A]/70">
-                          No posted crop requirements in the database.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
