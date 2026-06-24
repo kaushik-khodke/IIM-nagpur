@@ -1972,7 +1972,28 @@ Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
     if (!response.ok) {
       const errorText = await response.text();
       logger.error('Gemini API Error: ' + errorText);
-      return res.status(502).json({ error: 'Failed to generate content from Gemini API' });
+      
+      let reason = 'Failed to generate content from Gemini API';
+      try {
+        const errorJson = JSON.parse(errorText);
+        const code = errorJson.error?.code;
+        const status = errorJson.error?.status;
+        const msg = errorJson.error?.message || '';
+        
+        if (code === 503 || status === 'UNAVAILABLE' || msg.includes('overloaded') || msg.includes('demand')) {
+          reason = 'Cannot generate blog: MODEL IS BUSY (503 Service Unavailable)';
+        } else if (code === 429 || status === 'RESOURCE_EXHAUSTED' || msg.includes('limit') || msg.includes('exhausted')) {
+          reason = 'Cannot generate blog: API LIMIT REACHED (429 Rate Limit)';
+        } else if (code === 400 && (msg.includes('API key') || msg.includes('not valid') || msg.includes('key'))) {
+          reason = 'Cannot generate blog: INVALID API KEY';
+        } else if (msg) {
+          reason = `Cannot generate blog: ${msg.toUpperCase()}`;
+        }
+      } catch (e) {
+        reason = `Cannot generate blog: API ERROR (${response.status})`;
+      }
+      
+      return res.status(response.status || 502).json({ error: reason });
     }
 
     const data = await response.json();
