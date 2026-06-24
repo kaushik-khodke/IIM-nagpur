@@ -1865,18 +1865,81 @@ app.post('/api/admin/blogs/generate', authenticateToken, isAdmin, async (req, re
     return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your server/.env file.' });
   }
 
-  const prompt = `You are a professional blog writer for the Tractor Sewa platform (a marketplace and community for tractors, harvesters, operators, and farmers).
-Write a blog post in English based on the following inputs:
-- Title: "${title}"
-- Keywords: "${keywords || 'none'}"
+  const prompt = `You are an expert agriculture content writer and professional blog author for the Tractor Sewa platform.
+Write a highly engaging, informative, and practical blog post in English. It should read like a premium, narrative article, not an academic document. It must connect with machine owners, tractor/harvester operators, and farmers.
+
+Follow these strict guidelines:
+1. Narrative Flow: Start with a catchy hook or real-life scenario to pull readers in.
+2. Tone: Warm, authoritative, practical, and grounded in seasonal agricultural needs.
+3. Formatting: Use clear headings (## for main sections, ### for sub-sections), lists, and strong bullet points where relevant. Keep paragraphs short and highly readable.
+4. Word Count: 500-750 words.
+
+Inputs:
+- Topic/Title: "${title}"
+- Keywords to naturally include: "${keywords || 'none'}"
 - Category: "${category}"
+
+Additionally, you must select the most relevant, topic-matching, high-quality, hot-linkable Unsplash image URL from this curated catalog for the cover photo (ensure "?w=800&auto=format&fit=crop" is appended):
+
+- Category: Combine Harvester / Crops Harvesting in Progress
+  * URL: https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=800&auto=format&fit=crop
+  * Use for: Combine harvesters, machine harvesting, paddy/wheat reaping, harvesting season.
+  
+- Category: Modern Heavy Tractor Closeup / Purchase / Inspection
+  * URL: https://images.unsplash.com/photo-1594754714120-f1a8f9f7a78e?w=800&auto=format&fit=crop
+  * Use for: Tractor models, farm equipment buying guide, tractor engines, horse-power specs.
+
+- Category: Tractor Ploughing / Land Preparation
+  * URL: https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?w=800&auto=format&fit=crop
+  * Use for: Field soil tilling, tractor operations, farm preparation, sowing season.
+
+- Category: General Agriculture Farms / Green Drone View
+  * URL: https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop
+  * Use for: General farming practices, organic agriculture, vast landscapes, farm layout.
+
+- Category: Indian Farmer in Field / Golden Wheat Crops
+  * URL: https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop
+  * Use for: Wheat cultivation, rabi crop guide, farmer stories, field work, harvesting wheat.
+
+- Category: Green Crop Sprouts / Seed Quality / Agronomy
+  * URL: https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=800&auto=format&fit=crop
+  * Use for: Early plant growth, pest control, crop selection, fertilization, seedlings.
+
+- Category: Soil Health / Sowing Seedlings / Sustainable Farming
+  * URL: https://images.unsplash.com/photo-1560493676-04071c5f467b?w=800&auto=format&fit=crop
+  * Use for: Sowing seeds, hands with soil, sustainable soil preservation, eco-friendly farming.
+
+- Category: Indian Farmer Community / Rural Success Stories
+  * URL: https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop
+  * Use for: Farmers' groups, operator networks, agricultural markets, success stories, community.
+
+- Category: Rainy Weather / Rain on Crops / Monsoon Guidelines
+  * URL: https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=800&auto=format&fit=crop
+  * Use for: Monsoon preparation, heavy rains, rainy day tips, irrigation under rain.
+
+- Category: Workshop Mechanics / Tractor Repairs / Tool Maintenance
+  * URL: https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop
+  * Use for: Heavy machine maintenance, tractor servicing, workshop repairs, fixing breakdowns.
+
+- Category: Rice Paddy plantation / Water flooded fields
+  * URL: https://images.unsplash.com/photo-1516253593875-bd7ba052fbc5?w=800&auto=format&fit=crop
+  * Use for: Paddy cultivation, rice farming, flooded fields irrigation.
+
+- Category: Cotton Farming / Harvesting Cotton Balls
+  * URL: https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?w=800&auto=format&fit=crop
+  * Use for: Cotton harvesting, cash crops, cotton cultivation tips.
+
+- Category: Smart Farming / High Tech Greenhouse / Automation
+  * URL: https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop
+  * Use for: Modern technology, drip irrigation, smart farming systems, future agriculture.
 
 Return your response ONLY as a JSON object matching this exact structure:
 {
   "title": "A compelling final title based on the input",
   "category": "${category}",
   "short_description": "A short summary (1-2 sentences) of the blog post.",
-  "content": "The full blog content in Markdown format. Use clear headings (##, ###), bullet points, and paragraphs. Make it around 400-600 words, practical, informative, and engaging for agricultural stakeholders."
+  "content": "The full blog content in English in Markdown format.",
+  "image_url": "The chosen Unsplash image URL including parameters"
 }
 
 Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;

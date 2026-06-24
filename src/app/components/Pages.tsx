@@ -4228,7 +4228,9 @@ export function Blogs() {
                   <p className="font-semibold text-[#1A1A1A] text-base">
                     {activeBlog.short_description || activeBlog.shortDescription}
                   </p>
-                  <p>{activeBlog.content || t("blogs.loadingContent", { defaultValue: "Full article text is loading..." })}</p>
+                  <div className="text-sm text-[#57585A] leading-relaxed">
+                    {activeBlog.content ? renderMarkdown(activeBlog.content) : t("blogs.loadingContent", { defaultValue: "Full article text is loading..." })}
+                  </div>
                 </div>
 
                 {/* Engagement: Comments Section */}
@@ -4290,6 +4292,127 @@ export function Blogs() {
       />
     </div>
   );
+}
+
+// Helper to parse Markdown content and render styled JSX elements in blogs
+export function renderMarkdown(content: string) {
+  if (!content) return null;
+  
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+  let inList = false;
+  let listItems: React.ReactNode[] = [];
+
+  const parseInline = (text: string): React.ReactNode[] => {
+    if (!text) return [];
+    
+    // We split by ** first for bold text
+    const boldParts = text.split(/\*\*([^*]+)\*\*/g);
+    return boldParts.flatMap((bPart, bIdx) => {
+      if (bIdx % 2 === 1) {
+        return [<strong key={`b-${bIdx}`} className="font-extrabold text-[#172263]">{bPart}</strong>];
+      }
+      // For non-bold parts, split by * or _ for italics
+      const italicParts = bPart.split(/\*([^*]+)\*/g);
+      return italicParts.flatMap((iPart, iIdx) => {
+        if (iIdx % 2 === 1) {
+          return [<em key={`i-${bIdx}-${iIdx}`} className="italic text-[#57585A] font-medium">{iPart}</em>];
+        }
+        // Also support _italic_ parsing
+        const underParts = iPart.split(/_([^_]+)_/g);
+        return underParts.map((uPart, uIdx) => {
+          if (uIdx % 2 === 1) {
+            return <em key={`u-${bIdx}-${iIdx}-${uIdx}`} className="italic text-[#57585A] font-medium">{uPart}</em>;
+          }
+          return uPart;
+        });
+      });
+    });
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    
+    // Heading 1 (# Section)
+    if (trimmed.startsWith('# ')) {
+      if (inList) {
+        elements.push(<ul key={`list-${index}`} className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+        inList = false;
+        listItems = [];
+      }
+      const title = trimmed.replace(/^#\s+/, '');
+      elements.push(
+        <h1 key={`h1-${index}`} className="text-xl md:text-2xl font-black text-[#172263] mt-8 mb-4 font-sora">
+          {parseInline(title)}
+        </h1>
+      );
+    }
+    // Heading 2 (## Section)
+    else if (trimmed.startsWith('## ')) {
+      if (inList) {
+        elements.push(<ul key={`list-${index}`} className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+        inList = false;
+        listItems = [];
+      }
+      const title = trimmed.replace(/^##\s+/, '');
+      elements.push(
+        <h2 key={`h2-${index}`} className="text-lg md:text-xl font-extrabold text-[#172263] mt-6 mb-3 font-sora">
+          {parseInline(title)}
+        </h2>
+      );
+    }
+    // Heading 3 (### Sub-section)
+    else if (trimmed.startsWith('### ')) {
+      if (inList) {
+        elements.push(<ul key={`list-${index}`} className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+        inList = false;
+        listItems = [];
+      }
+      const title = trimmed.replace(/^###\s+/, '');
+      elements.push(
+        <h3 key={`h3-${index}`} className="text-base md:text-lg font-black text-[#D97706] mt-4 mb-2 font-sora">
+          {parseInline(title)}
+        </h3>
+      );
+    }
+    // List item (- Item or * Item)
+    else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      inList = true;
+      const itemText = trimmed.replace(/^[-*]\s+/, '');
+      listItems.push(
+        <li key={`li-${index}`} className="text-xs md:text-sm text-[#57585A] leading-relaxed">
+          {parseInline(itemText)}
+        </li>
+      );
+    }
+    // Empty line
+    else if (trimmed === '') {
+      if (inList) {
+        elements.push(<ul key={`list-${index}`} className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+        inList = false;
+        listItems = [];
+      }
+    }
+    // Paragraph
+    else {
+      if (inList) {
+        elements.push(<ul key={`list-${index}`} className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+        inList = false;
+        listItems = [];
+      }
+      elements.push(
+        <p key={`p-${index}`} className="text-xs md:text-sm text-[#57585A] leading-relaxed mb-3">
+          {parseInline(trimmed)}
+        </p>
+      );
+    }
+  });
+
+  if (inList) {
+    elements.push(<ul key="list-final" className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+  }
+
+  return <div className="space-y-3">{elements}</div>;
 }
 
 // ===========================
@@ -4374,7 +4497,9 @@ export function BlogDetail() {
         <div className="prose prose-sm max-w-none text-[#57585A] leading-relaxed space-y-4">
           <p className="font-semibold text-lg">{blog.short_description || blog.shortDescription}</p>
           <div className="w-full h-px bg-[#E2E8F0] my-4" />
-          <p>{blog.content || t("blogs.loadingContent", { defaultValue: "Full article text is loading..." })}</p>
+          <div className="text-sm text-[#57585A] leading-relaxed">
+            {blog.content ? renderMarkdown(blog.content) : t("blogs.loadingContent", { defaultValue: "Full article text is loading..." })}
+          </div>
         </div>
 
         <div className="mt-8 bg-white rounded-2xl border border-[#E2E8F0] p-5">
@@ -5851,9 +5976,9 @@ export function AdminPortal() {
         setBlogShortDesc(data.short_description || "");
         setBlogContent(data.content || "");
         setBlogDate("");
-        setBlogImageUrl("");
+        setBlogImageUrl(data.image_url || "");
         setBlogImageFile(null);
-        setBlogImagePreview("");
+        setBlogImagePreview(data.image_url || "");
         
         // Switch modals
         setShowAiBlogForm(false);
@@ -7069,7 +7194,7 @@ export function AdminPortal() {
                       </div>
                       <div>
                         <label className="text-sm text-[#57585A] block mb-1.5 font-bold">Blog Cover Image</label>
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                           <input
                             type="file"
                             accept="image/*"
@@ -7078,6 +7203,7 @@ export function AdminPortal() {
                               if (file) {
                                 setBlogImageFile(file);
                                 setBlogImagePreview(URL.createObjectURL(file));
+                                setBlogImageUrl(""); // Clear URL input when uploading a file
                               }
                             }}
                             className="hidden"
@@ -7085,12 +7211,27 @@ export function AdminPortal() {
                           />
                           <label
                             htmlFor="blog-image-picker"
-                            className="px-4 py-2.5 border border-[#E2E8F0] hover:bg-zinc-50 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-2"
+                            className="px-4 py-2.5 border border-[#E2E8F0] hover:bg-zinc-50 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-2 justify-center shrink-0"
                           >
-                            <Camera size={14} /> Upload Image
+                            <Camera size={14} /> Upload File
                           </label>
+                          
+                          <span className="text-xs text-gray-400 font-bold text-center self-center shrink-0">OR</span>
+                          
+                          <input
+                            type="text"
+                            value={blogImageUrl}
+                            onChange={(e) => {
+                              setBlogImageUrl(e.target.value);
+                              setBlogImagePreview(e.target.value);
+                              setBlogImageFile(null); // Clear file when entering a URL
+                            }}
+                            placeholder="Enter image web URL (or AI pre-filled link)..."
+                            className="flex-1 min-w-0 px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263]"
+                          />
+
                           {blogImagePreview && (
-                            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-[#E2E8F0]">
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-[#E2E8F0] shrink-0 self-center">
                               <img src={blogImagePreview} alt="Preview" className="w-full h-full object-cover" />
                               <button
                                 type="button"
@@ -7759,8 +7900,8 @@ export function AdminPortal() {
               </div>
 
               {/* Full body markdown/text */}
-              <div className="text-sm text-[#1A1A1A] leading-relaxed space-y-4 whitespace-pre-line font-medium font-sora">
-                {activeBlogPreview.content}
+              <div className="text-sm text-[#1A1A1A] leading-relaxed font-medium font-sora">
+                {renderMarkdown(activeBlogPreview.content)}
               </div>
             </div>
 
