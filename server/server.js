@@ -1879,59 +1879,25 @@ Inputs:
 - Keywords to naturally include: "${keywords || 'none'}"
 - Category: "${category}"
 
-Additionally, you must select the most relevant, topic-matching, high-quality, hot-linkable Unsplash image URL from this curated catalog for the cover photo (ensure "?w=800&auto=format&fit=crop" is appended):
+Additionally, you must select the most relevant, topic-matching, high-quality cover photo:
+- If one of the curated Unsplash images below matches your specific topic EXACTLY, you must choose its exact URL:
+  * Combine Harvester in field: https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=800&auto=format&fit=crop
+  * Modern Heavy Tractor Closeup: https://images.unsplash.com/photo-1594754714120-f1a8f9f7a78e?w=800&auto=format&fit=crop
+  * Tractor Ploughing fields: https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?w=800&auto=format&fit=crop
+  * General Green Drone View Farm: https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop
+  * Indian Farmer in Golden Wheat: https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop
+  * Green Crop Sprouts detail: https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=800&auto=format&fit=crop
+  * Sowing seeds / hands with soil: https://images.unsplash.com/photo-1560493676-04071c5f467b?w=800&auto=format&fit=crop
+  * Indian Farmers Community: https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop
+  * Monsoon / Rainy field: https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=800&auto=format&fit=crop
+  * Workshop Tractor Repair Mechanics: https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop
+  * Rice Paddy water flooded field: https://images.unsplash.com/photo-1516253593875-bd7ba052fbc5?w=800&auto=format&fit=crop
+  * Cotton Harvesting closeup: https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?w=800&auto=format&fit=crop
+  * Smart Greenhouse/Hydroponics: https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop
 
-- Category: Combine Harvester / Crops Harvesting in Progress
-  * URL: https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=800&auto=format&fit=crop
-  * Use for: Combine harvesters, machine harvesting, paddy/wheat reaping, harvesting season.
-  
-- Category: Modern Heavy Tractor Closeup / Purchase / Inspection
-  * URL: https://images.unsplash.com/photo-1594754714120-f1a8f9f7a78e?w=800&auto=format&fit=crop
-  * Use for: Tractor models, farm equipment buying guide, tractor engines, horse-power specs.
-
-- Category: Tractor Ploughing / Land Preparation
-  * URL: https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?w=800&auto=format&fit=crop
-  * Use for: Field soil tilling, tractor operations, farm preparation, sowing season.
-
-- Category: General Agriculture Farms / Green Drone View
-  * URL: https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop
-  * Use for: General farming practices, organic agriculture, vast landscapes, farm layout.
-
-- Category: Indian Farmer in Field / Golden Wheat Crops
-  * URL: https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop
-  * Use for: Wheat cultivation, rabi crop guide, farmer stories, field work, harvesting wheat.
-
-- Category: Green Crop Sprouts / Seed Quality / Agronomy
-  * URL: https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=800&auto=format&fit=crop
-  * Use for: Early plant growth, pest control, crop selection, fertilization, seedlings.
-
-- Category: Soil Health / Sowing Seedlings / Sustainable Farming
-  * URL: https://images.unsplash.com/photo-1560493676-04071c5f467b?w=800&auto=format&fit=crop
-  * Use for: Sowing seeds, hands with soil, sustainable soil preservation, eco-friendly farming.
-
-- Category: Indian Farmer Community / Rural Success Stories
-  * URL: https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop
-  * Use for: Farmers' groups, operator networks, agricultural markets, success stories, community.
-
-- Category: Rainy Weather / Rain on Crops / Monsoon Guidelines
-  * URL: https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=800&auto=format&fit=crop
-  * Use for: Monsoon preparation, heavy rains, rainy day tips, irrigation under rain.
-
-- Category: Workshop Mechanics / Tractor Repairs / Tool Maintenance
-  * URL: https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop
-  * Use for: Heavy machine maintenance, tractor servicing, workshop repairs, fixing breakdowns.
-
-- Category: Rice Paddy plantation / Water flooded fields
-  * URL: https://images.unsplash.com/photo-1516253593875-bd7ba052fbc5?w=800&auto=format&fit=crop
-  * Use for: Paddy cultivation, rice farming, flooded fields irrigation.
-
-- Category: Cotton Farming / Harvesting Cotton Balls
-  * URL: https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?w=800&auto=format&fit=crop
-  * Use for: Cotton harvesting, cash crops, cotton cultivation tips.
-
-- Category: Smart Farming / High Tech Greenhouse / Automation
-  * URL: https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop
-  * Use for: Modern technology, drip irrigation, smart farming systems, future agriculture.
+- If none of the handpicked Unsplash photos above matches your specific topic closely (e.g. if the blog is about a specific crop like tomatoes, onions, soil pH testing, specific repair tools, etc.), you MUST request a generated image by setting "image_url" to:
+  "GENERATE:<comma_separated_keywords>"
+  For example: "GENERATE:tomato,farming" or "GENERATE:soil,ph" or "GENERATE:mechanic,tools". Make the keywords highly specific to the blog topic!
 
 Return your response ONLY as a JSON object matching this exact structure:
 {
@@ -1939,7 +1905,7 @@ Return your response ONLY as a JSON object matching this exact structure:
   "category": "${category}",
   "short_description": "A short summary (1-2 sentences) of the blog post.",
   "content": "The full blog content in English in Markdown format.",
-  "image_url": "The chosen Unsplash image URL including parameters"
+  "image_url": "The chosen Unsplash image URL OR 'GENERATE:keyword1,keyword2'"
 }
 
 Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
@@ -2075,6 +2041,24 @@ Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
   } catch (e) {
     logger.error('Failed to parse AI output as JSON. Output was: ' + generatedText);
     return res.status(502).json({ error: 'AI output could not be parsed as valid JSON' });
+  }
+
+  // If the AI requested a dynamically generated image based on keywords,
+  // we construct a LoremFlickr topic-specific image locked to a random integer.
+  if (parsedResult.image_url && parsedResult.image_url.startsWith('GENERATE:')) {
+    const keywordsRaw = parsedResult.image_url.replace('GENERATE:', '');
+    const cleanKeywords = keywordsRaw.split(',')
+      .map(k => k.trim().toLowerCase().replace(/[^a-z0-9]/g, ''))
+      .filter(k => k.length > 0);
+    
+    // Always prefix with agriculture to ensure relevant photo pool
+    const tags = ['agriculture', ...cleanKeywords].slice(0, 4).join(',');
+    const randomLock = Math.floor(Math.random() * 100000) + 1;
+    parsedResult.image_url = `https://loremflickr.com/800/600/${tags}/all?lock=${randomLock}`;
+  } else if (!parsedResult.image_url || parsedResult.image_url === '') {
+    // Default fallback if no image url was provided by the model
+    const randomLock = Math.floor(Math.random() * 100000) + 1;
+    parsedResult.image_url = `https://loremflickr.com/800/600/agriculture,farming/all?lock=${randomLock}`;
   }
 
   res.json(parsedResult);
