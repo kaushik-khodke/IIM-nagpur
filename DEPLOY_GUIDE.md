@@ -39,7 +39,7 @@ Click **Advanced** and add the following Environment Variables:
 - `DB_HOST`: `mysql-6843131-ombhurke101-5783.e.aivencloud.com`
 - `DB_PORT`: `17085`
 - `DB_USER`: `avnadmin`
-- `DB_PASSWORD`: `AVNS_apWnsRczElWirfRnJbb`
+- `DB_PASSWORD`: `<YOUR_AIVEN_PASSWORD>`
 - `DB_NAME`: `defaultdb`
 - `DB_SSL_REQUIRED`: `true`
 - `JWT_SECRET`: `supersecretjwtkeyforsecurity_12345` *(Should be at least 32 characters long)*
@@ -81,7 +81,7 @@ Click **Deploy**. Vercel will build your static files and deploy the app. Vercel
 | `DB_HOST` | `mysql-6843131-ombhurke101-5783.e.aivencloud.com` | Aiven Cloud MySQL host |
 | `DB_PORT` | `17085` | Aiven Cloud MySQL port |
 | `DB_USER` | `avnadmin` | Database username |
-| `DB_PASSWORD` | `AVNS_apWnsRczElWirfRnJbb` | Database password |
+| `DB_PASSWORD` | `<YOUR_AIVEN_PASSWORD>` | Database password |
 | `DB_NAME` | `defaultdb` | Target database name |
 | `DB_SSL_REQUIRED` | `true` | Requires SSL connection (needed for Aiven) |
 | `JWT_SECRET` | *[Your Secret]* | Secrets for user authentication (min. 32 chars) |

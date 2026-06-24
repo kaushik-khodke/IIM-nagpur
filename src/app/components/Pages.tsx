@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
@@ -2745,8 +2745,8 @@ export function Requests() {
   const { t } = useTranslation(["pages", "static"]);
   const [requests, setRequests] = useState<any[]>([]);
   const [showDialog, setShowDialog] = useState(false);
-  const [reqType, setReqType] = useState<"operator" | "harvester">("operator");
-  const [tab, setTab] = useState<"operator" | "harvester">("operator");
+  const [reqType, setReqType] = useState<"operator" | "harvester">("harvester");
+  const [activeReqTab, setActiveReqTab] = useState<"pending" | "history">("pending");
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [selectedState, setSelectedState] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
@@ -2823,7 +2823,7 @@ export function Requests() {
     setLoading(true);
     try {
       const token = localStorage.getItem("tractorsewa_token");
-      const res = await fetch(`/api/requests?tab=${tab}&location=${encodeURIComponent(selectedDistrict)}&state=${encodeURIComponent(selectedState)}`, {
+      const res = await fetch(`/api/requests?location=${encodeURIComponent(selectedDistrict)}&state=${encodeURIComponent(selectedState)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2839,7 +2839,7 @@ export function Requests() {
 
   useEffect(() => {
     fetchRequests();
-  }, [tab, selectedState, selectedDistrict]);
+  }, [selectedState, selectedDistrict]);
 
   // Handle auto-detect for Dialog
   const handleDialogDetectLocation = async () => {
@@ -2877,7 +2877,7 @@ export function Requests() {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          type: reqType,
+          type: "harvester",
           ...newReq
         })
       });
@@ -2919,14 +2919,16 @@ export function Requests() {
     }
   };
 
-  const filtered = requests;
+  const pendingRequests = requests.filter((r) => r.status === "Pending" || r.status === "Open");
+  const historyRequests = requests.filter((r) => r.status === "Accepted" || r.status === "Rejected");
+  const filtered = activeReqTab === "pending" ? pendingRequests : historyRequests;
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
       <Navbar variant="auth" />
       <div className="w-full mx-auto px-4 sm:px-6 py-8">
         <PageHeader
-          title={t("requests.title", { defaultValue: "Browse Requirements" })}
+          title={t("requests.title", { defaultValue: "My Crop Requirements" })}
           action={
             <button
               onClick={() => {
@@ -2952,16 +2954,26 @@ export function Requests() {
         {/* Tabs and filters */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex gap-2">
-            {(["operator", "harvester"] as const).map((tVal) => (
-              <button
-                key={tVal}
-                onClick={() => setTab(tVal)}
-                className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${tab === tVal ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
-                  }`}
-              >
-                {tVal === "operator" ? t("requests.needOperator", { defaultValue: "Need Operator" }) : t("requests.needHarvester", { defaultValue: "Need Harvester" })}
-              </button>
-            ))}
+            <button
+              onClick={() => setActiveReqTab("pending")}
+              className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${
+                activeReqTab === "pending"
+                  ? "border-[#172263] bg-blue-50 text-[#172263] font-semibold"
+                  : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
+              }`}
+            >
+              {t("requests.pendingTab", { defaultValue: "Pending Requests" })} ({pendingRequests.length})
+            </button>
+            <button
+              onClick={() => setActiveReqTab("history")}
+              className={`px-5 py-2.5 rounded-xl text-sm border-2 transition-all ${
+                activeReqTab === "history"
+                  ? "border-[#172263] bg-blue-50 text-[#172263] font-semibold"
+                  : "border-[#E2E8F0] text-[#57585A] hover:border-blue-200"
+              }`}
+            >
+              {t("requests.historyTab", { defaultValue: "Request History" })} ({historyRequests.length})
+            </button>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -3011,20 +3023,52 @@ export function Requests() {
           {loading ? (
             <LoadingSpinner />
           ) : filtered.length === 0 ? (
-            <EmptyState title={t("requests.emptyTitle", { defaultValue: "No requirements posted" })} description={t("requests.emptyDescription", { defaultValue: "Post your first requirement to find operators or harvesters." })} />
+            <EmptyState
+              title={
+                activeReqTab === "pending"
+                  ? t("requests.emptyTitlePending", { defaultValue: "No pending requests" })
+                  : t("requests.emptyTitleHistory", { defaultValue: "No request history" })
+              }
+              description={
+                activeReqTab === "pending"
+                  ? t("requests.emptyDescriptionPending", { defaultValue: "Post a harvester requirement to get started." })
+                  : t("requests.emptyDescriptionHistory", { defaultValue: "Your accepted and rejected requests will appear here." })
+              }
+            />
           ) : (
             filtered.map((req) => {
               const isOwner = currentUser && req.userId === currentUser.id;
               return (
-                <div key={req.id} className={`bg-white rounded-2xl border border-[#E2E8F0] p-5 flex gap-4 items-start shadow-[0_2px_16px_rgba(232,114,12,0.06)] border-l-4 ${req.type === "operator" ? "border-l-[#172263]" : "border-l-[#15803D]"}`}>
+                <div
+                  key={req.id}
+                  className={`bg-white rounded-2xl border border-[#E2E8F0] p-5 flex gap-4 items-start shadow-[0_2px_16px_rgba(232,114,12,0.06)] border-l-4 ${
+                    req.status === "Accepted"
+                      ? "border-l-emerald-500"
+                      : req.status === "Rejected"
+                      ? "border-l-rose-500"
+                      : "border-l-amber-500"
+                  }`}
+                >
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${req.type === "operator" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"}`}>
-                        {req.type === "operator" ? t("requests.needOperator", { defaultValue: "Need Operator" }) : t("requests.needHarvester", { defaultValue: "Need Harvester" })}
+                      <span className="text-xs px-2 py-0.5 rounded-full border bg-green-50 text-green-700 border-green-200 capitalize">
+                        {req.type === "harvester" ? t("requests.harvesterType", { defaultValue: "Harvester" }) : req.type}
                       </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${req.status === "Open" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                        {t("requests.status." + req.status.toLowerCase(), { defaultValue: req.status })}
-                      </span>
+                      {req.status === "Accepted" && (
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold flex items-center gap-1 shadow-sm">
+                          <CheckCircle2 size={12} /> {t("requests.status.accepted", { defaultValue: "Accepted" })}
+                        </span>
+                      )}
+                      {req.status === "Rejected" && (
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold flex items-center gap-1 shadow-sm">
+                          <XCircle size={12} /> {t("requests.status.rejected", { defaultValue: "Rejected" })}
+                        </span>
+                      )}
+                      {(req.status === "Pending" || req.status === "Open") && (
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold flex items-center gap-1 animate-pulse shadow-sm">
+                          <Clock size={12} /> {t("requests.status.pending", { defaultValue: "Pending" })}
+                        </span>
+                      )}
                       {isOwner && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-semibold shadow-sm">
                           {t("requests.myRequirement", { defaultValue: "My Requirement" })}
@@ -3066,7 +3110,7 @@ export function Requests() {
             animate={{ opacity: 1, scale: 1 }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{t("requests.postTitle", { defaultValue: "Post a Requirement" })}</h3>
+              <h3 className="text-xl text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>{t("requests.postTitleHarvester", { defaultValue: "Post Harvester Requirement" })}</h3>
               <button
                 type="button"
                 onClick={handleDialogDetectLocation}
@@ -3075,13 +3119,7 @@ export function Requests() {
                 <MapPin size={12} /> {t("requests.autoDetect", { defaultValue: "Auto-detect Location" })}
               </button>
             </div>
-            <div className="flex gap-2 mb-4">
-              {(["operator", "harvester"] as const).map((tVal) => (
-                <button key={tVal} onClick={() => setNewReq((prev) => ({ ...prev, type: tVal }) as any) || setReqType(tVal)} className={`flex-1 py-2 rounded-xl text-sm border-2 transition-all ${reqType === tVal ? "border-[#172263] bg-blue-50 text-[#172263]" : "border-[#E2E8F0] text-[#57585A]"}`}>
-                  {tVal === "operator" ? t("requests.needOperator", { defaultValue: "Need Operator" }) : t("requests.needHarvester", { defaultValue: "Need Harvester" })}
-                </button>
-              ))}
-            </div>
+            
             <div className="space-y-3">
               {/* State Dropdown */}
               <div>
@@ -3386,14 +3424,31 @@ export function RequestDetail() {
 // ===========================
 // BLOGS
 // ===========================
-const CATEGORIES = ["All", "Harvesting Tips", "Machine Maintenance", "Success Stories", "Agri News", "Weather & Season"];
-
 export function Blogs() {
   const { t } = useTranslation(["pages", "static"]);
+  const [categories, setCategories] = useState<string[]>(["All", "Harvesting Tips", "Machine Maintenance", "Success Stories", "Agri News", "Weather & Season"]);
   const [blogs, setBlogs] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
+
+  // Fetch dynamic categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch("/api/blogs/categories");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setCategories(["All", ...data]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch blog categories", err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // States for Reels/Shorts Infinite Scroll Feed (Backend Paginated)
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1000000));
@@ -3821,7 +3876,7 @@ export function Blogs() {
                   {t("blogs.categoriesLabel", { defaultValue: "Categories" })}
                 </label>
                 <div className="flex flex-col gap-1">
-                  {CATEGORIES.map((c) => (
+                  {categories.map((c) => (
                     <button
                       key={c}
                       onClick={() => setCategory(c)}
@@ -3872,7 +3927,7 @@ export function Blogs() {
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <button
                 key={c}
                 onClick={() => setCategory(c)}
@@ -4228,7 +4283,9 @@ export function Blogs() {
                   <p className="font-semibold text-[#1A1A1A] text-base">
                     {activeBlog.short_description || activeBlog.shortDescription}
                   </p>
-                  <p>{activeBlog.content || t("blogs.loadingContent", { defaultValue: "Full article text is loading..." })}</p>
+                  <div className="text-sm text-[#57585A] leading-relaxed">
+                    {activeBlog.content ? renderMarkdown(activeBlog.content) : t("blogs.loadingContent", { defaultValue: "Full article text is loading..." })}
+                  </div>
                 </div>
 
                 {/* Engagement: Comments Section */}
@@ -4290,6 +4347,127 @@ export function Blogs() {
       />
     </div>
   );
+}
+
+// Helper to parse Markdown content and render styled JSX elements in blogs
+export function renderMarkdown(content: string) {
+  if (!content) return null;
+  
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+  let inList = false;
+  let listItems: React.ReactNode[] = [];
+
+  const parseInline = (text: string): React.ReactNode[] => {
+    if (!text) return [];
+    
+    // We split by ** first for bold text
+    const boldParts = text.split(/\*\*([^*]+)\*\*/g);
+    return boldParts.flatMap((bPart, bIdx) => {
+      if (bIdx % 2 === 1) {
+        return [<strong key={`b-${bIdx}`} className="font-extrabold text-[#172263]">{bPart}</strong>];
+      }
+      // For non-bold parts, split by * or _ for italics
+      const italicParts = bPart.split(/\*([^*]+)\*/g);
+      return italicParts.flatMap((iPart, iIdx) => {
+        if (iIdx % 2 === 1) {
+          return [<em key={`i-${bIdx}-${iIdx}`} className="italic text-[#57585A] font-medium">{iPart}</em>];
+        }
+        // Also support _italic_ parsing
+        const underParts = iPart.split(/_([^_]+)_/g);
+        return underParts.map((uPart, uIdx) => {
+          if (uIdx % 2 === 1) {
+            return <em key={`u-${bIdx}-${iIdx}-${uIdx}`} className="italic text-[#57585A] font-medium">{uPart}</em>;
+          }
+          return uPart;
+        });
+      });
+    });
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    
+    // Heading 1 (# Section)
+    if (trimmed.startsWith('# ')) {
+      if (inList) {
+        elements.push(<ul key={`list-${index}`} className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+        inList = false;
+        listItems = [];
+      }
+      const title = trimmed.replace(/^#\s+/, '');
+      elements.push(
+        <h1 key={`h1-${index}`} className="text-xl md:text-2xl font-black text-[#172263] mt-8 mb-4 font-sora">
+          {parseInline(title)}
+        </h1>
+      );
+    }
+    // Heading 2 (## Section)
+    else if (trimmed.startsWith('## ')) {
+      if (inList) {
+        elements.push(<ul key={`list-${index}`} className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+        inList = false;
+        listItems = [];
+      }
+      const title = trimmed.replace(/^##\s+/, '');
+      elements.push(
+        <h2 key={`h2-${index}`} className="text-lg md:text-xl font-extrabold text-[#172263] mt-6 mb-3 font-sora">
+          {parseInline(title)}
+        </h2>
+      );
+    }
+    // Heading 3 (### Sub-section)
+    else if (trimmed.startsWith('### ')) {
+      if (inList) {
+        elements.push(<ul key={`list-${index}`} className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+        inList = false;
+        listItems = [];
+      }
+      const title = trimmed.replace(/^###\s+/, '');
+      elements.push(
+        <h3 key={`h3-${index}`} className="text-base md:text-lg font-black text-[#D97706] mt-4 mb-2 font-sora">
+          {parseInline(title)}
+        </h3>
+      );
+    }
+    // List item (- Item or * Item)
+    else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      inList = true;
+      const itemText = trimmed.replace(/^[-*]\s+/, '');
+      listItems.push(
+        <li key={`li-${index}`} className="text-xs md:text-sm text-[#57585A] leading-relaxed">
+          {parseInline(itemText)}
+        </li>
+      );
+    }
+    // Empty line
+    else if (trimmed === '') {
+      if (inList) {
+        elements.push(<ul key={`list-${index}`} className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+        inList = false;
+        listItems = [];
+      }
+    }
+    // Paragraph
+    else {
+      if (inList) {
+        elements.push(<ul key={`list-${index}`} className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+        inList = false;
+        listItems = [];
+      }
+      elements.push(
+        <p key={`p-${index}`} className="text-xs md:text-sm text-[#57585A] leading-relaxed mb-3">
+          {parseInline(trimmed)}
+        </p>
+      );
+    }
+  });
+
+  if (inList) {
+    elements.push(<ul key="list-final" className="list-disc pl-5 my-3 space-y-1.5">{listItems}</ul>);
+  }
+
+  return <div className="space-y-3">{elements}</div>;
 }
 
 // ===========================
@@ -4374,7 +4552,9 @@ export function BlogDetail() {
         <div className="prose prose-sm max-w-none text-[#57585A] leading-relaxed space-y-4">
           <p className="font-semibold text-lg">{blog.short_description || blog.shortDescription}</p>
           <div className="w-full h-px bg-[#E2E8F0] my-4" />
-          <p>{blog.content || t("blogs.loadingContent", { defaultValue: "Full article text is loading..." })}</p>
+          <div className="text-sm text-[#57585A] leading-relaxed">
+            {blog.content ? renderMarkdown(blog.content) : t("blogs.loadingContent", { defaultValue: "Full article text is loading..." })}
+          </div>
         </div>
 
         <div className="mt-8 bg-white rounded-2xl border border-[#E2E8F0] p-5">
@@ -5474,23 +5654,13 @@ export function AdminPortal() {
   const [stats, setStats] = useState<any>({ totalUsers: 0, totalOperators: 0, totalHarvesters: 0, totalRequests: 0, blockedUsers: 0, loginHistory: [], performers: [] });
   const [activeTab, setActiveTab] = useState("dashboard");
   const [performerFilter, setPerformerFilter] = useState("highest_machine");
+  const [adminRequestsTab, setAdminRequestsTab] = useState<"pending" | "processed">("pending");
+  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  // NL query states
-  const [nlQuery, setNlQuery] = useState("");
-  const [parsedFilter, setParsedFilter] = useState<any>(null);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
 
   // Users listing states
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState("");
-
-  // CSV bulk states
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [defaultPassword, setDefaultPassword] = useState("Welcome123");
-  const [csvReport, setCsvReport] = useState<any>(null);
-  const [uploadingCsv, setUploadingCsv] = useState(false);
 
   // Moderator listings
   const [harvesters, setHarvesters] = useState<any[]>([]);
@@ -5521,6 +5691,9 @@ export function AdminPortal() {
   const [selectedChartPoint, setSelectedChartPoint] = useState<any | null>(null);
 
   // Admin blogs editing states
+  const [categories, setCategories] = useState<string[]>(["Harvesting Tips", "Machine Maintenance", "Success Stories", "Agri News", "Weather & Season"]);
+  const [customCategory, setCustomCategory] = useState("");
+  const [aiCustomCategory, setAiCustomCategory] = useState("");
   const [editingBlog, setEditingBlog] = useState<any | null>(null);
   const [showBlogForm, setShowBlogForm] = useState(false);
   const [blogTitle, setBlogTitle] = useState("");
@@ -5584,7 +5757,84 @@ export function AdminPortal() {
     checkAdmin();
   }, [token]);
 
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/blogs/categories");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
+
+  const handleCategoryChange = async (value: string, type: 'standard' | 'ai') => {
+    if (value === "Add New Category...") {
+      const newCat = window.prompt("Enter new category name:");
+      if (newCat && newCat.trim() !== "") {
+        const cleanName = newCat.trim();
+        try {
+          const res = await fetch("/api/admin/blogs/categories", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ name: cleanName })
+          });
+          if (res.ok) {
+            toast.success(`Category "${cleanName}" added successfully.`);
+            await fetchCategories();
+            if (type === 'standard') {
+              setBlogCategory(cleanName);
+            } else {
+              setAiPromptCategory(cleanName);
+            }
+          } else {
+            const err = await res.json();
+            toast.error(err.error || "Failed to add category.");
+            if (type === 'standard') {
+              setBlogCategory(categories[0] || "Machine Maintenance");
+            } else {
+              setAiPromptCategory(categories[0] || "Machine Maintenance");
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          toast.error("Error adding category.");
+          if (type === 'standard') {
+            setBlogCategory(categories[0] || "Machine Maintenance");
+          } else {
+            setAiPromptCategory(categories[0] || "Machine Maintenance");
+          }
+        }
+      } else {
+        if (type === 'standard') {
+          setBlogCategory(categories[0] || "Machine Maintenance");
+        } else {
+          setAiPromptCategory(categories[0] || "Machine Maintenance");
+        }
+      }
+    } else {
+      if (type === 'standard') {
+        setBlogCategory(value);
+        if (value !== "Other") {
+          setCustomCategory("");
+        }
+      } else {
+        setAiPromptCategory(value);
+        if (value !== "Other") {
+          setAiCustomCategory("");
+        }
+      }
+    }
+  };
+
   const refreshAllData = () => {
+    fetchCategories();
     fetchStats();
     fetchAllUsers();
     fetchHarvesters();
@@ -5701,6 +5951,29 @@ export function AdminPortal() {
     }
   };
 
+  const handleUpdateRequestStatus = async (requestId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/admin/requests/${requestId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        toast.success(`Request status updated to ${newStatus} successfully.`);
+        fetchRequests();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to update request status.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error updating request status.");
+    }
+  };
+
   const handleAnswerFaqSubmit = async (faqId: string) => {
     if (!faqAnswerText.trim()) {
       toast.error("Please enter an answer.");
@@ -5801,7 +6074,14 @@ export function AdminPortal() {
   const startEditBlog = (blog: any) => {
     setEditingBlog(blog);
     setBlogTitle(blog.title || "");
-    setBlogCategory(blog.category || "Machine Maintenance");
+    const isStandardCat = categories.includes(blog.category);
+    if (isStandardCat) {
+      setBlogCategory(blog.category || "Machine Maintenance");
+      setCustomCategory("");
+    } else {
+      setBlogCategory("Other");
+      setCustomCategory(blog.category || "");
+    }
     setBlogShortDesc(blog.short_description || "");
     setBlogContent(blog.content || "");
     setBlogDate(blog.date || "");
@@ -5814,7 +6094,8 @@ export function AdminPortal() {
   const startCreateBlog = () => {
     setEditingBlog(null);
     setBlogTitle("");
-    setBlogCategory("Machine Maintenance");
+    setBlogCategory(categories[0] || "Machine Maintenance");
+    setCustomCategory("");
     setBlogShortDesc("");
     setBlogContent("");
     setBlogDate("");
@@ -5827,7 +6108,8 @@ export function AdminPortal() {
   const startAiGenerateBlog = () => {
     setAiPromptTitle("");
     setAiPromptKeywords("");
-    setAiPromptCategory("Machine Maintenance");
+    setAiPromptCategory(categories[0] || "Machine Maintenance");
+    setAiCustomCategory("");
     setShowAiBlogForm(true);
   };
 
@@ -5835,6 +6117,12 @@ export function AdminPortal() {
     e.preventDefault();
     if (!aiPromptTitle.trim()) {
       toast.error("Please enter a title or topic.");
+      return;
+    }
+
+    const categoryToSend = aiPromptCategory === "Other" ? aiCustomCategory.trim() : aiPromptCategory.trim();
+    if (!categoryToSend) {
+      toast.error("Please specify a category.");
       return;
     }
 
@@ -5849,7 +6137,7 @@ export function AdminPortal() {
         body: JSON.stringify({
           title: aiPromptTitle.trim(),
           keywords: aiPromptKeywords.trim(),
-          category: aiPromptCategory
+          category: categoryToSend
         })
       });
 
@@ -5859,13 +6147,23 @@ export function AdminPortal() {
         // Prefill the standard blog form with the AI generated content
         setEditingBlog(null);
         setBlogTitle(data.title || aiPromptTitle.trim());
-        setBlogCategory(data.category || aiPromptCategory);
+        
+        const returnedCategory = data.category || categoryToSend;
+        const isStandardCat = categories.includes(returnedCategory);
+        if (isStandardCat) {
+          setBlogCategory(returnedCategory);
+          setCustomCategory("");
+        } else {
+          setBlogCategory("Other");
+          setCustomCategory(returnedCategory);
+        }
+
         setBlogShortDesc(data.short_description || "");
         setBlogContent(data.content || "");
         setBlogDate("");
-        setBlogImageUrl("");
+        setBlogImageUrl(data.image_url || "");
         setBlogImageFile(null);
-        setBlogImagePreview("");
+        setBlogImagePreview(data.image_url || "");
         
         // Switch modals
         setShowAiBlogForm(false);
@@ -5885,7 +6183,9 @@ export function AdminPortal() {
 
   const handleBlogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!blogTitle.trim() || !blogCategory.trim() || !blogShortDesc.trim() || !blogContent.trim()) {
+    const categoryToSend = blogCategory === "Other" ? customCategory.trim() : blogCategory.trim();
+
+    if (!blogTitle.trim() || !categoryToSend || !blogShortDesc.trim() || !blogContent.trim()) {
       toast.error(t("admin.fillRequiredFields", { defaultValue: "Please fill in all required fields." }));
       return;
     }
@@ -5919,7 +6219,7 @@ export function AdminPortal() {
 
       const blogData = {
         title: blogTitle.trim(),
-        category: blogCategory.trim(),
+        category: categoryToSend,
         short_description: blogShortDesc.trim(),
         content: blogContent.trim(),
         date: blogDate.trim() || undefined,
@@ -5943,7 +6243,8 @@ export function AdminPortal() {
         setShowBlogForm(false);
         setEditingBlog(null);
         setBlogTitle("");
-        setBlogCategory("Machine Maintenance");
+        setBlogCategory(categories[0] || "Machine Maintenance");
+        setCustomCategory("");
         setBlogShortDesc("");
         setBlogContent("");
         setBlogDate("");
@@ -5960,30 +6261,6 @@ export function AdminPortal() {
       toast.error(t("admin.errorSaveBlog", { defaultValue: "Error saving blog post" }));
     } finally {
       setSavingBlog(false);
-    }
-  };
-
-  const handleNlSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nlQuery.trim()) return;
-
-    setSearching(true);
-    try {
-      const res = await fetch(`/api/admin/users/query?q=${encodeURIComponent(nlQuery)}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setParsedFilter(data.parsed);
-        setSearchResults(data.results);
-      } else {
-        toast.error(t("admin.failedParseSearch", { defaultValue: "Failed to parse natural language search" }));
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error(t("admin.errorSearchQuery", { defaultValue: "Error executing English search query" }));
-    } finally {
-      setSearching(false);
     }
   };
 
@@ -6004,7 +6281,6 @@ export function AdminPortal() {
         if (res.ok) {
           toast.success(t("admin.userBlocked", { defaultValue: "User blocked successfully!" }));
           refreshAllData();
-          if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
           toast.error(t("admin.failedBlock", { defaultValue: "Failed to block user" }));
         }
@@ -6020,7 +6296,6 @@ export function AdminPortal() {
         if (res.ok) {
           toast.success(t("admin.userUnblocked", { defaultValue: "User unblocked successfully!" }));
           refreshAllData();
-          if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
           toast.error(t("admin.failedUnblock", { defaultValue: "Failed to unblock user" }));
         }
@@ -6032,7 +6307,6 @@ export function AdminPortal() {
         if (res.ok) {
           toast.success(t("admin.userWiped", { defaultValue: "Cleared entire user posts/data and blocked user successfully." }));
           refreshAllData();
-          if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
           toast.error(t("admin.failedWipe", { defaultValue: "Failed to wipe user data" }));
         }
@@ -6084,43 +6358,6 @@ export function AdminPortal() {
     } catch (err) {
       console.error(err);
       toast.error(t("admin.errorGenericOperation", { defaultValue: "Error executing administrative operation" }));
-    }
-  };
-
-  const handleCsvUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!csvFile) {
-      toast.error(t("admin.selectValidCsv", { defaultValue: "Select a valid CSV file first." }));
-      return;
-    }
-
-    setUploadingCsv(true);
-    setCsvReport(null);
-
-    const formData = new FormData();
-    formData.append("file", csvFile);
-    formData.append("defaultPassword", defaultPassword);
-
-    try {
-      const res = await fetch("/api/admin/users/bulk", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` },
-        body: formData
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success(t("admin.csvSuccess", { defaultValue: "CSV user registration completed successfully." }));
-        setCsvReport(data);
-        setCsvFile(null);
-        refreshAllData();
-      } else {
-        toast.error(data.error || t("admin.csvErrorUpload", { defaultValue: "Error uploading user data file." }));
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error(t("admin.csvErrorGeneric", { defaultValue: "Error during CSV upload execution" }));
-    } finally {
-      setUploadingCsv(false);
     }
   };
 
@@ -6225,8 +6462,6 @@ export function AdminPortal() {
               {[
                 { id: "dashboard", label: t("admin.nav.dashboard", { defaultValue: "Dashboard" }), icon: <LayoutGrid size={18} /> },
                 { id: "directory", label: t("admin.nav.directory", { defaultValue: "User Directory" }), icon: <User size={18} /> },
-                { id: "nlSearch", label: t("admin.nav.nlSearch", { defaultValue: "NL Search" }), icon: <Search size={18} /> },
-                { id: "csvImport", label: t("admin.nav.csvImport", { defaultValue: "CSV Import" }), icon: <Upload size={18} /> },
                 { id: "harvesters", label: t("admin.nav.machines", { defaultValue: "Machines" }), icon: <Tractor size={18} /> },
                 { id: "operators", label: t("admin.nav.operators", { defaultValue: "Operators" }), icon: <UserCheck size={18} /> },
                 { id: "requests", label: t("admin.nav.requests", { defaultValue: "Requests" }), icon: <FileText size={18} /> },
@@ -6515,7 +6750,7 @@ export function AdminPortal() {
                               textAnchor="middle"
                               className="font-sans"
                             >
-                              {p.displayDate.split(" ")[0]}
+                              {p.displayDate}
                             </text>
                           </g>
                         ))}
@@ -6748,231 +6983,7 @@ export function AdminPortal() {
             </div>
           )}
 
-          {/* ================================== */}
-          {/* TAB: NL ENGLISH SEARCH             */}
-          {/* ================================== */}
-          {activeTab === "nlSearch" && (
-            <div className="space-y-6">
-              <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm space-y-4">
-                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">English Query User Search</h3>
-                <p className="text-[#57585A] text-sm">
-                  Type search parameters in natural English. The system automatically extracts name patterns and locations. E.g. <span className="italic">"Show users from Punjab named Rajesh"</span> or <span className="italic">"Maharashtra Pune operators"</span>
-                </p>
 
-                <form onSubmit={handleNlSearch} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={nlQuery}
-                    onChange={(e) => setNlQuery(e.target.value)}
-                    placeholder="e.g. Find users in Maharashtra named Vikram"
-                    required
-                    className="flex-1 px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-[#172263]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={searching}
-                    className="bg-[#172263] hover:bg-[#11194A] text-white font-bold px-6 py-3 rounded-xl transition flex items-center gap-2"
-                  >
-                    {searching ? "Searching..." : "Parse & Search"}
-                  </button>
-                </form>
-              </div>
-
-              {parsedFilter && (
-                <div className="bg-[#fcfbf9] border border-[#e8dfd2] p-4 rounded-2xl flex gap-6 text-sm text-[#57585A]">
-                  <div>
-                    <span className="text-[#57585A]/70 block text-xs uppercase tracking-wider font-bold">Detected Name</span>
-                    <span className="text-[#1A1A1A] font-extrabold mt-0.5 block font-sora">{parsedFilter.name || "None"}</span>
-                  </div>
-                  <div className="border-l border-[#e8dfd2] pl-6">
-                    <span className="text-[#57585A]/70 block text-xs uppercase tracking-wider font-bold">Detected State</span>
-                    <span className="text-[#1A1A1A] font-extrabold mt-0.5 block font-sora">{parsedFilter.state || "None"}</span>
-                  </div>
-                  <div className="border-l border-[#e8dfd2] pl-6">
-                    <span className="text-[#57585A]/70 block text-xs uppercase tracking-wider font-bold">Detected District</span>
-                    <span className="text-[#1A1A1A] font-extrabold mt-0.5 block font-sora">{parsedFilter.district || "None"}</span>
-                  </div>
-                </div>
-              )}
-
-              {nlQuery && (
-                <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
-                  <div className="px-6 py-4 border-b border-[#E2E8F0]">
-                    <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">Search Results ({searchResults.length})</h4>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-[#57585A]">
-                      <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
-                        <tr>
-                          <th className="px-6 py-3.5">Name</th>
-                          <th className="px-6 py-3.5">Email</th>
-                          <th className="px-6 py-3.5">Phone</th>
-                          <th className="px-6 py-3.5">State</th>
-                          <th className="px-6 py-3.5 text-center">Status</th>
-                          <th className="px-6 py-3.5 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
-                        {searchResults.length > 0 ? (
-                          searchResults.map((user) => (
-                            <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{user.name}</td>
-                              <td className="px-6 py-4">{user.email}</td>
-                              <td className="px-6 py-4">{user.phone || "-"}</td>
-                              <td className="px-6 py-4">{user.state || "-"}</td>
-                              <td className="px-6 py-4 text-center">
-                                {user.is_blocked ? (
-                                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 border border-red-200 text-red-600">
-                                    Blocked
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-50 border border-green-200 text-green-600">
-                                    Active
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
-                                <button
-                                  onClick={() =>
-                                    openConfirmModal(
-                                      user.is_blocked ? "unblock" : "block",
-                                      user.id,
-                                      user.name
-                                    )
-                                  }
-                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition border ${user.is_blocked
-                                      ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
-                                      : "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100"
-                                    }`}
-                                >
-                                  {user.is_blocked ? "Unblock" : "Block"}
-                                </button>
-                                <button
-                                  onClick={() => openConfirmModal("wipe", user.id, user.name)}
-                                  className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition"
-                                >
-                                  Wipe Data
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={6} className="px-6 py-12 text-center text-[#57585A]/70">
-                              No records found. Try simplifying your query tags.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ================================== */}
-          {/* TAB: CSV BULK IMPORT               */}
-          {/* ================================== */}
-          {activeTab === "csvImport" && (
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm space-y-6">
-                <div>
-                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Bulk Import Users</h3>
-                  <p className="text-[#57585A] text-sm mt-1">
-                    Upload a standard CSV file to instantly register users on the network and auto-provision operator profiles.
-                  </p>
-                </div>
-
-                <form onSubmit={handleCsvUpload} className="space-y-4">
-                  <div>
-                    <label className="text-xs text-[#57585A] font-bold block mb-1">CSV File Selection</label>
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-                      required
-                      className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-[#172263] hover:file:bg-blue-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-[#57585A] font-bold block mb-1">Assigned Default Password</label>
-                    <input
-                      type="text"
-                      value={defaultPassword}
-                      onChange={(e) => setDefaultPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      placeholder="Welcome123"
-                      className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-[#172263]"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={uploadingCsv}
-                    className="w-full bg-[#172263] hover:bg-[#11194A] text-white font-bold py-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {uploadingCsv ? "Processing CSV..." : "Process Bulk Upload"}
-                  </button>
-                </form>
-
-                <div className="pt-4 border-t border-[#E2E8F0] flex justify-between items-center text-xs">
-                  <span className="text-[#57585A]">Format Verification Checklist</span>
-                  <a
-                    href="/sample_users.csv"
-                    download="sample_users.csv"
-                    className="text-[#D97706] hover:underline inline-flex items-center gap-1 font-bold"
-                  >
-                    Download Sample CSV 📥
-                  </a>
-                </div>
-              </div>
-
-              <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm flex flex-col justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora mb-4">Bulk Import Operations Report</h3>
-
-                  {csvReport ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-green-50 border border-green-200 p-4 rounded-2xl text-center">
-                          <span className="text-[#57585A] text-xs block font-semibold">Success Count</span>
-                          <span className="text-2xl font-black text-green-600 mt-1 block font-sora">{csvReport.successCount}</span>
-                        </div>
-                        <div className="bg-red-50 border border-red-200 p-4 rounded-2xl text-center">
-                          <span className="text-[#57585A] text-xs block font-semibold">Failed Count</span>
-                          <span className="text-2xl font-black text-red-600 mt-1 block font-sora">{csvReport.failedCount}</span>
-                        </div>
-                      </div>
-
-                      {csvReport.errors && csvReport.errors.length > 0 && (
-                        <div>
-                          <span className="text-xs text-red-600 font-bold block mb-2">Row-by-Row Upload Failures:</span>
-                          <div className="bg-red-50/30 border border-red-100 p-3 rounded-2xl max-h-48 overflow-y-auto text-xs font-mono space-y-1.5 text-red-800">
-                            {csvReport.errors.map((err: string, i: number) => (
-                              <div key={i}>⚠️ {err}</div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-[#57585A]/70 text-sm text-center py-12 border-2 border-dashed border-[#E2E8F0] rounded-2xl">
-                      Upload a CSV file and run parser to generate imports report here.
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-[#fcfbf9] p-4 rounded-2xl text-xs text-[#57585A] border border-[#e8dfd2] mt-4">
-                  <strong>CSV Template Structure:</strong><br />
-                  Columns must be named exactly: <code className="text-[#D97706] font-mono">name,email,phone,state</code>.<br />
-                  All imported users can later list themselves as operators or add harvesters from the portal.
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ================================== */}
           {/* TAB: MACHINES MODERATION           */}
@@ -7119,55 +7130,196 @@ export function AdminPortal() {
           {/* TAB: REQUESTS MODERATION           */}
           {/* ================================== */}
           {activeTab === "requests" && (
-            <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
-              <div className="p-6 border-b border-[#E2E8F0]">
-                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Posted Crop Requirements ({requests.length})</h3>
+            <div className="space-y-6">
+              {/* Request Sub-Tabs Switcher */}
+              <div className="flex gap-2 p-1 bg-gray-50 border border-[#E2E8F0] rounded-2xl w-fit">
+                <button
+                  type="button"
+                  onClick={() => setAdminRequestsTab("pending")}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    adminRequestsTab === "pending"
+                      ? "bg-white text-[#172263] shadow-sm"
+                      : "text-[#57585A] hover:bg-white/50"
+                  }`}
+                >
+                  Pending Action ({requests.filter(r => r.status === "Pending" || r.status === "Open").length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminRequestsTab("processed")}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    adminRequestsTab === "processed"
+                      ? "bg-white text-[#172263] shadow-sm"
+                      : "text-[#57585A] hover:bg-white/50"
+                  }`}
+                >
+                  Processed History ({requests.filter(r => r.status === "Accepted" || r.status === "Rejected").length})
+                </button>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-[#57585A]">
-                  <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
-                    <tr>
-                      <th className="px-6 py-3.5">Crop Type</th>
-                      <th className="px-6 py-3.5">Listing Category</th>
-                      <th className="px-6 py-3.5">Location</th>
-                      <th className="px-6 py-3.5">Duration</th>
-                      <th className="px-6 py-3.5">Date Added</th>
-                      <th className="px-6 py-3.5">Requester</th>
-                      <th className="px-6 py-3.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
-                    {requests.length > 0 ? (
-                      requests.map((r) => (
-                        <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{r.machineType}</td>
-                          <td className="px-6 py-4 capitalize">{r.type}</td>
-                          <td className="px-6 py-4">{r.location}, {r.state}</td>
-                          <td className="px-6 py-4">{r.duration || "Not specified"}</td>
-                          <td className="px-6 py-4">
-                            {r.startDate ? new Date(r.startDate).toLocaleDateString() : "-"}
-                          </td>
-                          <td className="px-6 py-4">{r.requesterName}</td>
-                          <td className="px-6 py-4 text-right">
-                            <button
-                              onClick={() => openConfirmModal("deleteReq", r.id, `${r.machineType} requirement`)}
-                              className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition"
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-[#E2E8F0]">
+                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">
+                    {adminRequestsTab === "pending" ? "Pending Crop Requirements" : "Processed Crop Requirements"}
+                  </h3>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-[#57585A]">
+                    <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                      <tr>
+                        <th className="px-6 py-3.5">Crop Type</th>
+                        <th className="px-6 py-3.5">Listing Category</th>
+                        <th className="px-6 py-3.5">Location</th>
+                        <th className="px-6 py-3.5">Duration</th>
+                        <th className="px-6 py-3.5">Date Added</th>
+                        <th className="px-6 py-3.5">Requester</th>
+                        {adminRequestsTab === "processed" && <th className="px-6 py-3.5">Status</th>}
+                        <th className="px-6 py-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                      {(adminRequestsTab === "pending"
+                        ? requests.filter(r => r.status === "Pending" || r.status === "Open")
+                        : requests.filter(r => r.status === "Accepted" || r.status === "Rejected")
+                      ).length > 0 ? (
+                        (adminRequestsTab === "pending"
+                          ? requests.filter(r => r.status === "Pending" || r.status === "Open")
+                          : requests.filter(r => r.status === "Accepted" || r.status === "Rejected")
+                        ).map((r) => (
+                          <Fragment key={r.id}>
+                            <tr
+                              onClick={() => setExpandedRequestId(expandedRequestId === r.id ? null : r.id)}
+                              className="hover:bg-slate-50/50 transition-colors cursor-pointer"
                             >
-                              Delete Request
-                            </button>
+                              <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">
+                                <div className="flex items-center gap-1.5 hover:text-blue-700 transition-colors">
+                                  <ChevronDown size={14} className={`shrink-0 transition-transform ${expandedRequestId === r.id ? "rotate-180 text-blue-600" : "text-slate-400"}`} />
+                                  <span>{r.machineType}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 capitalize">{r.type}</td>
+                              <td className="px-6 py-4">{r.location}, {r.state}</td>
+                              <td className="px-6 py-4">{r.duration || "Not specified"} days</td>
+                              <td className="px-6 py-4">
+                                {r.startDate ? new Date(r.startDate).toLocaleDateString() : "-"}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex flex-col">
+                                  <span className="font-semibold text-slate-700">{r.requesterName}</span>
+                                  <span className="text-xs text-slate-500">{r.requesterPhone || "No phone"}</span>
+                                </div>
+                              </td>
+                              {adminRequestsTab === "processed" && (
+                                <td className="px-6 py-4">
+                                  {r.status === "Accepted" ? (
+                                    <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold inline-flex items-center gap-1">
+                                      <CheckCircle2 size={12} /> Accepted
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold inline-flex items-center gap-1">
+                                      <XCircle size={12} /> Rejected
+                                    </span>
+                                  )}
+                                </td>
+                              )}
+                              <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex justify-end items-center gap-2">
+                                  {adminRequestsTab === "pending" ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateRequestStatus(r.id, "Accepted")}
+                                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                                      >
+                                        Accept
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateRequestStatus(r.id, "Rejected")}
+                                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                                      >
+                                        Reject
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateRequestStatus(r.id, "Pending")}
+                                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-[#57585A] border border-[#E2E8F0] rounded-xl text-xs font-bold transition"
+                                    >
+                                      Reset to Pending
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => openConfirmModal("deleteReq", r.id, `${r.machineType} requirement`)}
+                                    className="px-3 py-1.5 bg-white text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-50 transition"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            {expandedRequestId === r.id && (
+                              <tr className="bg-slate-50/30">
+                                <td colSpan={adminRequestsTab === "processed" ? 8 : 7} className="px-6 py-4">
+                                  <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm space-y-4 text-left">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                      <div>
+                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Requester Information</span>
+                                        <div className="flex items-center gap-3">
+                                          {r.requesterProfilePic ? (
+                                            <img src={r.requesterProfilePic} className="w-12 h-12 rounded-full border border-slate-200 object-cover" alt="" />
+                                          ) : (
+                                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-[#172263] font-bold border border-slate-200 text-lg">
+                                              {r.requesterName ? r.requesterName.charAt(0).toUpperCase() : "U"}
+                                            </div>
+                                          )}
+                                          <div>
+                                            <div className="text-sm font-bold text-slate-800">{r.requesterName}</div>
+                                            <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                              <Phone size={12} className="text-slate-400" /> {r.requesterPhone || "No phone listed"}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Requirement Schedule</span>
+                                        <div className="space-y-1.5 text-sm text-slate-700">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="text-slate-400 font-medium">Start Date:</span>
+                                            <span className="font-semibold text-slate-800">{r.startDate ? new Date(r.startDate).toLocaleDateString() : "Immediate"}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="text-slate-400 font-medium">Duration:</span>
+                                            <span className="font-semibold text-slate-800">{r.duration ? `${r.duration} Days` : "Not specified"}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="pt-3 border-t border-slate-100">
+                                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Detailed Description</span>
+                                      <p className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50/60 p-4 rounded-xl border border-slate-100 font-medium leading-relaxed">
+                                        {r.description || "No description provided by the user."}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={adminRequestsTab === "processed" ? 8 : 7} className="px-6 py-12 text-center text-[#57585A]/70">
+                            {adminRequestsTab === "pending" ? "No pending crop requirements in the database." : "No processed crop requirements in the database."}
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-[#57585A]/70">
-                          No posted crop requirements in the database.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -7345,16 +7497,27 @@ export function AdminPortal() {
                         <label className="text-sm text-[#57585A] block mb-1.5 font-bold">Category *</label>
                         <select
                           value={blogCategory}
-                          onChange={(e) => setBlogCategory(e.target.value)}
+                          onChange={(e) => handleCategoryChange(e.target.value, 'standard')}
                           className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                         >
-                          <option value="Harvesting Tips">Harvesting Tips</option>
-                          <option value="Machine Maintenance">Machine Maintenance</option>
-                          <option value="Success Stories">Success Stories</option>
-                          <option value="Agri News">Agri News</option>
-                          <option value="Weather & Season">Weather & Season</option>
-                          <option value="Other">Other</option>
+                          {categories.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                          <option value="Other">Other (One-time...)</option>
+                          <option value="Add New Category...">Add New Category...</option>
                         </select>
+                        {blogCategory === "Other" && (
+                          <div className="mt-2.5">
+                            <input
+                              type="text"
+                              required
+                              value={customCategory}
+                              onChange={(e) => setCustomCategory(e.target.value)}
+                              placeholder="Type custom one-time category..."
+                              className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -7371,7 +7534,7 @@ export function AdminPortal() {
                       </div>
                       <div>
                         <label className="text-sm text-[#57585A] block mb-1.5 font-bold">Blog Cover Image</label>
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                           <input
                             type="file"
                             accept="image/*"
@@ -7380,6 +7543,7 @@ export function AdminPortal() {
                               if (file) {
                                 setBlogImageFile(file);
                                 setBlogImagePreview(URL.createObjectURL(file));
+                                setBlogImageUrl(""); // Clear URL input when uploading a file
                               }
                             }}
                             className="hidden"
@@ -7387,12 +7551,27 @@ export function AdminPortal() {
                           />
                           <label
                             htmlFor="blog-image-picker"
-                            className="px-4 py-2.5 border border-[#E2E8F0] hover:bg-zinc-50 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-2"
+                            className="px-4 py-2.5 border border-[#E2E8F0] hover:bg-zinc-50 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-2 justify-center shrink-0"
                           >
-                            <Camera size={14} /> Upload Image
+                            <Camera size={14} /> Upload File
                           </label>
+                          
+                          <span className="text-xs text-gray-400 font-bold text-center self-center shrink-0">OR</span>
+                          
+                          <input
+                            type="text"
+                            value={blogImageUrl}
+                            onChange={(e) => {
+                              setBlogImageUrl(e.target.value);
+                              setBlogImagePreview(e.target.value);
+                              setBlogImageFile(null); // Clear file when entering a URL
+                            }}
+                            placeholder="Enter image web URL (or AI pre-filled link)..."
+                            className="flex-1 min-w-0 px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263]"
+                          />
+
                           {blogImagePreview && (
-                            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-[#E2E8F0]">
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-[#E2E8F0] shrink-0 self-center">
                               <img src={blogImagePreview} alt="Preview" className="w-full h-full object-cover" />
                               <button
                                 type="button"
@@ -8061,8 +8240,8 @@ export function AdminPortal() {
               </div>
 
               {/* Full body markdown/text */}
-              <div className="text-sm text-[#1A1A1A] leading-relaxed space-y-4 whitespace-pre-line font-medium font-sora">
-                {activeBlogPreview.content}
+              <div className="text-sm text-[#1A1A1A] leading-relaxed font-medium font-sora">
+                {renderMarkdown(activeBlogPreview.content)}
               </div>
             </div>
 
@@ -8155,17 +8334,29 @@ export function AdminPortal() {
                 <label className="text-xs text-[#57585A] block mb-1.5 font-bold uppercase tracking-wider">Category *</label>
                 <select
                   value={aiPromptCategory}
-                  onChange={(e) => setAiPromptCategory(e.target.value)}
+                  onChange={(e) => handleCategoryChange(e.target.value, 'ai')}
                   className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                   disabled={generatingBlog}
                 >
-                  <option value="Harvesting Tips">Harvesting Tips</option>
-                  <option value="Machine Maintenance">Machine Maintenance</option>
-                  <option value="Success Stories">Success Stories</option>
-                  <option value="Agri News">Agri News</option>
-                  <option value="Weather & Season">Weather & Season</option>
-                  <option value="Other">Other</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  <option value="Other">Other (One-time...)</option>
+                  <option value="Add New Category...">Add New Category...</option>
                 </select>
+                {aiPromptCategory === "Other" && (
+                  <div className="mt-2.5">
+                    <input
+                      type="text"
+                      required
+                      value={aiCustomCategory}
+                      onChange={(e) => setAiCustomCategory(e.target.value)}
+                      placeholder="Type custom one-time category..."
+                      className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                      disabled={generatingBlog}
+                    />
+                  </div>
+                )}
               </div>
 
 

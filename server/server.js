@@ -755,34 +755,50 @@ app.delete('/api/harvesters/:id', authenticateToken, async (req, res) => {
 
 // 6. Request Routes
 app.get('/api/requests', authenticateToken, async (req, res) => {
-  const { tab, userId, location, state, limit } = req.query;
-  let queryStr = 'SELECT r.*, u.name as requesterName, u.phone as requesterPhone, u.image_path as requesterProfilePic FROM requests r JOIN users u ON r.user_id = u.id WHERE 1=1';
-  const queryParams = [];
-
-  if (tab) {
-    queryStr += ' AND r.type = ?';
-    queryParams.push(tab);
-  }
-  if (userId === 'me') {
-    queryStr += ' AND r.user_id = ?';
-    queryParams.push(req.user.id);
-  }
-  if (location) {
-    queryStr += ' AND r.location LIKE ?';
-    queryParams.push(`%${location}%`);
-  }
-  if (state) {
-    queryStr += ' AND r.state = ?';
-    queryParams.push(state);
-  }
-
-  queryStr += ' ORDER BY r.id DESC';
-
-  if (limit) {
-    queryStr += ' LIMIT ?';
-    queryParams.push(parseInt(limit));
-  }
   try {
+    // Check requester role
+    const [userRows] = await db.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
+    const userRole = userRows.length > 0 ? userRows[0].role : 'user';
+
+    const { tab, userId, location, state, limit } = req.query;
+    let queryStr = 'SELECT r.*, u.name as requesterName, u.phone as requesterPhone, u.image_path as requesterProfilePic FROM requests r JOIN users u ON r.user_id = u.id WHERE 1=1';
+    const queryParams = [];
+
+    if (userRole !== 'admin') {
+      // Force non-admins to only see their own requests
+      queryStr += ' AND r.user_id = ?';
+      queryParams.push(req.user.id);
+    } else {
+      // Admins can filter by userId query parameter
+      if (userId === 'me') {
+        queryStr += ' AND r.user_id = ?';
+        queryParams.push(req.user.id);
+      } else if (userId && userId !== 'all') {
+        queryStr += ' AND r.user_id = ?';
+        queryParams.push(userId);
+      }
+    }
+
+    if (tab) {
+      queryStr += ' AND r.type = ?';
+      queryParams.push(tab);
+    }
+    if (location) {
+      queryStr += ' AND r.location LIKE ?';
+      queryParams.push(`%${location}%`);
+    }
+    if (state) {
+      queryStr += ' AND r.state = ?';
+      queryParams.push(state);
+    }
+
+    queryStr += ' ORDER BY r.id DESC';
+
+    if (limit) {
+      queryStr += ' LIMIT ?';
+      queryParams.push(parseInt(limit));
+    }
+
     const [rows] = await db.query(queryStr, queryParams);
     const formattedRows = rows.map(r => ({
       id: r.id,
@@ -839,7 +855,21 @@ app.get('/api/requests/:id', authenticateToken, async (req, res) => {
 
 app.post('/api/requests', authenticateToken, async (req, res) => {
   const { type, location, state, machineType, duration, startDate, description } = req.body;
-  if (!type || !location || !state || !machineType || !startDate) {
+
+  // Look up user role to enforce harvester-only requests for non-admin users
+  let userRole = 'user';
+  try {
+    const [userRows] = await db.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
+    if (userRows.length > 0) {
+      userRole = userRows[0].role;
+    }
+  } catch (err) {
+    console.error('Error fetching user role for post request:', err);
+  }
+
+  const finalType = userRole === 'admin' ? (type || 'harvester') : 'harvester';
+
+  if (!finalType || !location || !state || !machineType || !startDate) {
     return res.status(400).json({ error: 'Please fill out all required fields' });
   }
 
@@ -860,7 +890,7 @@ app.post('/api/requests', authenticateToken, async (req, res) => {
   try {
     await db.query(
       'INSERT INTO requests (id, user_id, type, location, state, machine_type, duration, start_date, status, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [require('crypto').randomUUID(), req.user.id, type, location, state, machineType, duration || null, formattedDate, 'Open', description || null]
+      [require('crypto').randomUUID(), req.user.id, finalType, location, state, machineType, duration || null, formattedDate, 'Pending', description || null]
     );
     res.status(201).json({ message: 'Requirement posted successfully' });
   } catch (error) {
@@ -972,7 +1002,7 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
 app.get('/api/messages/unread', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT m.*, u.name as senderName 
+      SELECT m.*, u.name as senderName, u.image_path as senderProfilePic
       FROM messages m 
       JOIN users u ON m.sender_id = u.id 
       WHERE m.receiver_id = ? AND m.is_read = 0
@@ -1000,6 +1030,16 @@ app.put('/api/messages/unread/mark-read', authenticateToken, async (req, res) =>
 });
 
 // 8. Blog Routes
+app.get('/api/blogs/categories', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT name FROM blog_categories ORDER BY name ASC');
+    res.json(rows.map(row => row.name));
+  } catch (error) {
+    console.error('Error fetching blog categories:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.get('/api/blogs', async (req, res) => {
   const { category, search, limit, offset, seed } = req.query;
   const user = getOptionalUser(req);
@@ -1344,6 +1384,21 @@ app.delete('/api/admin/requests/:id', authenticateToken, isAdmin, async (req, re
   try {
     await db.query('DELETE FROM requests WHERE id = ?', [req.params.id]);
     res.json({ message: 'Request deleted by administrator.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 7. Admin Update Request Status (Accept/Reject/Pending)
+app.put('/api/admin/requests/:id/status', authenticateToken, isAdmin, async (req, res) => {
+  const { status } = req.body;
+  if (!['Pending', 'Accepted', 'Rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status. Status must be Pending, Accepted, or Rejected.' });
+  }
+  try {
+    await db.query('UPDATE requests SET status = ? WHERE id = ?', [status, req.params.id]);
+    res.json({ message: `Request status updated to ${status} successfully.` });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1865,21 +1920,41 @@ app.post('/api/admin/blogs/generate', authenticateToken, isAdmin, async (req, re
     return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your server/.env file.' });
   }
 
-  const prompt = `You are a professional blog writer for the Tractor Sewa platform (a marketplace and community for tractors, harvesters, operators, and farmers).
-Write a blog post in English based on the following inputs:
-- Title: "${title}"
-- Keywords: "${keywords || 'none'}"
+  const prompt = `You are an expert agriculture content writer and professional blog author for the Tractor Sewa platform.
+Write a highly engaging, informative, and practical blog post in English. It should read like a premium, narrative article, not an academic document. It must connect with machine owners, tractor/harvester operators, and farmers.
+
+Follow these strict guidelines:
+1. Narrative Flow: Start with a catchy hook or real-life scenario to pull readers in.
+2. Tone: Warm, authoritative, practical, and grounded in seasonal agricultural needs.
+3. Formatting: Use clear headings (## for main sections, ### for sub-sections), lists, and strong bullet points where relevant. Keep paragraphs short and highly readable.
+4. Word Count: 500-750 words.
+
+Inputs:
+- Topic/Title: "${title}"
+- Keywords to naturally include: "${keywords || 'none'}"
 - Category: "${category}"
+
+Additionally, you must search the web to find a highly relevant, real, verified, and active cover photo URL for the specific topic of this blog.
+- Locate a direct, public image link (from official manufacturer portals, verified agricultural news sites, or trusted media) that corresponds exactly to the blog subject. For example, if writing about the launch of the "John Deere 9RX Tractor", you must find a real, verified, direct image URL of the John Deere 9RX.
+- If you find a verified direct image URL, set "image_url" to that exact URL.
+- If you cannot find a verified direct image URL, you MUST return a dynamic category-relevant query in the following format:
+  "GENERATE:<comma_separated_keywords>"
+  For example: "GENERATE:tomato,farming" or "GENERATE:monsoon,paddy". The system will automatically build a high-quality topic-specific cover image using your keywords.
 
 Return your response ONLY as a JSON object matching this exact structure:
 {
   "title": "A compelling final title based on the input",
   "category": "${category}",
   "short_description": "A short summary (1-2 sentences) of the blog post.",
-  "content": "The full blog content in Markdown format. Use clear headings (##, ###), bullet points, and paragraphs. Make it around 400-600 words, practical, informative, and engaging for agricultural stakeholders."
+  "content": "The full blog content in English in Markdown format.",
+  "image_url": "The verified web image URL OR 'GENERATE:keyword1,keyword2'"
 }
 
 Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
+
+  let geminiFailed = false;
+  let geminiErrorReason = '';
+  let generatedText = '';
 
   try {
     const response = await fetch(
@@ -1899,38 +1974,169 @@ Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
               ],
             },
           ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-          },
+          tools: [
+            {
+              googleSearch: {}
+            }
+          ],
         }),
       }
     );
 
     if (!response.ok) {
+      geminiFailed = true;
       const errorText = await response.text();
       logger.error('Gemini API Error: ' + errorText);
-      return res.status(502).json({ error: 'Failed to generate content from Gemini API' });
+      try {
+        const errorJson = JSON.parse(errorText);
+        const code = errorJson.error?.code;
+        const status = errorJson.error?.status;
+        const msg = errorJson.error?.message || '';
+        
+        if (code === 503 || status === 'UNAVAILABLE' || msg.includes('overloaded') || msg.includes('demand')) {
+          geminiErrorReason = 'MODEL IS BUSY (503 Service Unavailable)';
+        } else if (code === 429 || status === 'RESOURCE_EXHAUSTED' || msg.includes('limit') || msg.includes('exhausted')) {
+          geminiErrorReason = 'API LIMIT REACHED (429 Rate Limit)';
+        } else if (code === 400 && (msg.includes('API key') || msg.includes('not valid') || msg.includes('key'))) {
+          geminiErrorReason = 'INVALID API KEY';
+        } else if (msg) {
+          geminiErrorReason = msg.toUpperCase();
+        } else {
+          geminiErrorReason = `HTTP ERROR ${response.status}`;
+        }
+      } catch (e) {
+        geminiErrorReason = `HTTP ERROR ${response.status}`;
+      }
+    } else {
+      const data = await response.json();
+      generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!generatedText) {
+        geminiFailed = true;
+        geminiErrorReason = 'INVALID RESPONSE STRUCTURE';
+      }
     }
-
-    const data = await response.json();
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!generatedText) {
-      return res.status(502).json({ error: 'Invalid response structure from Gemini API' });
-    }
-
-    let parsedResult;
-    try {
-      parsedResult = JSON.parse(generatedText.trim());
-    } catch (e) {
-      logger.error('Failed to parse Gemini output as JSON. Output was: ' + generatedText);
-      return res.status(502).json({ error: 'AI output could not be parsed as valid JSON' });
-    }
-
-    res.json(parsedResult);
   } catch (error) {
-    logger.error('Error generating blog post: ' + error.stack);
-    res.status(500).json({ error: 'Internal Server Error during blog generation' });
+    logger.error('Gemini call failed with exception: ' + error.stack);
+    geminiFailed = true;
+    geminiErrorReason = error.message;
+  }
+
+  // Fallback to OpenAI if Gemini failed and OpenAI API key is available
+  if (geminiFailed) {
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    if (openaiApiKey) {
+      logger.info(`Gemini failed (${geminiErrorReason}). Falling back to OpenAI (gpt-4o-mini)...`);
+      try {
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert agriculture content writer and professional blog author for the Tractor Sewa platform. Respond ONLY with a raw JSON object matching the requested structure.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            response_format: { type: 'json_object' }
+          })
+        });
+
+        if (openaiResponse.ok) {
+          const openaiData = await openaiResponse.json();
+          generatedText = openaiData.choices?.[0]?.message?.content;
+          if (generatedText) {
+            geminiFailed = false;
+            logger.info('Successfully generated blog content using OpenAI fallback!');
+          } else {
+            logger.error('OpenAI response did not contain choices/content');
+            return res.status(502).json({ error: 'Cannot generate blog: OpenAI fallback response format was invalid.' });
+          }
+        } else {
+          const openaiErrorText = await openaiResponse.text();
+          logger.error('OpenAI API Error: ' + openaiErrorText);
+          return res.status(502).json({ 
+            error: `Cannot generate blog: Gemini was busy (${geminiErrorReason}) and OpenAI fallback failed (${openaiResponse.status}).` 
+          });
+        }
+      } catch (openaiErr) {
+        logger.error('OpenAI fallback failed with exception: ' + openaiErr.stack);
+        return res.status(502).json({ 
+          error: `Cannot generate blog: Gemini was busy (${geminiErrorReason}) and OpenAI fallback connection failed.` 
+        });
+      }
+    } else {
+      // No OpenAI key configured, return the Gemini error
+      return res.status(502).json({ error: `Cannot generate blog: ${geminiErrorReason}` });
+    }
+  }
+
+  // Parse and return result
+  let parsedResult;
+  try {
+    let cleanText = generatedText.trim();
+    // Remove markdown code block markers if they are present
+    if (cleanText.startsWith('```json')) {
+      cleanText = cleanText.substring(7);
+    } else if (cleanText.startsWith('```')) {
+      cleanText = cleanText.substring(3);
+    }
+    if (cleanText.endsWith('```')) {
+      cleanText = cleanText.substring(0, cleanText.length - 3);
+    }
+    parsedResult = JSON.parse(cleanText.trim());
+  } catch (e) {
+    logger.error('Failed to parse AI output as JSON. Output was: ' + generatedText);
+    return res.status(502).json({ error: 'AI output could not be parsed as valid JSON' });
+  }
+
+  // If the AI requested a dynamically generated image based on keywords,
+  // we construct a LoremFlickr topic-specific image locked to a random integer.
+  if (parsedResult.image_url && parsedResult.image_url.startsWith('GENERATE:')) {
+    const keywordsRaw = parsedResult.image_url.replace('GENERATE:', '');
+    const cleanKeywords = keywordsRaw.split(',')
+      .map(k => k.trim().toLowerCase().replace(/[^a-z0-9]/g, ''))
+      .filter(k => k.length > 0);
+    
+    // Always prefix with agriculture to ensure relevant photo pool
+    const tags = ['agriculture', ...cleanKeywords].slice(0, 4).join(',');
+    const randomLock = Math.floor(Math.random() * 100000) + 1;
+    parsedResult.image_url = `https://loremflickr.com/800/600/${tags}/all?lock=${randomLock}`;
+  } else if (!parsedResult.image_url || parsedResult.image_url === '') {
+    // Default fallback if no image url was provided by the model
+    const randomLock = Math.floor(Math.random() * 100000) + 1;
+    parsedResult.image_url = `https://loremflickr.com/800/600/agriculture,farming/all?lock=${randomLock}`;
+  }
+
+  res.json(parsedResult);
+});
+
+app.post('/api/admin/blogs/categories', authenticateToken, isAdmin, async (req, res) => {
+  const { name } = req.body;
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    return res.status(400).json({ error: 'Category name is required' });
+  }
+
+  const cleanName = name.trim();
+  try {
+    // Check if category already exists (case-insensitive checks since name is UNIQUE)
+    const [existing] = await db.query('SELECT id FROM blog_categories WHERE name = ?', [cleanName]);
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'Category already exists' });
+    }
+
+    await db.query('INSERT INTO blog_categories (name) VALUES (?)', [cleanName]);
+    res.status(201).json({ message: 'Category added successfully', name: cleanName });
+  } catch (error) {
+    console.error('Error adding category:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

@@ -62,7 +62,7 @@ export function TractorModel() {
         enablePan={false}
         target={[0, -0.2, 0]}
         autoRotate={true}
-        autoRotateSpeed={1.5}
+        autoRotateSpeed={1}
         minPolarAngle={Math.PI / 2}
         maxPolarAngle={Math.PI / 2}
       />

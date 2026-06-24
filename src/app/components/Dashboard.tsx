@@ -67,6 +67,14 @@ export function Dashboard() {
   const [scoreCount, setScoreCount] = useState<number>(0);
   const [myHarvestersCount, setMyHarvestersCount] = useState<number>(0);
   const [myOperatorsCount, setMyOperatorsCount] = useState<number>(0);
+  const [myOperatorProfile, setMyOperatorProfile] = useState<any>(null);
+  const [conversations, setConversations] = useState<any[]>([]);
+  
+  // Custom states for simplified profile, local community, message notifications, and blogs card
+  const [localHarvestersCount, setLocalHarvestersCount] = useState<number>(0);
+  const [localOperatorsCount, setLocalOperatorsCount] = useState<number>(0);
+  const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
+  const [latestBlog, setLatestBlog] = useState<any>(null);
 
   const [activeMachinesTab, setActiveMachinesTab] = useState<'harvesters' | 'requests'>('harvesters');
   const [myRequestsCount, setMyRequestsCount] = useState(0);
@@ -177,6 +185,9 @@ export function Dashboard() {
             if (myOpsRes.ok) {
               const allOps = await myOpsRes.json();
               setMyOperatorsCount(allOps.length);
+              if (allOps.length > 0) {
+                setMyOperatorProfile(allOps[0]);
+              }
             }
           }
         }
@@ -239,6 +250,7 @@ export function Dashboard() {
           });
           if (msgsRes.ok) {
             const partnersData = await msgsRes.json();
+            setConversations(partnersData);
             partnersData.forEach((p: any) => {
               if (p.lastMessage) {
                 newActivities.push({
@@ -256,6 +268,44 @@ export function Dashboard() {
         // Sort desc by timestamp
         newActivities.sort((a, b) => b.timestamp - a.timestamp);
         setActivities(newActivities.slice(0, 5));
+
+        // Fetch local listings counts based on user state
+        const uState = userProfile?.state || 'Maharashtra';
+        const localHarvsRes = await fetch(`/api/harvesters?state=${encodeURIComponent(uState)}`);
+        if (localHarvsRes.ok) {
+          const lhData = await localHarvsRes.json();
+          setLocalHarvestersCount(lhData.length);
+        }
+        const localOpsRes = await fetch(`/api/operators?state=${encodeURIComponent(uState)}`);
+        if (localOpsRes.ok) {
+          const loData = await localOpsRes.json();
+          setLocalOperatorsCount(loData.length);
+        }
+
+        // Fetch unread messages
+        if (token) {
+          const unreadRes = await fetch('/api/messages/unread', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (unreadRes.ok) {
+            const unreadData = await unreadRes.json();
+            // Filter unique senders, keeping the latest message per sender
+            const uniqueSenders: Record<string, any> = {};
+            unreadData.forEach((m: any) => {
+              uniqueSenders[m.sender_id] = m;
+            });
+            setUnreadMessages(Object.values(uniqueSenders));
+          }
+        }
+
+        // Fetch latest blog post
+        const blogsRes = await fetch('/api/blogs?limit=1');
+        if (blogsRes.ok) {
+          const blogsData = await blogsRes.json();
+          if (blogsData.length > 0) {
+            setLatestBlog(blogsData[0]);
+          }
+        }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -374,6 +424,22 @@ export function Dashboard() {
     fetchDirectory();
   }, [dirSearch, dirCategory, dirState, dirDistrict, dirSortBy, dirLimit, token]);
 
+  // Helper calculations for redesigned stats cards
+  const userState = currentUser?.state || 'Maharashtra';
+  const localRequests = recentRequests.filter((req: any) => 
+    req.state?.trim().toLowerCase() === userState.trim().toLowerCase()
+  );
+  
+  const localHarvestersDemand = localRequests.filter((req: any) => 
+    req.type?.toLowerCase().includes('harvester')
+  ).length;
+  
+  const localOperatorsDemand = localRequests.filter((req: any) => 
+    req.type?.toLowerCase().includes('operator')
+  ).length;
+
+  const totalLocalDemand = localRequests.length;
+
   const handleBookingClick = (ownerId: number | string) => {
     if (!token) {
       setChooserOpen(true);
@@ -402,129 +468,138 @@ export function Dashboard() {
         
         {token && (
           <>
-            {/* Hello Greeting Header */}
-            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-black text-[#172263] tracking-tight font-sora">
-                  Hello, Operator!
-                </h1>
-                <p className="text-xs text-[#57585A] mt-1">Manage your farming fleet, reviews, and active requests.</p>
-              </div>
-              {currentUser && (
-                <div className="flex items-center gap-3 bg-white border border-[#E2E8F0] shadow-xs px-4 py-2 rounded-2xl">
-                  <Avatar className="w-9 h-9 rounded-full shadow-xs ring-2 ring-blue-50">
-                    {currentUser?.image_path ? <AvatarImage src={currentUser.image_path} alt={currentUser.name} /> : null}
-                    <AvatarFallback className="bg-[#172263] text-white font-bold text-sm">
-                      {currentUser?.name ? currentUser.name.charAt(0) : "O"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-[#1A1A1A]">{currentUser.name}</p>
-                    <p className="text-[10px] text-[#57585A] capitalize">{currentUser.role}</p>
-                  </div>
-                </div>
-              )}
-            </div>
 
             {/* Stats Row (4 Columns Grid) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
               
-              {/* Card 1: Active Machines */}
-              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md">
+              {/* Card 1: My Listings & Profile */}
+              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
-                  <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-2">ACTIVE MACHINES</span>
-                  {/* Harvester / Request Tabs */}
-                  <div className="flex bg-[#F1F5F9] p-1 rounded-xl w-fit mb-3">
-                    <button
-                      onClick={() => setActiveMachinesTab('harvesters')}
-                      className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${activeMachinesTab === 'harvesters' ? 'bg-white shadow-xs text-[#172263]' : 'text-[#57585A] hover:text-[#172263]'}`}
-                    >
-                      Harvesters
-                    </button>
-                    <button
-                      onClick={() => setActiveMachinesTab('requests')}
-                      className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${activeMachinesTab === 'requests' ? 'bg-white shadow-xs text-[#172263]' : 'text-[#57585A] hover:text-[#172263]'}`}
-                    >
-                      Requests
-                    </button>
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-2">MY LISTINGS & PROFILE</span>
+                    <User size={16} className="text-[#172263]" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl font-black text-[#172263] font-sora">
-                      {activeMachinesTab === 'harvesters' 
-                        ? (currentUser ? harvesters.filter((h: any) => h.userId === currentUser.id).length : harvesters.length || 0)
-                        : myRequestsCount
-                      }
-                    </span>
-                    <span className="px-1.5 py-0.5 text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-md">
-                      +1
-                    </span>
+                  
+                  <div className="space-y-1 mt-1">
+                    <div className="text-base font-extrabold text-[#172263] font-sora truncate">{currentUser?.name || userName}</div>
+                    <div className="text-[10px] text-[#57585A] font-semibold truncate">{currentUser?.email}</div>
+                    <div className="text-[9px] bg-slate-100 text-[#172263] px-2 py-0.5 rounded-md inline-block uppercase font-bold tracking-wider">
+                      Role: {currentUser?.role || "user"}
+                    </div>
                   </div>
                 </div>
 
-                {/* Sparkline Graph */}
-                <div className="mt-2 w-full h-12">
-                  <svg className="w-full h-full text-emerald-500" viewBox="0 0 100 30" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="sparklineGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10B981" stopOpacity="0.2" />
-                        <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      d="M 0 22 Q 15 15, 30 25 T 60 10 T 80 18 T 100 8"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M 0 22 Q 15 15, 30 25 T 60 10 T 80 18 T 100 8 L 100 30 L 0 30 Z"
-                      fill="url(#sparklineGrad)"
-                    />
-                  </svg>
+                <div className="grid grid-cols-2 gap-2 mt-1 border-t border-[#F1F5F9] pt-2">
+                  <div>
+                    <span className="text-[8px] uppercase tracking-wider font-bold text-gray-400 block">Harvesters</span>
+                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora">{myHarvestersCount} active</span>
+                  </div>
+                  <div>
+                    <span className="text-[8px] uppercase tracking-wider font-bold text-gray-400 block">Operator Profile</span>
+                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora">{myOperatorsCount > 0 ? "Published" : "Not Created"}</span>
+                  </div>
                 </div>
                 
-                <div className="flex justify-between items-center text-[10px] text-[#57585A] font-medium border-t border-[#F1F5F9] pt-2 mt-1">
-                  <span>Active</span>
-                  <span>Past 6 months</span>
+                <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
+                  <span>Status: Active</span>
+                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/operators')}>Manage</span>
                 </div>
               </div>
 
-              {/* Card 2: My Rating */}
-              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md">
+              {/* Card 2: Local Machine Network */}
+              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
-                  <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">MY RATING</span>
-                  <div className="text-xl font-extrabold text-[#172263] font-sora mt-1">
-                    {userScore !== null ? `${userScore} Score` : "Yet to receive"}
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">MY LOCATION NETWORK</span>
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-100 text-[9px] font-black text-blue-700 uppercase">
+                      <MapPin size={9} fill="currentColor" /> {userState}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-baseline gap-1.5 mt-2">
+                    <span className="text-3xl font-black text-[#172263] font-sora">
+                      {localHarvestersCount + localOperatorsCount}
+                    </span>
+                    <span className="text-xs text-[#57585A] font-bold">Total listings</span>
                   </div>
                 </div>
 
-                {/* Radial Gauge */}
-                <div className="flex justify-center items-center my-1">
-                  <div className="relative w-14 h-14 flex items-center justify-center">
+                {/* SVG Visual Graph representing local network categories */}
+                <div className="h-10 mt-1 flex items-end justify-between gap-3">
+                  <div className="flex-1 flex flex-col justify-end h-full">
+                    <div className="flex justify-between text-[8px] font-bold text-gray-500 mb-1">
+                      <span>Harvesters</span>
+                      <span>{localHarvestersCount}</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-[#172263] h-full rounded-full transition-all" style={{ width: `${(localHarvestersCount + localOperatorsCount) ? (localHarvestersCount / (localHarvestersCount + localOperatorsCount)) * 100 : 0}%` }} />
+                    </div>
+                  </div>
+                  <div className="flex-1 flex flex-col justify-end h-full">
+                    <div className="flex justify-between text-[8px] font-bold text-gray-500 mb-1">
+                      <span>Operators</span>
+                      <span>{localOperatorsCount}</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-[#D97706] h-full rounded-full transition-all" style={{ width: `${(localHarvestersCount + localOperatorsCount) ? (localOperatorsCount / (localHarvestersCount + localOperatorsCount)) * 100 : 0}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
+                  <span>Network: Connected</span>
+                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/machines')}>Browse Directory</span>
+                </div>
+              </div>
+
+              {/* Card 3: Reputation & Trust */}
+              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">MY RATING</span>
+                    <div className="text-xl font-extrabold text-[#172263] font-sora mt-1">
+                      {userScore !== null ? `${parseFloat(userScore).toFixed(1)} Rating` : "No Ratings Yet"}
+                    </div>
+                    <div className="flex items-center gap-0.5 mt-1">
+                      {Array(5).fill(0).map((_, i) => (
+                        <Star
+                          key={i}
+                          size={11}
+                          fill={i < Math.round(parseFloat(userScore || "0")) ? "#D97706" : "none"}
+                          className={i < Math.round(parseFloat(userScore || "0")) ? "stroke-[#D97706]" : "stroke-gray-300"}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Radial Gauge SVG */}
+                  <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 64 64">
-                      {/* Track circle */}
                       <circle
                         cx="32"
                         cy="32"
                         r="26"
-                        stroke="#E2E8F0"
-                        strokeWidth="4"
+                        stroke="#F1F5F9"
+                        strokeWidth="4.5"
                         fill="transparent"
                       />
-                      {/* Progress circle */}
                       <circle
                         cx="32"
                         cy="32"
                         r="26"
-                        stroke="#172263"
-                        strokeWidth="4"
+                        stroke="url(#trustGradient)"
+                        strokeWidth="4.5"
                         fill="transparent"
                         strokeDasharray="163.36"
                         strokeDashoffset={163.36 - (163.36 * (userScore ? (parseFloat(userScore) / 5) * 100 : 0)) / 100}
                         strokeLinecap="round"
                       />
+                      <defs>
+                        <linearGradient id="trustGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#172263" />
+                          <stop offset="100%" stopColor="#D97706" />
+                        </linearGradient>
+                      </defs>
                     </svg>
                     <div className="absolute text-[10px] font-black text-[#172263]">
                       {userScore ? `${Math.round((parseFloat(userScore) / 5) * 100)}%` : "0%"}
@@ -532,77 +607,38 @@ export function Dashboard() {
                   </div>
                 </div>
 
-                <div className="text-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
+                <div className="text-left text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
                   {scoreCount > 0 
                     ? `Based on ${scoreCount} ${scoreCount === 1 ? 'score given' : 'scores given'}` 
-                    : "No scores given"}
+                    : "Feedback received from farmers on the platform"}
                 </div>
               </div>
 
-              {/* Card 3: Total Listings */}
-              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md">
+              {/* Card 4: Latest Agri Insights */}
+              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
-                  <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">TOTAL LISTINGS</span>
-                  <span className="text-3xl font-black text-[#172263] font-sora">
-                    {myHarvestersCount + myOperatorsCount}
-                  </span>
-                </div>
-
-                {/* My Listings Breakdown Bar Chart */}
-                <div className="flex justify-center items-end gap-6 h-12 px-2 mt-2">
-                  {(() => {
-                    const maxVal = Math.max(myHarvestersCount, myOperatorsCount, 1);
-                    const items = [
-                      { label: "Harvesters", value: myHarvestersCount },
-                      { label: "Operators", value: myOperatorsCount }
-                    ];
-                    
-                    return items.map((item, idx) => {
-                      const pctHeight = (item.value / maxVal) * 32;
-                      return (
-                        <div key={idx} className="flex flex-col items-center w-20 group">
-                          <div className="w-full bg-[#E2E8F0] rounded-sm h-9 flex items-end relative">
-                            <div 
-                              className="w-full bg-[#172263] rounded-sm transition-all duration-500 group-hover:bg-[#D97706]"
-                              style={{ height: `${Math.max(4, pctHeight)}px` }}
-                            />
-                            {/* Hover tooltip showing actual value */}
-                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-[#172263] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                              {item.value}
-                            </span>
-                          </div>
-                          <span className="text-[8px] text-[#57585A] font-semibold mt-1">{item.label}</span>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
-
-              {/* Card 4: Messages / Activity */}
-              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">MESSAGES/ACTIVITY</span>
-                    <span className="text-3xl font-black text-[#172263] font-sora">{activities.length || 0}</span>
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">LATEST AGRI INSIGHTS</span>
+                    <Sparkles size={16} className="text-[#D97706]" />
                   </div>
-                  <div className="flex items-center gap-1.5 text-[#57585A]">
-                    <button className="p-1 hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"><Search size={14} /></button>
-                    <button className="p-1 hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"><Filter size={14} /></button>
-                  </div>
-                </div>
-
-                {/* Minimal Activity list preview */}
-                <div className="bg-[#F8FAFC] border border-[#E2E8F0]/40 rounded-xl p-2 h-16 overflow-y-auto space-y-1.5 mt-2">
-                  {activities.slice(0, 2).map((act, i) => (
-                    <div key={i} className="flex items-center gap-2 text-[9px] text-[#1A1A1A] leading-tight truncate">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-                      <span className="truncate">{act.key ? t(act.key, { ...act.params, defaultValue: act.text }) : act.text}</span>
+                  
+                  <div className="leading-tight mt-2">
+                    <div className="text-[10px] font-black bg-amber-50 text-[#D97706] border border-amber-100/50 px-2 py-0.5 rounded-md inline-block uppercase tracking-wider mb-1.5">
+                      {latestBlog?.category || "Agri News"}
                     </div>
-                  ))}
-                  {activities.length === 0 && (
-                    <div className="text-[9px] text-[#57585A] text-center mt-2">No recent alerts</div>
-                  )}
+                    <div className="text-xs font-bold text-[#172263] line-clamp-2 h-8 font-sora leading-snug">
+                      {latestBlog?.title || "No blogs published yet"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[9px] text-[#57585A] font-bold border-t border-[#F1F5F9] pt-2">
+                  Published: {latestBlog?.date || "Recently"}
+                </div>
+
+                <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
+                  <span>Read time: 3 mins</span>
+                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/blogs')}>Read Article</span>
                 </div>
               </div>
 
@@ -989,143 +1025,59 @@ export function Dashboard() {
             /* RIGHT COLUMN: Sidebar Widgets */
             <div className="lg:col-span-4 space-y-6">
               
-              {/* Recent Requests widget */}
+
+              {/* Message Notifications Widget */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
-                  <h2 className="text-lg font-extrabold text-[#1A1A1A] font-sora">Recent Requests</h2>
-                  <button className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-700 to-[#172263] text-white text-[10px] font-black rounded-lg hover:shadow-xs transition-shadow cursor-pointer">
-                    <Sparkles size={10} /> Ask with AI
-                  </button>
-                </div>
-
-                {/* Search & Filter widgets inside Sidebar */}
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                      <Search size={12} />
+                  <h2 className="text-lg font-extrabold text-[#1A1A1A] font-sora">Message Notifications</h2>
+                  {unreadMessages.length > 0 && (
+                    <span className="bg-[#D97706] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                      {unreadMessages.length} New
                     </span>
-                    <input
-                      type="text"
-                      placeholder="Search requests..."
-                      value={requestSearchQuery}
-                      onChange={(e) => setRequestSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 border border-[#E2E8F0] bg-white rounded-xl text-xs text-[#1A1A1A] focus:outline-hidden focus:ring-1 focus:ring-[#172263]"
-                    />
-                  </div>
-                  <select
-                    value={requestFilterType}
-                    onChange={(e) => setRequestFilterType(e.target.value as any)}
-                    className="px-2 py-1.5 border border-[#E2E8F0] bg-white rounded-xl text-xs font-bold text-[#57585A] cursor-pointer"
-                  >
-                    <option value="all">Filters</option>
-                    <option value="harvester">Harvester</option>
-                    <option value="operator">Operator</option>
-                  </select>
-                </div>
-
-                {/* Collapsible Requests List */}
-                <div className="bg-white border border-[#E2E8F0] rounded-3xl p-4 shadow-xs space-y-3 max-h-[300px] overflow-y-auto">
-                  {(() => {
-                    const filteredRequests = recentRequests.filter(req => {
-                      const matchesSearch = req.machineType?.toLowerCase().includes(requestSearchQuery.toLowerCase()) ||
-                                            req.location?.toLowerCase().includes(requestSearchQuery.toLowerCase()) ||
-                                            req.type?.toLowerCase().includes(requestSearchQuery.toLowerCase());
-                      const matchesType = requestFilterType === 'all' ? true : req.type?.toLowerCase() === requestFilterType;
-                      return matchesSearch && matchesType;
-                    });
-
-                    if (filteredRequests.length > 0) {
-                      return filteredRequests.map((req) => (
-                        <div 
-                          key={req.id} 
-                          onClick={() => setOpenLogRequestId(openLogRequestId === req.id ? null : req.id)}
-                          className="flex flex-col bg-[#F8FAFC] p-3 rounded-2xl border border-[#E2E8F0]/40 hover:border-[#172263]/30 hover:bg-[#EAEFF8] transition-all duration-200 cursor-pointer group"
-                        >
-                          <div className="flex gap-3 items-start">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center text-white shrink-0 relative overflow-hidden">
-                              <FileText size={16} className="text-white/90" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex justify-between items-start mb-1">
-                                <h4 className="text-xs font-bold text-[#1A1A1A] truncate pr-2 group-hover:text-[#172263] transition-colors leading-tight">
-                                  {req.type === 'harvester' ? 'Harvester' : 'Operator'} - {req.machineType}
-                                </h4>
-                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0 uppercase border border-blue-100">
-                                  {req.status || "Open"}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-[#57585A] flex items-center gap-1 font-medium truncate mt-1">
-                                <MapPin size={9} className="text-[#E82326]" /> {formatLocation(req.location, req.state)}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Collapsible Message Log drawer */}
-                          {openLogRequestId === req.id && (
-                            <div className="mt-3 border-t border-[#E2E8F0]/70 pt-2.5 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                              <div className="flex justify-between items-center text-[9px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-md px-2 py-1">
-                                <span>Message log</span>
-                                <span className="uppercase text-[8px] font-black">Status</span>
-                              </div>
-                              <div className="flex justify-between items-center text-[9px] font-bold text-gray-700 bg-gray-100 border border-gray-200/50 rounded-md px-2 py-1">
-                                <span>Message log</span>
-                                <span className="uppercase text-[8px] font-black text-gray-500">Status</span>
-                              </div>
-                              <p className="text-[9px] text-[#57585A] font-semibold leading-relaxed px-1">
-                                {req.description ? `"${req.description}"` : '"Requirement details published online."'}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      ));
-                    } else {
-                      return (
-                        <div className="py-8 text-center text-xs text-[#57585A] font-medium">
-                          {localStorage.getItem("tractorsewa_token") ? "No requests found matching filters." : "Please log in to view requests."}
-                        </div>
-                      );
-                    }
-                  })()}
-                </div>
-              </div>
-
-              {/* Recent Activity widget */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
-                  <h2 className="text-lg font-extrabold text-[#1A1A1A] font-sora">Recent Activity</h2>
-                  <Link to="/activity" className="text-xs font-bold text-[#172263] hover:underline">
-                    View All
-                  </Link>
+                  )}
                 </div>
 
                 <div className="bg-white border border-[#E2E8F0] rounded-3xl p-5 shadow-xs flex flex-col min-h-[220px] justify-between">
-                  {activities.length > 0 ? (
+                  {unreadMessages.length > 0 ? (
                     <div className="space-y-4 overflow-y-auto max-h-[160px] pr-1">
-                      {activities.map((act, i) => (
-                        <div key={i} className="flex gap-3 items-start border-b border-[#F8FAFC] pb-2 last:border-0 last:pb-0">
-                          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0 border border-blue-100/30">
-                            {act.icon}
+                      {unreadMessages.map((msg, i) => (
+                        <div 
+                          key={i} 
+                          onClick={() => navigate(`/messages?userId=${msg.sender_id}`)}
+                          className="flex gap-3 items-center border-b border-[#F8FAFC] pb-2 last:border-0 last:pb-0 cursor-pointer hover:bg-slate-50 p-1.5 rounded-xl transition-all"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-100">
+                            {msg.senderProfilePic ? (
+                              <img 
+                                src={msg.senderProfilePic.startsWith('http') || msg.senderProfilePic.startsWith('/') ? msg.senderProfilePic : `/${msg.senderProfilePic}`} 
+                                alt={msg.senderName} 
+                                className="w-full h-full object-cover" 
+                              />
+                            ) : (
+                              <span className="text-white font-extrabold text-xs">{msg.senderName?.charAt(0)}</span>
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-[#1A1A1A] leading-tight truncate">
-                              {act.key ? t(act.key, { ...act.params, defaultValue: act.text }) : act.text}
+                            <p className="text-xs font-bold text-[#1A1A1A] truncate">
+                              {msg.senderName}
                             </p>
-                            <p className="text-[9px] text-[#57585A] font-semibold mt-1.5 flex items-center gap-1">
-                              <Clock size={8} /> {act.timeKey ? t(act.timeKey, { ns: act.timeNs, defaultValue: act.time }) : act.time}
-                            </p>
+                          </div>
+                          <div className="text-[10px] text-gray-400 font-semibold shrink-0">
+                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="flex-1 flex items-center justify-center py-10">
-                      <p className="text-xs text-[#57585A] text-center font-medium">No recent activity logs available</p>
+                    <div className="flex-1 flex flex-col items-center justify-center py-10">
+                      <Inbox className="w-8 h-8 text-gray-300 mb-2" />
+                      <p className="text-xs text-[#57585A] text-center font-medium">No unread messages</p>
                     </div>
                   )}
 
                   <div className="mt-4 border-t border-[#E2E8F0]/60 pt-3">
-                    <Link to="/activity" className="w-full py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-xs font-bold text-[#172263] rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-xs">
-                      View Activity Logs <ArrowRight size={12} className="ml-1.5" />
+                    <Link to="/messages" className="w-full py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-xs font-bold text-[#172263] rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-xs">
+                      Open Inbox <ArrowRight size={12} className="ml-1.5" />
                     </Link>
                   </div>
                 </div>
