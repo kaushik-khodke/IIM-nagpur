@@ -1944,6 +1944,10 @@ Return your response ONLY as a JSON object matching this exact structure:
 
 Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
 
+  let geminiFailed = false;
+  let geminiErrorReason = '';
+  let generatedText = '';
+
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -1970,10 +1974,9 @@ Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
     );
 
     if (!response.ok) {
+      geminiFailed = true;
       const errorText = await response.text();
       logger.error('Gemini API Error: ' + errorText);
-      
-      let reason = 'Failed to generate content from Gemini API';
       try {
         const errorJson = JSON.parse(errorText);
         const code = errorJson.error?.code;
@@ -1981,41 +1984,100 @@ Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
         const msg = errorJson.error?.message || '';
         
         if (code === 503 || status === 'UNAVAILABLE' || msg.includes('overloaded') || msg.includes('demand')) {
-          reason = 'Cannot generate blog: MODEL IS BUSY (503 Service Unavailable)';
+          geminiErrorReason = 'MODEL IS BUSY (503 Service Unavailable)';
         } else if (code === 429 || status === 'RESOURCE_EXHAUSTED' || msg.includes('limit') || msg.includes('exhausted')) {
-          reason = 'Cannot generate blog: API LIMIT REACHED (429 Rate Limit)';
+          geminiErrorReason = 'API LIMIT REACHED (429 Rate Limit)';
         } else if (code === 400 && (msg.includes('API key') || msg.includes('not valid') || msg.includes('key'))) {
-          reason = 'Cannot generate blog: INVALID API KEY';
+          geminiErrorReason = 'INVALID API KEY';
         } else if (msg) {
-          reason = `Cannot generate blog: ${msg.toUpperCase()}`;
+          geminiErrorReason = msg.toUpperCase();
+        } else {
+          geminiErrorReason = `HTTP ERROR ${response.status}`;
         }
       } catch (e) {
-        reason = `Cannot generate blog: API ERROR (${response.status})`;
+        geminiErrorReason = `HTTP ERROR ${response.status}`;
       }
-      
-      return res.status(response.status || 502).json({ error: reason });
+    } else {
+      const data = await response.json();
+      generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!generatedText) {
+        geminiFailed = true;
+        geminiErrorReason = 'INVALID RESPONSE STRUCTURE';
+      }
     }
-
-    const data = await response.json();
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!generatedText) {
-      return res.status(502).json({ error: 'Invalid response structure from Gemini API' });
-    }
-
-    let parsedResult;
-    try {
-      parsedResult = JSON.parse(generatedText.trim());
-    } catch (e) {
-      logger.error('Failed to parse Gemini output as JSON. Output was: ' + generatedText);
-      return res.status(502).json({ error: 'AI output could not be parsed as valid JSON' });
-    }
-
-    res.json(parsedResult);
   } catch (error) {
-    logger.error('Error generating blog post: ' + error.stack);
-    res.status(500).json({ error: 'Internal Server Error during blog generation' });
+    logger.error('Gemini call failed with exception: ' + error.stack);
+    geminiFailed = true;
+    geminiErrorReason = error.message;
   }
+
+  // Fallback to OpenAI if Gemini failed and OpenAI API key is available
+  if (geminiFailed) {
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    if (openaiApiKey) {
+      logger.info(`Gemini failed (${geminiErrorReason}). Falling back to OpenAI (gpt-4o-mini)...`);
+      try {
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert agriculture content writer and professional blog author for the Tractor Sewa platform. Respond ONLY with a raw JSON object matching the requested structure.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            response_format: { type: 'json_object' }
+          })
+        });
+
+        if (openaiResponse.ok) {
+          const openaiData = await openaiResponse.json();
+          generatedText = openaiData.choices?.[0]?.message?.content;
+          if (generatedText) {
+            geminiFailed = false;
+            logger.info('Successfully generated blog content using OpenAI fallback!');
+          } else {
+            logger.error('OpenAI response did not contain choices/content');
+            return res.status(502).json({ error: 'Cannot generate blog: OpenAI fallback response format was invalid.' });
+          }
+        } else {
+          const openaiErrorText = await openaiResponse.text();
+          logger.error('OpenAI API Error: ' + openaiErrorText);
+          return res.status(502).json({ 
+            error: `Cannot generate blog: Gemini was busy (${geminiErrorReason}) and OpenAI fallback failed (${openaiResponse.status}).` 
+          });
+        }
+      } catch (openaiErr) {
+        logger.error('OpenAI fallback failed with exception: ' + openaiErr.stack);
+        return res.status(502).json({ 
+          error: `Cannot generate blog: Gemini was busy (${geminiErrorReason}) and OpenAI fallback connection failed.` 
+        });
+      }
+    } else {
+      // No OpenAI key configured, return the Gemini error
+      return res.status(502).json({ error: `Cannot generate blog: ${geminiErrorReason}` });
+    }
+  }
+
+  // Parse and return result
+  let parsedResult;
+  try {
+    parsedResult = JSON.parse(generatedText.trim());
+  } catch (e) {
+    logger.error('Failed to parse AI output as JSON. Output was: ' + generatedText);
+    return res.status(502).json({ error: 'AI output could not be parsed as valid JSON' });
+  }
+
+  res.json(parsedResult);
 });
 
 app.post('/api/admin/blogs', authenticateToken, isAdmin, async (req, res) => {
