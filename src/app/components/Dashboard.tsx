@@ -69,6 +69,12 @@ export function Dashboard() {
   const [myOperatorsCount, setMyOperatorsCount] = useState<number>(0);
   const [myOperatorProfile, setMyOperatorProfile] = useState<any>(null);
   const [conversations, setConversations] = useState<any[]>([]);
+  
+  // Custom states for simplified profile, local community, message notifications, and blogs card
+  const [localHarvestersCount, setLocalHarvestersCount] = useState<number>(0);
+  const [localOperatorsCount, setLocalOperatorsCount] = useState<number>(0);
+  const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
+  const [latestBlog, setLatestBlog] = useState<any>(null);
 
   const [activeMachinesTab, setActiveMachinesTab] = useState<'harvesters' | 'requests'>('harvesters');
   const [myRequestsCount, setMyRequestsCount] = useState(0);
@@ -262,6 +268,44 @@ export function Dashboard() {
         // Sort desc by timestamp
         newActivities.sort((a, b) => b.timestamp - a.timestamp);
         setActivities(newActivities.slice(0, 5));
+
+        // Fetch local listings counts based on user state
+        const uState = userProfile?.state || 'Maharashtra';
+        const localHarvsRes = await fetch(`/api/harvesters?state=${encodeURIComponent(uState)}`);
+        if (localHarvsRes.ok) {
+          const lhData = await localHarvsRes.json();
+          setLocalHarvestersCount(lhData.length);
+        }
+        const localOpsRes = await fetch(`/api/operators?state=${encodeURIComponent(uState)}`);
+        if (localOpsRes.ok) {
+          const loData = await localOpsRes.json();
+          setLocalOperatorsCount(loData.length);
+        }
+
+        // Fetch unread messages
+        if (token) {
+          const unreadRes = await fetch('/api/messages/unread', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (unreadRes.ok) {
+            const unreadData = await unreadRes.json();
+            // Filter unique senders, keeping the latest message per sender
+            const uniqueSenders: Record<string, any> = {};
+            unreadData.forEach((m: any) => {
+              uniqueSenders[m.sender_id] = m;
+            });
+            setUnreadMessages(Object.values(uniqueSenders));
+          }
+        }
+
+        // Fetch latest blog post
+        const blogsRes = await fetch('/api/blogs?limit=1');
+        if (blogsRes.ok) {
+          const blogsData = await blogsRes.json();
+          if (blogsData.length > 0) {
+            setLatestBlog(blogsData[0]);
+          }
+        }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -428,99 +472,93 @@ export function Dashboard() {
             {/* Stats Row (4 Columns Grid) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
               
-              {/* Card 1: My Fleet & Profile */}
+              {/* Card 1: My Listings & Profile */}
               <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-2">MY FLEET & PROFILE</span>
-                    <Tractor size={16} className="text-[#172263]" />
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-2">MY LISTINGS & PROFILE</span>
+                    <User size={16} className="text-[#172263]" />
                   </div>
                   
-                  <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl font-black text-[#172263] font-sora">
-                      {myHarvestersCount}
-                    </span>
-                    <span className="text-xs text-[#57585A] font-bold">Harvester{myHarvestersCount === 1 ? '' : 's'} listed</span>
+                  <div className="space-y-1 mt-1">
+                    <div className="text-base font-extrabold text-[#172263] font-sora truncate">{currentUser?.name || userName}</div>
+                    <div className="text-[10px] text-[#57585A] font-semibold truncate">{currentUser?.email}</div>
+                    <div className="text-[9px] bg-slate-100 text-[#172263] px-2 py-0.5 rounded-md inline-block uppercase font-bold tracking-wider">
+                      Role: {currentUser?.role || "user"}
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2 mt-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] text-gray-500 font-bold">Fleet Status: Active</span>
+                <div className="grid grid-cols-2 gap-2 mt-1 border-t border-[#F1F5F9] pt-2">
+                  <div>
+                    <span className="text-[8px] uppercase tracking-wider font-bold text-gray-400 block">Harvesters</span>
+                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora">{myHarvestersCount} active</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    {myOperatorsCount > 0 ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
-                        ✓ Operator Profile Listed
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-100 uppercase">
-                        ⚠ No Operator Listing
-                      </span>
-                    )}
+                  <div>
+                    <span className="text-[8px] uppercase tracking-wider font-bold text-gray-400 block">Operator Profile</span>
+                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora">{myOperatorsCount > 0 ? "Published" : "Not Created"}</span>
                   </div>
                 </div>
                 
                 <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
-                  <span>Listings Active</span>
+                  <span>Status: Active</span>
                   <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/operators')}>Manage</span>
                 </div>
               </div>
 
-              {/* Card 2: Local Demand Match */}
+              {/* Card 2: Local Machine Network */}
               <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">LOCAL WORK DEMAND</span>
-                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-100 text-[9px] font-black text-[#D97706] uppercase">
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">MY LOCATION NETWORK</span>
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-100 text-[9px] font-black text-blue-700 uppercase">
                       <MapPin size={9} fill="currentColor" /> {userState}
                     </div>
                   </div>
                   
                   <div className="flex items-baseline gap-1.5 mt-2">
                     <span className="text-3xl font-black text-[#172263] font-sora">
-                      {totalLocalDemand}
+                      {localHarvestersCount + localOperatorsCount}
                     </span>
-                    <span className="text-xs text-[#57585A] font-bold">Open lead{totalLocalDemand === 1 ? '' : 's'}</span>
+                    <span className="text-xs text-[#57585A] font-bold">Total listings</span>
                   </div>
                 </div>
 
-                {/* SVG Visual Graph representing local demand categories */}
+                {/* SVG Visual Graph representing local network categories */}
                 <div className="h-10 mt-1 flex items-end justify-between gap-3">
                   <div className="flex-1 flex flex-col justify-end h-full">
                     <div className="flex justify-between text-[8px] font-bold text-gray-500 mb-1">
-                      <span>Harvesters Wanted</span>
-                      <span>{localHarvestersDemand}</span>
+                      <span>Harvesters</span>
+                      <span>{localHarvestersCount}</span>
                     </div>
                     <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#172263] h-full rounded-full transition-all" style={{ width: `${totalLocalDemand ? (localHarvestersDemand / totalLocalDemand) * 100 : 0}%` }} />
+                      <div className="bg-[#172263] h-full rounded-full transition-all" style={{ width: `${(localHarvestersCount + localOperatorsCount) ? (localHarvestersCount / (localHarvestersCount + localOperatorsCount)) * 100 : 0}%` }} />
                     </div>
                   </div>
                   <div className="flex-1 flex flex-col justify-end h-full">
                     <div className="flex justify-between text-[8px] font-bold text-gray-500 mb-1">
-                      <span>Operators Wanted</span>
-                      <span>{localOperatorsDemand}</span>
+                      <span>Operators</span>
+                      <span>{localOperatorsCount}</span>
                     </div>
                     <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                      <div className="bg-[#D97706] h-full rounded-full transition-all" style={{ width: `${totalLocalDemand ? (localOperatorsDemand / totalLocalDemand) * 100 : 0}%` }} />
+                      <div className="bg-[#D97706] h-full rounded-full transition-all" style={{ width: `${(localHarvestersCount + localOperatorsCount) ? (localOperatorsCount / (localHarvestersCount + localOperatorsCount)) * 100 : 0}%` }} />
                     </div>
                   </div>
                 </div>
 
                 <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
-                  <span>Match Rate: {totalLocalDemand > 0 ? 'High' : 'No jobs'}</span>
-                  <span className="text-[#172263] hover:underline cursor-pointer font-bold">Check Leads</span>
+                  <span>Network: Connected</span>
+                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/machines')}>Browse Directory</span>
                 </div>
               </div>
 
-              {/* Card 3: Reputation & Customer Trust */}
+              {/* Card 3: Reputation & Trust */}
               <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">CUSTOMER TRUST</span>
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">MY RATING</span>
                     <div className="text-xl font-extrabold text-[#172263] font-sora mt-1">
-                      {userScore !== null ? `${parseFloat(userScore).toFixed(1)} Rating` : "New Operator"}
+                      {userScore !== null ? `${parseFloat(userScore).toFixed(1)} Rating` : "No Ratings Yet"}
                     </div>
                     <div className="flex items-center gap-0.5 mt-1">
                       {Array(5).fill(0).map((_, i) => (
@@ -569,52 +607,38 @@ export function Dashboard() {
                   </div>
                 </div>
 
-                <div className="text-[10px] text-gray-500 font-bold mt-1">
-                  {parseFloat(userScore || "0") >= 4.5 
-                    ? "✓ Highly Recommended Operator" 
-                    : scoreCount > 0 
-                      ? "✓ Active Farmer feedback" 
-                      : "No rating reviews recorded"}
-                </div>
-
                 <div className="text-left text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
                   {scoreCount > 0 
                     ? `Based on ${scoreCount} ${scoreCount === 1 ? 'score given' : 'scores given'}` 
-                    : "Trust grows with each completed job"}
+                    : "Feedback received from farmers on the platform"}
                 </div>
               </div>
 
-              {/* Card 4: Negotiations & Chat */}
+              {/* Card 4: Latest Agri Insights */}
               <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">CLIENT CONVERSATIONS</span>
-                    <MessageSquare size={16} className="text-[#D97706]" />
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">LATEST AGRI INSIGHTS</span>
+                    <Sparkles size={16} className="text-[#D97706]" />
                   </div>
                   
-                  <div className="flex items-baseline gap-1.5 mt-2">
-                    <span className="text-3xl font-black text-[#172263] font-sora">
-                      {conversations.length}
-                    </span>
-                    <span className="text-xs text-[#57585A] font-bold">Active negotiation{conversations.length === 1 ? '' : 's'}</span>
+                  <div className="leading-tight mt-2">
+                    <div className="text-[10px] font-black bg-amber-50 text-[#D97706] border border-amber-100/50 px-2 py-0.5 rounded-md inline-block uppercase tracking-wider mb-1.5">
+                      {latestBlog?.category || "Agri News"}
+                    </div>
+                    <div className="text-xs font-bold text-[#172263] line-clamp-2 h-8 font-sora leading-snug">
+                      {latestBlog?.title || "No blogs published yet"}
+                    </div>
                   </div>
                 </div>
 
-                {/* Latest message preview */}
-                <div className="bg-[#F8FAFC] border border-[#E2E8F0]/40 rounded-xl p-2 h-14 overflow-hidden mt-1 flex flex-col justify-center">
-                  {conversations.length > 0 ? (
-                    <div className="leading-tight">
-                      <div className="text-[9px] font-black text-[#1A1A1A] truncate">{conversations[0].name}</div>
-                      <div className="text-[9px] text-gray-400 truncate mt-0.5 italic">"{conversations[0].lastMessage || "No message content"}"</div>
-                    </div>
-                  ) : (
-                    <div className="text-[9px] text-[#57585A] text-center italic">No active conversations</div>
-                  )}
+                <div className="text-[9px] text-[#57585A] font-bold border-t border-[#F1F5F9] pt-2">
+                  Published: {latestBlog?.date || "Recently"}
                 </div>
 
                 <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
-                  <span>Inquiries active</span>
-                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/messages')}>Open Inbox</span>
+                  <span>Read time: 3 mins</span>
+                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/blogs')}>Read Article</span>
                 </div>
               </div>
 
@@ -1002,43 +1026,58 @@ export function Dashboard() {
             <div className="lg:col-span-4 space-y-6">
               
 
-              {/* Recent Activity widget */}
+              {/* Message Notifications Widget */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
-                  <h2 className="text-lg font-extrabold text-[#1A1A1A] font-sora">Recent Activity</h2>
-                  <Link to="/activity" className="text-xs font-bold text-[#172263] hover:underline">
-                    View All
-                  </Link>
+                  <h2 className="text-lg font-extrabold text-[#1A1A1A] font-sora">Message Notifications</h2>
+                  {unreadMessages.length > 0 && (
+                    <span className="bg-[#D97706] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                      {unreadMessages.length} New
+                    </span>
+                  )}
                 </div>
 
                 <div className="bg-white border border-[#E2E8F0] rounded-3xl p-5 shadow-xs flex flex-col min-h-[220px] justify-between">
-                  {activities.length > 0 ? (
+                  {unreadMessages.length > 0 ? (
                     <div className="space-y-4 overflow-y-auto max-h-[160px] pr-1">
-                      {activities.map((act, i) => (
-                        <div key={i} className="flex gap-3 items-start border-b border-[#F8FAFC] pb-2 last:border-0 last:pb-0">
-                          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0 border border-blue-100/30">
-                            {act.icon}
+                      {unreadMessages.map((msg, i) => (
+                        <div 
+                          key={i} 
+                          onClick={() => navigate(`/messages?userId=${msg.sender_id}`)}
+                          className="flex gap-3 items-center border-b border-[#F8FAFC] pb-2 last:border-0 last:pb-0 cursor-pointer hover:bg-slate-50 p-1.5 rounded-xl transition-all"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-100">
+                            {msg.senderProfilePic ? (
+                              <img 
+                                src={msg.senderProfilePic.startsWith('http') || msg.senderProfilePic.startsWith('/') ? msg.senderProfilePic : `/${msg.senderProfilePic}`} 
+                                alt={msg.senderName} 
+                                className="w-full h-full object-cover" 
+                              />
+                            ) : (
+                              <span className="text-white font-extrabold text-xs">{msg.senderName?.charAt(0)}</span>
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-[#1A1A1A] leading-tight truncate">
-                              {act.key ? t(act.key, { ...act.params, defaultValue: act.text }) : act.text}
+                            <p className="text-xs font-bold text-[#1A1A1A] truncate">
+                              {msg.senderName}
                             </p>
-                            <p className="text-[9px] text-[#57585A] font-semibold mt-1.5 flex items-center gap-1">
-                              <Clock size={8} /> {act.timeKey ? t(act.timeKey, { ns: act.timeNs, defaultValue: act.time }) : act.time}
-                            </p>
+                          </div>
+                          <div className="text-[10px] text-gray-400 font-semibold shrink-0">
+                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="flex-1 flex items-center justify-center py-10">
-                      <p className="text-xs text-[#57585A] text-center font-medium">No recent activity logs available</p>
+                    <div className="flex-1 flex flex-col items-center justify-center py-10">
+                      <Inbox className="w-8 h-8 text-gray-300 mb-2" />
+                      <p className="text-xs text-[#57585A] text-center font-medium">No unread messages</p>
                     </div>
                   )}
 
                   <div className="mt-4 border-t border-[#E2E8F0]/60 pt-3">
-                    <Link to="/activity" className="w-full py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-xs font-bold text-[#172263] rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-xs">
-                      View Activity Logs <ArrowRight size={12} className="ml-1.5" />
+                    <Link to="/messages" className="w-full py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-xs font-bold text-[#172263] rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-xs">
+                      Open Inbox <ArrowRight size={12} className="ml-1.5" />
                     </Link>
                   </div>
                 </div>

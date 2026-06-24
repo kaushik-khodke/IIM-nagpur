@@ -3386,14 +3386,31 @@ export function RequestDetail() {
 // ===========================
 // BLOGS
 // ===========================
-const CATEGORIES = ["All", "Harvesting Tips", "Machine Maintenance", "Success Stories", "Agri News", "Weather & Season"];
-
 export function Blogs() {
   const { t } = useTranslation(["pages", "static"]);
+  const [categories, setCategories] = useState<string[]>(["All", "Harvesting Tips", "Machine Maintenance", "Success Stories", "Agri News", "Weather & Season"]);
   const [blogs, setBlogs] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
+
+  // Fetch dynamic categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch("/api/blogs/categories");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setCategories(["All", ...data]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch blog categories", err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // States for Reels/Shorts Infinite Scroll Feed (Backend Paginated)
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1000000));
@@ -3821,7 +3838,7 @@ export function Blogs() {
                   {t("blogs.categoriesLabel", { defaultValue: "Categories" })}
                 </label>
                 <div className="flex flex-col gap-1">
-                  {CATEGORIES.map((c) => (
+                  {categories.map((c) => (
                     <button
                       key={c}
                       onClick={() => setCategory(c)}
@@ -3872,7 +3889,7 @@ export function Blogs() {
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <button
                 key={c}
                 onClick={() => setCategory(c)}
@@ -5634,6 +5651,9 @@ export function AdminPortal() {
   const [selectedChartPoint, setSelectedChartPoint] = useState<any | null>(null);
 
   // Admin blogs editing states
+  const [categories, setCategories] = useState<string[]>(["Harvesting Tips", "Machine Maintenance", "Success Stories", "Agri News", "Weather & Season"]);
+  const [customCategory, setCustomCategory] = useState("");
+  const [aiCustomCategory, setAiCustomCategory] = useState("");
   const [editingBlog, setEditingBlog] = useState<any | null>(null);
   const [showBlogForm, setShowBlogForm] = useState(false);
   const [blogTitle, setBlogTitle] = useState("");
@@ -5697,7 +5717,84 @@ export function AdminPortal() {
     checkAdmin();
   }, [token]);
 
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/blogs/categories");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
+
+  const handleCategoryChange = async (value: string, type: 'standard' | 'ai') => {
+    if (value === "Add New Category...") {
+      const newCat = window.prompt("Enter new category name:");
+      if (newCat && newCat.trim() !== "") {
+        const cleanName = newCat.trim();
+        try {
+          const res = await fetch("/api/admin/blogs/categories", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ name: cleanName })
+          });
+          if (res.ok) {
+            toast.success(`Category "${cleanName}" added successfully.`);
+            await fetchCategories();
+            if (type === 'standard') {
+              setBlogCategory(cleanName);
+            } else {
+              setAiPromptCategory(cleanName);
+            }
+          } else {
+            const err = await res.json();
+            toast.error(err.error || "Failed to add category.");
+            if (type === 'standard') {
+              setBlogCategory(categories[0] || "Machine Maintenance");
+            } else {
+              setAiPromptCategory(categories[0] || "Machine Maintenance");
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          toast.error("Error adding category.");
+          if (type === 'standard') {
+            setBlogCategory(categories[0] || "Machine Maintenance");
+          } else {
+            setAiPromptCategory(categories[0] || "Machine Maintenance");
+          }
+        }
+      } else {
+        if (type === 'standard') {
+          setBlogCategory(categories[0] || "Machine Maintenance");
+        } else {
+          setAiPromptCategory(categories[0] || "Machine Maintenance");
+        }
+      }
+    } else {
+      if (type === 'standard') {
+        setBlogCategory(value);
+        if (value !== "Other") {
+          setCustomCategory("");
+        }
+      } else {
+        setAiPromptCategory(value);
+        if (value !== "Other") {
+          setAiCustomCategory("");
+        }
+      }
+    }
+  };
+
   const refreshAllData = () => {
+    fetchCategories();
     fetchStats();
     fetchAllUsers();
     fetchHarvesters();
@@ -5914,7 +6011,14 @@ export function AdminPortal() {
   const startEditBlog = (blog: any) => {
     setEditingBlog(blog);
     setBlogTitle(blog.title || "");
-    setBlogCategory(blog.category || "Machine Maintenance");
+    const isStandardCat = categories.includes(blog.category);
+    if (isStandardCat) {
+      setBlogCategory(blog.category || "Machine Maintenance");
+      setCustomCategory("");
+    } else {
+      setBlogCategory("Other");
+      setCustomCategory(blog.category || "");
+    }
     setBlogShortDesc(blog.short_description || "");
     setBlogContent(blog.content || "");
     setBlogDate(blog.date || "");
@@ -5927,7 +6031,8 @@ export function AdminPortal() {
   const startCreateBlog = () => {
     setEditingBlog(null);
     setBlogTitle("");
-    setBlogCategory("Machine Maintenance");
+    setBlogCategory(categories[0] || "Machine Maintenance");
+    setCustomCategory("");
     setBlogShortDesc("");
     setBlogContent("");
     setBlogDate("");
@@ -5940,7 +6045,8 @@ export function AdminPortal() {
   const startAiGenerateBlog = () => {
     setAiPromptTitle("");
     setAiPromptKeywords("");
-    setAiPromptCategory("Machine Maintenance");
+    setAiPromptCategory(categories[0] || "Machine Maintenance");
+    setAiCustomCategory("");
     setShowAiBlogForm(true);
   };
 
@@ -5948,6 +6054,12 @@ export function AdminPortal() {
     e.preventDefault();
     if (!aiPromptTitle.trim()) {
       toast.error("Please enter a title or topic.");
+      return;
+    }
+
+    const categoryToSend = aiPromptCategory === "Other" ? aiCustomCategory.trim() : aiPromptCategory.trim();
+    if (!categoryToSend) {
+      toast.error("Please specify a category.");
       return;
     }
 
@@ -5962,7 +6074,7 @@ export function AdminPortal() {
         body: JSON.stringify({
           title: aiPromptTitle.trim(),
           keywords: aiPromptKeywords.trim(),
-          category: aiPromptCategory
+          category: categoryToSend
         })
       });
 
@@ -5972,7 +6084,17 @@ export function AdminPortal() {
         // Prefill the standard blog form with the AI generated content
         setEditingBlog(null);
         setBlogTitle(data.title || aiPromptTitle.trim());
-        setBlogCategory(data.category || aiPromptCategory);
+        
+        const returnedCategory = data.category || categoryToSend;
+        const isStandardCat = categories.includes(returnedCategory);
+        if (isStandardCat) {
+          setBlogCategory(returnedCategory);
+          setCustomCategory("");
+        } else {
+          setBlogCategory("Other");
+          setCustomCategory(returnedCategory);
+        }
+
         setBlogShortDesc(data.short_description || "");
         setBlogContent(data.content || "");
         setBlogDate("");
@@ -5998,7 +6120,9 @@ export function AdminPortal() {
 
   const handleBlogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!blogTitle.trim() || !blogCategory.trim() || !blogShortDesc.trim() || !blogContent.trim()) {
+    const categoryToSend = blogCategory === "Other" ? customCategory.trim() : blogCategory.trim();
+
+    if (!blogTitle.trim() || !categoryToSend || !blogShortDesc.trim() || !blogContent.trim()) {
       toast.error(t("admin.fillRequiredFields", { defaultValue: "Please fill in all required fields." }));
       return;
     }
@@ -6032,7 +6156,7 @@ export function AdminPortal() {
 
       const blogData = {
         title: blogTitle.trim(),
-        category: blogCategory.trim(),
+        category: categoryToSend,
         short_description: blogShortDesc.trim(),
         content: blogContent.trim(),
         date: blogDate.trim() || undefined,
@@ -6056,7 +6180,8 @@ export function AdminPortal() {
         setShowBlogForm(false);
         setEditingBlog(null);
         setBlogTitle("");
-        setBlogCategory("Machine Maintenance");
+        setBlogCategory(categories[0] || "Machine Maintenance");
+        setCustomCategory("");
         setBlogShortDesc("");
         setBlogContent("");
         setBlogDate("");
@@ -7168,16 +7293,27 @@ export function AdminPortal() {
                         <label className="text-sm text-[#57585A] block mb-1.5 font-bold">Category *</label>
                         <select
                           value={blogCategory}
-                          onChange={(e) => setBlogCategory(e.target.value)}
+                          onChange={(e) => handleCategoryChange(e.target.value, 'standard')}
                           className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                         >
-                          <option value="Harvesting Tips">Harvesting Tips</option>
-                          <option value="Machine Maintenance">Machine Maintenance</option>
-                          <option value="Success Stories">Success Stories</option>
-                          <option value="Agri News">Agri News</option>
-                          <option value="Weather & Season">Weather & Season</option>
-                          <option value="Other">Other</option>
+                          {categories.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                          <option value="Other">Other (One-time...)</option>
+                          <option value="Add New Category...">Add New Category...</option>
                         </select>
+                        {blogCategory === "Other" && (
+                          <div className="mt-2.5">
+                            <input
+                              type="text"
+                              required
+                              value={customCategory}
+                              onChange={(e) => setCustomCategory(e.target.value)}
+                              placeholder="Type custom one-time category..."
+                              className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -7994,17 +8130,29 @@ export function AdminPortal() {
                 <label className="text-xs text-[#57585A] block mb-1.5 font-bold uppercase tracking-wider">Category *</label>
                 <select
                   value={aiPromptCategory}
-                  onChange={(e) => setAiPromptCategory(e.target.value)}
+                  onChange={(e) => handleCategoryChange(e.target.value, 'ai')}
                   className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
                   disabled={generatingBlog}
                 >
-                  <option value="Harvesting Tips">Harvesting Tips</option>
-                  <option value="Machine Maintenance">Machine Maintenance</option>
-                  <option value="Success Stories">Success Stories</option>
-                  <option value="Agri News">Agri News</option>
-                  <option value="Weather & Season">Weather & Season</option>
-                  <option value="Other">Other</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  <option value="Other">Other (One-time...)</option>
+                  <option value="Add New Category...">Add New Category...</option>
                 </select>
+                {aiPromptCategory === "Other" && (
+                  <div className="mt-2.5">
+                    <input
+                      type="text"
+                      required
+                      value={aiCustomCategory}
+                      onChange={(e) => setAiCustomCategory(e.target.value)}
+                      placeholder="Type custom one-time category..."
+                      className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                      disabled={generatingBlog}
+                    />
+                  </div>
+                )}
               </div>
 
 

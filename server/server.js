@@ -972,7 +972,7 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
 app.get('/api/messages/unread', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT m.*, u.name as senderName 
+      SELECT m.*, u.name as senderName, u.image_path as senderProfilePic
       FROM messages m 
       JOIN users u ON m.sender_id = u.id 
       WHERE m.receiver_id = ? AND m.is_read = 0
@@ -1000,6 +1000,16 @@ app.put('/api/messages/unread/mark-read', authenticateToken, async (req, res) =>
 });
 
 // 8. Blog Routes
+app.get('/api/blogs/categories', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT name FROM blog_categories ORDER BY name ASC');
+    res.json(rows.map(row => row.name));
+  } catch (error) {
+    console.error('Error fetching blog categories:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.get('/api/blogs', async (req, res) => {
   const { category, search, limit, offset, seed } = req.query;
   const user = getOptionalUser(req);
@@ -1879,25 +1889,12 @@ Inputs:
 - Keywords to naturally include: "${keywords || 'none'}"
 - Category: "${category}"
 
-Additionally, you must select the most relevant, topic-matching, high-quality cover photo:
-- If one of the curated Unsplash images below matches your specific topic EXACTLY, you must choose its exact URL:
-  * Combine Harvester in field: https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=800&auto=format&fit=crop
-  * Modern Heavy Tractor Closeup: https://images.unsplash.com/photo-1594754714120-f1a8f9f7a78e?w=800&auto=format&fit=crop
-  * Tractor Ploughing fields: https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?w=800&auto=format&fit=crop
-  * General Green Drone View Farm: https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop
-  * Indian Farmer in Golden Wheat: https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop
-  * Green Crop Sprouts detail: https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=800&auto=format&fit=crop
-  * Sowing seeds / hands with soil: https://images.unsplash.com/photo-1560493676-04071c5f467b?w=800&auto=format&fit=crop
-  * Indian Farmers Community: https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop
-  * Monsoon / Rainy field: https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=800&auto=format&fit=crop
-  * Workshop Tractor Repair Mechanics: https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop
-  * Rice Paddy water flooded field: https://images.unsplash.com/photo-1516253593875-bd7ba052fbc5?w=800&auto=format&fit=crop
-  * Cotton Harvesting closeup: https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?w=800&auto=format&fit=crop
-  * Smart Greenhouse/Hydroponics: https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop
-
-- If none of the handpicked Unsplash photos above matches your specific topic closely (e.g. if the blog is about a specific crop like tomatoes, onions, soil pH testing, specific repair tools, etc.), you MUST request a generated image by setting "image_url" to:
+Additionally, you must search the web to find a highly relevant, real, verified, and active cover photo URL for the specific topic of this blog.
+- Locate a direct, public image link (from official manufacturer portals, verified agricultural news sites, or trusted media) that corresponds exactly to the blog subject. For example, if writing about the launch of the "John Deere 9RX Tractor", you must find a real, verified, direct image URL of the John Deere 9RX.
+- If you find a verified direct image URL, set "image_url" to that exact URL.
+- If you cannot find a verified direct image URL, you MUST return a dynamic category-relevant query in the following format:
   "GENERATE:<comma_separated_keywords>"
-  For example: "GENERATE:tomato,farming" or "GENERATE:soil,ph" or "GENERATE:mechanic,tools". Make the keywords highly specific to the blog topic!
+  For example: "GENERATE:tomato,farming" or "GENERATE:monsoon,paddy". The system will automatically build a high-quality topic-specific cover image using your keywords.
 
 Return your response ONLY as a JSON object matching this exact structure:
 {
@@ -1905,7 +1902,7 @@ Return your response ONLY as a JSON object matching this exact structure:
   "category": "${category}",
   "short_description": "A short summary (1-2 sentences) of the blog post.",
   "content": "The full blog content in English in Markdown format.",
-  "image_url": "The chosen Unsplash image URL OR 'GENERATE:keyword1,keyword2'"
+  "image_url": "The verified web image URL OR 'GENERATE:keyword1,keyword2'"
 }
 
 Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
@@ -1932,9 +1929,11 @@ Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
               ],
             },
           ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-          },
+          tools: [
+            {
+              googleSearch: {}
+            }
+          ],
         }),
       }
     );
@@ -2037,7 +2036,17 @@ Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
   // Parse and return result
   let parsedResult;
   try {
-    parsedResult = JSON.parse(generatedText.trim());
+    let cleanText = generatedText.trim();
+    // Remove markdown code block markers if they are present
+    if (cleanText.startsWith('```json')) {
+      cleanText = cleanText.substring(7);
+    } else if (cleanText.startsWith('```')) {
+      cleanText = cleanText.substring(3);
+    }
+    if (cleanText.endsWith('```')) {
+      cleanText = cleanText.substring(0, cleanText.length - 3);
+    }
+    parsedResult = JSON.parse(cleanText.trim());
   } catch (e) {
     logger.error('Failed to parse AI output as JSON. Output was: ' + generatedText);
     return res.status(502).json({ error: 'AI output could not be parsed as valid JSON' });
@@ -2062,6 +2071,28 @@ Do not wrap the JSON in markdown code blocks. Return raw JSON text only.`;
   }
 
   res.json(parsedResult);
+});
+
+app.post('/api/admin/blogs/categories', authenticateToken, isAdmin, async (req, res) => {
+  const { name } = req.body;
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    return res.status(400).json({ error: 'Category name is required' });
+  }
+
+  const cleanName = name.trim();
+  try {
+    // Check if category already exists (case-insensitive checks since name is UNIQUE)
+    const [existing] = await db.query('SELECT id FROM blog_categories WHERE name = ?', [cleanName]);
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'Category already exists' });
+    }
+
+    await db.query('INSERT INTO blog_categories (name) VALUES (?)', [cleanName]);
+    res.status(201).json({ message: 'Category added successfully', name: cleanName });
+  } catch (error) {
+    console.error('Error adding category:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 app.post('/api/admin/blogs', authenticateToken, isAdmin, async (req, res) => {

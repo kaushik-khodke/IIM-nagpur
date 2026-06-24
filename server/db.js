@@ -267,6 +267,14 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create Blog Categories Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS blog_categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE
+      )
+    `);
+
     // Create Blogs Table
     await activePool.query(`
       CREATE TABLE IF NOT EXISTS blogs (
@@ -450,6 +458,26 @@ async function seedData(activePool) {
       );
     }
     console.log('Seeded default blogs.');
+  }
+
+  // Seed default categories if empty
+  try {
+    const [catCount] = await activePool.query('SELECT COUNT(*) as count FROM blog_categories');
+    if (catCount[0].count === 0) {
+      const defaultCategories = [
+        "Harvesting Tips",
+        "Machine Maintenance",
+        "Success Stories",
+        "Agri News",
+        "Weather & Season"
+      ];
+      for (const cat of defaultCategories) {
+        await activePool.query('INSERT IGNORE INTO blog_categories (name) VALUES (?)', [cat]);
+      }
+      console.log('Seeded default blog categories.');
+    }
+  } catch (err) {
+    console.error('Error seeding blog categories:', err.message);
   }
 }
 
