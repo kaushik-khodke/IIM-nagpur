@@ -8,6 +8,7 @@ const Landing = lazy(() => import("./components/Landing").then(m => ({ default: 
 const AuthPage = lazy(() => import("./components/Auth").then(m => ({ default: m.AuthPage })));
 const Dashboard = lazy(() => import("./components/Dashboard").then(m => ({ default: m.Dashboard })));
 const Settings = lazy(() => import("./components/Settings").then(m => ({ default: m.Settings })));
+const ActivityPage = lazy(() => import("./components/ActivityPage").then(m => ({ default: m.ActivityPage })));
 const EnquiryPage = lazy(() => import("./components/Enquiry").then(m => ({ default: m.EnquiryPage })));
 const AskQuestion = lazy(() => import("./components/AskQuestion").then(m => ({ default: m.AskQuestion })));
 
@@ -234,6 +235,14 @@ export default function App() {
             element={
               <ProtectedPage>
                 <Settings />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/activity"
+            element={
+              <ProtectedPage>
+                <ActivityPage />
               </ProtectedPage>
             }
           />

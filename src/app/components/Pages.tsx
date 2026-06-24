@@ -5476,21 +5476,9 @@ export function AdminPortal() {
   const [performerFilter, setPerformerFilter] = useState("highest_machine");
   const navigate = useNavigate();
 
-  // NL query states
-  const [nlQuery, setNlQuery] = useState("");
-  const [parsedFilter, setParsedFilter] = useState<any>(null);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
-
   // Users listing states
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState("");
-
-  // CSV bulk states
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [defaultPassword, setDefaultPassword] = useState("Welcome123");
-  const [csvReport, setCsvReport] = useState<any>(null);
-  const [uploadingCsv, setUploadingCsv] = useState(false);
 
   // Moderator listings
   const [harvesters, setHarvesters] = useState<any[]>([]);
@@ -5963,30 +5951,6 @@ export function AdminPortal() {
     }
   };
 
-  const handleNlSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nlQuery.trim()) return;
-
-    setSearching(true);
-    try {
-      const res = await fetch(`/api/admin/users/query?q=${encodeURIComponent(nlQuery)}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setParsedFilter(data.parsed);
-        setSearchResults(data.results);
-      } else {
-        toast.error(t("admin.failedParseSearch", { defaultValue: "Failed to parse natural language search" }));
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error(t("admin.errorSearchQuery", { defaultValue: "Error executing English search query" }));
-    } finally {
-      setSearching(false);
-    }
-  };
-
   const executeAction = async () => {
     setConfirmOpen(false);
     if (!confirmTargetId) return;
@@ -6004,7 +5968,6 @@ export function AdminPortal() {
         if (res.ok) {
           toast.success(t("admin.userBlocked", { defaultValue: "User blocked successfully!" }));
           refreshAllData();
-          if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
           toast.error(t("admin.failedBlock", { defaultValue: "Failed to block user" }));
         }
@@ -6020,7 +5983,6 @@ export function AdminPortal() {
         if (res.ok) {
           toast.success(t("admin.userUnblocked", { defaultValue: "User unblocked successfully!" }));
           refreshAllData();
-          if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
           toast.error(t("admin.failedUnblock", { defaultValue: "Failed to unblock user" }));
         }
@@ -6032,7 +5994,6 @@ export function AdminPortal() {
         if (res.ok) {
           toast.success(t("admin.userWiped", { defaultValue: "Cleared entire user posts/data and blocked user successfully." }));
           refreshAllData();
-          if (nlQuery) handleNlSearch({ preventDefault: () => { } } as any);
         } else {
           toast.error(t("admin.failedWipe", { defaultValue: "Failed to wipe user data" }));
         }
@@ -6084,43 +6045,6 @@ export function AdminPortal() {
     } catch (err) {
       console.error(err);
       toast.error(t("admin.errorGenericOperation", { defaultValue: "Error executing administrative operation" }));
-    }
-  };
-
-  const handleCsvUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!csvFile) {
-      toast.error(t("admin.selectValidCsv", { defaultValue: "Select a valid CSV file first." }));
-      return;
-    }
-
-    setUploadingCsv(true);
-    setCsvReport(null);
-
-    const formData = new FormData();
-    formData.append("file", csvFile);
-    formData.append("defaultPassword", defaultPassword);
-
-    try {
-      const res = await fetch("/api/admin/users/bulk", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` },
-        body: formData
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success(t("admin.csvSuccess", { defaultValue: "CSV user registration completed successfully." }));
-        setCsvReport(data);
-        setCsvFile(null);
-        refreshAllData();
-      } else {
-        toast.error(data.error || t("admin.csvErrorUpload", { defaultValue: "Error uploading user data file." }));
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error(t("admin.csvErrorGeneric", { defaultValue: "Error during CSV upload execution" }));
-    } finally {
-      setUploadingCsv(false);
     }
   };
 
@@ -6225,8 +6149,6 @@ export function AdminPortal() {
               {[
                 { id: "dashboard", label: t("admin.nav.dashboard", { defaultValue: "Dashboard" }), icon: <LayoutGrid size={18} /> },
                 { id: "directory", label: t("admin.nav.directory", { defaultValue: "User Directory" }), icon: <User size={18} /> },
-                { id: "nlSearch", label: t("admin.nav.nlSearch", { defaultValue: "NL Search" }), icon: <Search size={18} /> },
-                { id: "csvImport", label: t("admin.nav.csvImport", { defaultValue: "CSV Import" }), icon: <Upload size={18} /> },
                 { id: "harvesters", label: t("admin.nav.machines", { defaultValue: "Machines" }), icon: <Tractor size={18} /> },
                 { id: "operators", label: t("admin.nav.operators", { defaultValue: "Operators" }), icon: <UserCheck size={18} /> },
                 { id: "requests", label: t("admin.nav.requests", { defaultValue: "Requests" }), icon: <FileText size={18} /> },
@@ -6515,7 +6437,7 @@ export function AdminPortal() {
                               textAnchor="middle"
                               className="font-sans"
                             >
-                              {p.displayDate.split(" ")[0]}
+                              {p.displayDate}
                             </text>
                           </g>
                         ))}
@@ -6748,231 +6670,7 @@ export function AdminPortal() {
             </div>
           )}
 
-          {/* ================================== */}
-          {/* TAB: NL ENGLISH SEARCH             */}
-          {/* ================================== */}
-          {activeTab === "nlSearch" && (
-            <div className="space-y-6">
-              <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm space-y-4">
-                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">English Query User Search</h3>
-                <p className="text-[#57585A] text-sm">
-                  Type search parameters in natural English. The system automatically extracts name patterns and locations. E.g. <span className="italic">"Show users from Punjab named Rajesh"</span> or <span className="italic">"Maharashtra Pune operators"</span>
-                </p>
 
-                <form onSubmit={handleNlSearch} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={nlQuery}
-                    onChange={(e) => setNlQuery(e.target.value)}
-                    placeholder="e.g. Find users in Maharashtra named Vikram"
-                    required
-                    className="flex-1 px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-[#172263]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={searching}
-                    className="bg-[#172263] hover:bg-[#11194A] text-white font-bold px-6 py-3 rounded-xl transition flex items-center gap-2"
-                  >
-                    {searching ? "Searching..." : "Parse & Search"}
-                  </button>
-                </form>
-              </div>
-
-              {parsedFilter && (
-                <div className="bg-[#fcfbf9] border border-[#e8dfd2] p-4 rounded-2xl flex gap-6 text-sm text-[#57585A]">
-                  <div>
-                    <span className="text-[#57585A]/70 block text-xs uppercase tracking-wider font-bold">Detected Name</span>
-                    <span className="text-[#1A1A1A] font-extrabold mt-0.5 block font-sora">{parsedFilter.name || "None"}</span>
-                  </div>
-                  <div className="border-l border-[#e8dfd2] pl-6">
-                    <span className="text-[#57585A]/70 block text-xs uppercase tracking-wider font-bold">Detected State</span>
-                    <span className="text-[#1A1A1A] font-extrabold mt-0.5 block font-sora">{parsedFilter.state || "None"}</span>
-                  </div>
-                  <div className="border-l border-[#e8dfd2] pl-6">
-                    <span className="text-[#57585A]/70 block text-xs uppercase tracking-wider font-bold">Detected District</span>
-                    <span className="text-[#1A1A1A] font-extrabold mt-0.5 block font-sora">{parsedFilter.district || "None"}</span>
-                  </div>
-                </div>
-              )}
-
-              {nlQuery && (
-                <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
-                  <div className="px-6 py-4 border-b border-[#E2E8F0]">
-                    <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">Search Results ({searchResults.length})</h4>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-[#57585A]">
-                      <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
-                        <tr>
-                          <th className="px-6 py-3.5">Name</th>
-                          <th className="px-6 py-3.5">Email</th>
-                          <th className="px-6 py-3.5">Phone</th>
-                          <th className="px-6 py-3.5">State</th>
-                          <th className="px-6 py-3.5 text-center">Status</th>
-                          <th className="px-6 py-3.5 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
-                        {searchResults.length > 0 ? (
-                          searchResults.map((user) => (
-                            <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{user.name}</td>
-                              <td className="px-6 py-4">{user.email}</td>
-                              <td className="px-6 py-4">{user.phone || "-"}</td>
-                              <td className="px-6 py-4">{user.state || "-"}</td>
-                              <td className="px-6 py-4 text-center">
-                                {user.is_blocked ? (
-                                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 border border-red-200 text-red-600">
-                                    Blocked
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-50 border border-green-200 text-green-600">
-                                    Active
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
-                                <button
-                                  onClick={() =>
-                                    openConfirmModal(
-                                      user.is_blocked ? "unblock" : "block",
-                                      user.id,
-                                      user.name
-                                    )
-                                  }
-                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition border ${user.is_blocked
-                                      ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
-                                      : "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100"
-                                    }`}
-                                >
-                                  {user.is_blocked ? "Unblock" : "Block"}
-                                </button>
-                                <button
-                                  onClick={() => openConfirmModal("wipe", user.id, user.name)}
-                                  className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition"
-                                >
-                                  Wipe Data
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={6} className="px-6 py-12 text-center text-[#57585A]/70">
-                              No records found. Try simplifying your query tags.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ================================== */}
-          {/* TAB: CSV BULK IMPORT               */}
-          {/* ================================== */}
-          {activeTab === "csvImport" && (
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm space-y-6">
-                <div>
-                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Bulk Import Users</h3>
-                  <p className="text-[#57585A] text-sm mt-1">
-                    Upload a standard CSV file to instantly register users on the network and auto-provision operator profiles.
-                  </p>
-                </div>
-
-                <form onSubmit={handleCsvUpload} className="space-y-4">
-                  <div>
-                    <label className="text-xs text-[#57585A] font-bold block mb-1">CSV File Selection</label>
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-                      required
-                      className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-[#172263] hover:file:bg-blue-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-[#57585A] font-bold block mb-1">Assigned Default Password</label>
-                    <input
-                      type="text"
-                      value={defaultPassword}
-                      onChange={(e) => setDefaultPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      placeholder="Welcome123"
-                      className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-[#172263]"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={uploadingCsv}
-                    className="w-full bg-[#172263] hover:bg-[#11194A] text-white font-bold py-3 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {uploadingCsv ? "Processing CSV..." : "Process Bulk Upload"}
-                  </button>
-                </form>
-
-                <div className="pt-4 border-t border-[#E2E8F0] flex justify-between items-center text-xs">
-                  <span className="text-[#57585A]">Format Verification Checklist</span>
-                  <a
-                    href="/sample_users.csv"
-                    download="sample_users.csv"
-                    className="text-[#D97706] hover:underline inline-flex items-center gap-1 font-bold"
-                  >
-                    Download Sample CSV 📥
-                  </a>
-                </div>
-              </div>
-
-              <div className="bg-white border border-[#E2E8F0] p-6 rounded-3xl shadow-sm flex flex-col justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora mb-4">Bulk Import Operations Report</h3>
-
-                  {csvReport ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-green-50 border border-green-200 p-4 rounded-2xl text-center">
-                          <span className="text-[#57585A] text-xs block font-semibold">Success Count</span>
-                          <span className="text-2xl font-black text-green-600 mt-1 block font-sora">{csvReport.successCount}</span>
-                        </div>
-                        <div className="bg-red-50 border border-red-200 p-4 rounded-2xl text-center">
-                          <span className="text-[#57585A] text-xs block font-semibold">Failed Count</span>
-                          <span className="text-2xl font-black text-red-600 mt-1 block font-sora">{csvReport.failedCount}</span>
-                        </div>
-                      </div>
-
-                      {csvReport.errors && csvReport.errors.length > 0 && (
-                        <div>
-                          <span className="text-xs text-red-600 font-bold block mb-2">Row-by-Row Upload Failures:</span>
-                          <div className="bg-red-50/30 border border-red-100 p-3 rounded-2xl max-h-48 overflow-y-auto text-xs font-mono space-y-1.5 text-red-800">
-                            {csvReport.errors.map((err: string, i: number) => (
-                              <div key={i}>⚠️ {err}</div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-[#57585A]/70 text-sm text-center py-12 border-2 border-dashed border-[#E2E8F0] rounded-2xl">
-                      Upload a CSV file and run parser to generate imports report here.
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-[#fcfbf9] p-4 rounded-2xl text-xs text-[#57585A] border border-[#e8dfd2] mt-4">
-                  <strong>CSV Template Structure:</strong><br />
-                  Columns must be named exactly: <code className="text-[#D97706] font-mono">name,email,phone,state</code>.<br />
-                  All imported users can later list themselves as operators or add harvesters from the portal.
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ================================== */}
           {/* TAB: MACHINES MODERATION           */}
