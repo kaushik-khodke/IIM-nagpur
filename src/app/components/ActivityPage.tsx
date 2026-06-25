@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Navbar } from "./shared";
 import { useTranslation } from "react-i18next";

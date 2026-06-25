@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster, toast } from "sonner";
 import { useEffect, lazy, Suspense } from "react";
 import { ProtectedRoute } from "./components/shared";

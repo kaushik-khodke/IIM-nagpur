@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Link, useNavigate, useLocation, Navigate } from "react-router";
+import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -709,7 +709,9 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
       })
         .then(res => {
           if (!res.ok) {
-            logout();
+            if (res.status === 401 || res.status === 403 || res.status === 404) {
+              logout();
+            }
             return null;
           }
           return res.json();
@@ -1059,44 +1061,49 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 // ---- Protected Route ----
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem("tractorsewa_token");
-  if (token) {
-    localStorage.removeItem("tractorsewa_preview_mode");
-  }
-  const isPreview = !token && localStorage.getItem("tractorsewa_preview_mode") === "true";
   const location = useLocation();
 
-  if (!token) {
-    if (isPreview) {
-      if (location.pathname === "/dashboard") {
-        return <>{children}</>;
-      }
-      return (
-        <Navigate
-          to={`/dashboard?auth_required=true&redirect_path=${encodeURIComponent(
-            location.pathname + location.search
-          )}`}
-          replace
-        />
-      );
-    }
+  // If user has a valid token, clear preview mode and allow access
+  if (token) {
+    localStorage.removeItem("tractorsewa_preview_mode");
+    return <>{children}</>;
+  }
 
+  // User is not authenticated
+  const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+
+  if (isPreview) {
+    // Allow preview mode only on dashboard
+    if (location.pathname === "/dashboard") {
+      return <>{children}</>;
+    }
+    // Redirect to dashboard with auth required flag for other protected routes
     return (
-      <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
-        <div className="text-center">
-          <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }} className="text-2xl text-[#1A1A1A] mb-4">
-            Please login to continue
-          </h2>
-          <Link
-            to="/login"
-            className="px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors"
-          >
-            Go to Login
-          </Link>
-        </div>
-      </div>
+      <Navigate
+        to={`/dashboard?auth_required=true&redirect_path=${encodeURIComponent(
+          location.pathname + location.search
+        )}`}
+        replace
+      />
     );
   }
-  return <>{children}</>;
+
+  // No token and not in preview mode - show login screen
+  return (
+    <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
+      <div className="text-center">
+        <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }} className="text-2xl text-[#1A1A1A] mb-4">
+          Please login to continue
+        </h2>
+        <Link
+          to="/login"
+          className="px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors"
+        >
+          Go to Login
+        </Link>
+      </div>
+    </div>
+  );
 }
 
 

@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   User,
   Bell,
-  Lock,
-  Eye,
-  ShieldCheck,
   HelpCircle,
   ChevronRight,
   Save,
@@ -24,6 +21,8 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
+  Book,
+  Video,
 } from "lucide-react";
 import { Navbar } from "./shared";
 
@@ -42,8 +41,24 @@ interface UserSettings {
   notificationsSms: boolean;
   doNotDisturbStart: string | null;
   doNotDisturbEnd: string | null;
-  profileVisibility: "public" | "private" | "hidden";
-  showContactInfo: boolean;
+}
+
+function formatTimeInput(value: string | null | undefined): string {
+  if (!value) return "";
+  const str = String(value).trim();
+  return /^\d{2}:\d{2}/.test(str) ? str.slice(0, 5) : "";
+}
+
+function buildNotificationForm(data: Pick<UserSettings, "notificationsEmail" | "notificationsSms" | "doNotDisturbStart" | "doNotDisturbEnd">) {
+  const dndStart = formatTimeInput(data.doNotDisturbStart);
+  const dndEnd = formatTimeInput(data.doNotDisturbEnd);
+  return {
+    email: Boolean(data.notificationsEmail),
+    sms: Boolean(data.notificationsSms),
+    dndStart,
+    dndEnd,
+    dndEnabled: Boolean(dndStart || dndEnd),
+  };
 }
 
 // ─── Toggle Component ─────────────────────────────────────────────────────────
@@ -166,39 +181,49 @@ export function Settings() {
   const [accountForm, setAccountForm] = useState({ name: "", phone: "", whatsappNumber: "", state: "", bio: "" });
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
   const [notifForm, setNotifForm] = useState({ email: true, sms: true, dndStart: "", dndEnd: "", dndEnabled: false });
-  const [privacyForm, setPrivacyForm] = useState({ visibility: "public" as "public" | "private" | "hidden", showContact: true });
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
 
+  // Enquiry form state
+  const [enquiryForm, setEnquiryForm] = useState({ name: "", phone: "", location: "", requirement: "Harvester", dateNeeded: "" });
+  const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
+
   const token = localStorage.getItem("tractorsewa_token");
 
   useEffect(() => {
+    if (!token) {
+      toast.error(t("settings.toasts.loginRequired", { defaultValue: "Please log in to manage settings" }));
+      navigate("/login");
+      return;
+    }
+
     const fetch_ = async () => {
       try {
         const res = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
+        if (res.status === 401) {
+          toast.error(t("settings.toasts.sessionExpired", { defaultValue: "Session expired. Please log in again." }));
+          navigate("/login");
+          return;
+        }
         if (res.ok) {
           const data: UserSettings = await res.json();
           setSettings(data);
           setAccountForm({ name: data.name || "", phone: data.phone || "", whatsappNumber: data.whatsappNumber || "", state: data.state || "", bio: data.bio || "" });
-          setNotifForm({
-            email: data.notificationsEmail,
-            sms: data.notificationsSms,
-            dndStart: data.doNotDisturbStart || "",
-            dndEnd: data.doNotDisturbEnd || "",
-            dndEnabled: !!(data.doNotDisturbStart || data.doNotDisturbEnd),
-          });
-          setPrivacyForm({ visibility: data.profileVisibility || "public", showContact: data.showContactInfo });
+          setNotifForm(buildNotificationForm(data));
+        } else {
+          const data = await res.json().catch(() => ({}));
+          toast.error(data.error || t("settings.toasts.loadFailed", { defaultValue: "Failed to load settings" }));
         }
-      } catch (err) {
-        toast.error(t("settings.toasts.loadFailed", { defaultValue: "Failed to load settings" }));
+      } catch {
+        toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" }));
       } finally {
         setLoading(false);
       }
     };
     fetch_();
-  }, [t]);
+  }, [navigate, t, token]);
 
   const saveAccount = async () => {
     setSaving("account");
@@ -231,33 +256,52 @@ export function Settings() {
   };
 
   const saveNotifications = async () => {
+    if (!token) {
+      toast.error(t("settings.toasts.loginRequired", { defaultValue: "Please log in to manage settings" }));
+      navigate("/login");
+      return;
+    }
+
+    if (notifForm.dndEnabled) {
+      if (!notifForm.dndStart || !notifForm.dndEnd) {
+        toast.error(t("settings.toasts.dndTimesRequired", { defaultValue: "Please set both Do Not Disturb start and end times" }));
+        return;
+      }
+    }
+
     setSaving("notifications");
     try {
+      const payload = {
+        notificationsEmail: notifForm.email,
+        notificationsSms: notifForm.sms,
+        doNotDisturbStart: notifForm.dndEnabled ? notifForm.dndStart : null,
+        doNotDisturbEnd: notifForm.dndEnabled ? notifForm.dndEnd : null,
+      };
+
       const res = await fetch("/api/settings/notifications", {
         method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          notificationsEmail: notifForm.email, notificationsSms: notifForm.sms,
-          doNotDisturbStart: notifForm.dndEnabled ? notifForm.dndStart || null : null,
-          doNotDisturbEnd: notifForm.dndEnabled ? notifForm.dndEnd || null : null,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (res.ok) toast.success(t("settings.toasts.notifSaved", { defaultValue: "Notification preferences saved!" }));
-      else toast.error(data.error || t("settings.toasts.notifFailed", { defaultValue: "Failed to save" }));
-    } catch { toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" })); }
-    finally { setSaving(null); }
-  };
-
-  const savePrivacy = async () => {
-    setSaving("privacy");
-    try {
-      const res = await fetch("/api/settings/privacy", {
-        method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ profileVisibility: privacyForm.visibility, showContactInfo: privacyForm.showContact }),
-      });
-      const data = await res.json();
-      if (res.ok) toast.success(t("settings.toasts.privacySaved", { defaultValue: "Privacy settings saved!" }));
-      else toast.error(data.error || t("settings.toasts.privacyFailed", { defaultValue: "Failed to save" }));
+      if (res.ok) {
+        const saved = buildNotificationForm({
+          notificationsEmail: data.notificationsEmail,
+          notificationsSms: data.notificationsSms,
+          doNotDisturbStart: data.doNotDisturbStart,
+          doNotDisturbEnd: data.doNotDisturbEnd,
+        });
+        setNotifForm(saved);
+        setSettings(prev => prev ? {
+          ...prev,
+          notificationsEmail: saved.email,
+          notificationsSms: saved.sms,
+          doNotDisturbStart: data.doNotDisturbStart,
+          doNotDisturbEnd: data.doNotDisturbEnd,
+        } : prev);
+        toast.success(t("settings.toasts.notifSaved", { defaultValue: "Notification preferences saved!" }));
+      } else {
+        toast.error(data.error || t("settings.toasts.notifFailed", { defaultValue: "Failed to save" }));
+      }
     } catch { toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" })); }
     finally { setSaving(null); }
   };
@@ -280,11 +324,52 @@ export function Settings() {
     finally { setSaving(null); setShowDeleteModal(false); }
   };
 
+  const submitEnquiry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanedPhone = enquiryForm.phone.replace(/\D/g, "");
+    let finalPhone = cleanedPhone;
+    if (cleanedPhone.length === 12 && cleanedPhone.startsWith("91")) {
+      finalPhone = cleanedPhone.substring(2);
+    } else if (cleanedPhone.length === 11 && cleanedPhone.startsWith("0")) {
+      finalPhone = cleanedPhone.substring(1);
+    }
+
+    if (!/^\d{10}$/.test(finalPhone)) {
+      toast.error(t("enquiry.errorPhone", { defaultValue: "Please enter a valid 10-digit mobile number" }));
+      return;
+    }
+
+    setSubmittingEnquiry(true);
+    try {
+      const res = await fetch("/api/enquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: enquiryForm.name,
+          phone: finalPhone,
+          location: enquiryForm.location,
+          requirement: enquiryForm.requirement,
+          dateNeeded: enquiryForm.dateNeeded,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success(t("enquiry.successToast", { defaultValue: "Enquiry submitted successfully! We will contact you soon." }));
+        setEnquiryForm({ name: "", phone: "", location: "", requirement: "Harvester", dateNeeded: "" });
+      } else {
+        const data = await res.json();
+        toast.error(data.error || t("enquiry.errorToast", { defaultValue: "Failed to submit enquiry" }));
+      }
+    } catch {
+      toast.error(t("enquiry.errorGeneric", { defaultValue: "Error submitting enquiry" }));
+    } finally {
+      setSubmittingEnquiry(false);
+    }
+  };
+
   const navItems = [
     { id: "account", label: t("settings.menu.account", { defaultValue: "Account" }), icon: <User size={16} /> },
     { id: "notifications", label: t("settings.menu.notifications", { defaultValue: "Notifications" }), icon: <Bell size={16} /> },
-    { id: "privacy", label: t("settings.menu.privacy", { defaultValue: "Privacy" }), icon: <Eye size={16} /> },
-    { id: "verification", label: t("settings.menu.verification", { defaultValue: "Verification" }), icon: <ShieldCheck size={16} /> },
     { id: "support", label: t("settings.menu.support", { defaultValue: "Support & Help" }), icon: <HelpCircle size={16} /> },
   ];
 
@@ -400,125 +485,161 @@ export function Settings() {
               <p className="text-sm font-semibold text-[#1A1A1A]">{t("settings.notifications.dndLabel", { defaultValue: "Enable Do Not Disturb" })}</p>
               <p className="text-xs text-zinc-500 mt-0.5">{t("settings.notifications.dndDesc", { defaultValue: "Mute all notifications during selected hours" })}</p>
             </div>
-            <Toggle checked={notifForm.dndEnabled} onChange={v => setNotifForm(f => ({ ...f, dndEnabled: v }))} />
+            <Toggle checked={notifForm.dndEnabled} onChange={v => setNotifForm(f => ({
+              ...f,
+              dndEnabled: v,
+              ...(v ? {} : { dndStart: "", dndEnd: "" }),
+            }))} />
           </div>
           {notifForm.dndEnabled && (
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div>
                 <label className="block text-xs font-semibold text-[#57585A] mb-1.5">{t("settings.notifications.from", { defaultValue: "From" })}</label>
-                <input type="time" value={notifForm.dndStart} onChange={e => setNotifForm(f => ({ ...f, dndStart: e.target.value }))}
+                <input type="time" value={notifForm.dndStart} onChange={e => setNotifForm(f => ({ ...f, dndStart: e.target.value }))} required
                   className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#172263]/20 focus:border-[#172263]" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#57585A] mb-1.5">{t("settings.notifications.to", { defaultValue: "To" })}</label>
-                <input type="time" value={notifForm.dndEnd} onChange={e => setNotifForm(f => ({ ...f, dndEnd: e.target.value }))}
+                <input type="time" value={notifForm.dndEnd} onChange={e => setNotifForm(f => ({ ...f, dndEnd: e.target.value }))} required
                   className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#172263]/20 focus:border-[#172263]" />
               </div>
             </div>
           )}
         </div>
-        <div className="mt-4 pt-4 border-t border-zinc-100 flex justify-end">
-          <button onClick={saveNotifications} disabled={saving === "notifications"} className="flex items-center gap-2 bg-[#172263] hover:bg-[#11194A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60">
-            <Save size={14} /> {saving === "notifications" ? t("settings.saving", { defaultValue: "Saving..." }) : t("settings.notifications.savePreferences", { defaultValue: "Save Preferences" })}
-          </button>
-        </div>
-      </SectionCard>
-    </div>
-  );
-
-  const renderPrivacy = () => (
-    <div className="space-y-6">
-      <SectionCard title={t("settings.privacy.profileVisibility", { defaultValue: "Profile Visibility" })}>
-        <div className="space-y-3">
-          {([
-            { value: "public", label: t("settings.privacy.publicLabel", { defaultValue: "Public Profile" }), desc: t("settings.privacy.publicDesc", { defaultValue: "Visible to all users and appears in search results" }) },
-            { value: "private", label: t("settings.privacy.privateLabel", { defaultValue: "Private Profile" }), desc: t("settings.privacy.privateDesc", { defaultValue: "Only visible to users you've connected with" }) },
-            { value: "hidden", label: t("settings.privacy.hiddenLabel", { defaultValue: "Hidden Profile" }), desc: t("settings.privacy.hiddenDesc", { defaultValue: "Not visible in search results or directory" }) },
-          ] as { value: "public" | "private" | "hidden"; label: string; desc: string }[]).map(opt => (
-            <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${privacyForm.visibility === opt.value ? "border-[#172263] bg-[#172263]/5" : "border-[#E2E8F0] hover:border-zinc-300"}`}>
-              <input type="radio" name="visibility" value={opt.value} checked={privacyForm.visibility === opt.value}
-                onChange={() => setPrivacyForm(f => ({ ...f, visibility: opt.value }))} className="mt-0.5 accent-[#172263]" />
-              <div>
-                <p className="text-sm font-semibold text-[#1A1A1A]">{opt.label}</p>
-                <p className="text-xs text-zinc-500">{opt.desc}</p>
-              </div>
-            </label>
-          ))}
-        </div>
       </SectionCard>
 
-      <SectionCard title={t("settings.privacy.contactInfo", { defaultValue: "Contact Information" })}>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[#1A1A1A]">{t("settings.privacy.showContactLabel", { defaultValue: "Show contact details" })}</p>
-              <p className="text-xs text-zinc-500">{t("settings.privacy.showContactDesc", { defaultValue: "Allow other users to see your phone number and WhatsApp" })}</p>
-            </div>
-            <Toggle checked={privacyForm.showContact} onChange={v => setPrivacyForm(f => ({ ...f, showContact: v }))} />
-          </div>
-        </div>
-        <div className="mt-4 pt-4 border-t border-zinc-100 flex justify-end">
-          <button onClick={savePrivacy} disabled={saving === "privacy"} className="flex items-center gap-2 bg-[#172263] hover:bg-[#11194A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60">
-            <Save size={14} /> {saving === "privacy" ? t("settings.saving", { defaultValue: "Saving..." }) : t("settings.privacy.saveSettings", { defaultValue: "Save Privacy Settings" })}
-          </button>
-        </div>
-      </SectionCard>
-    </div>
-  );
-
-  const renderVerification = () => (
-    <div className="space-y-6">
-      <SectionCard title={t("settings.verification.statusTitle", { defaultValue: "Verification Status" })}>
-        <div className="space-y-4">
-          {[
-            { label: t("settings.verification.emailLabel", { defaultValue: "Email Address" }), value: settings?.email, verified: true, hint: t("settings.verification.emailHint", { defaultValue: "Your email is verified on registration" }) },
-            { label: t("settings.verification.phoneLabel", { defaultValue: "Phone Number" }), value: settings?.phone ? `+91-${settings.phone}` : t("settings.verification.phoneFallback", { defaultValue: "Not provided" }), verified: false, hint: t("settings.verification.phoneHint", { defaultValue: "Phone verification coming soon" }) },
-            { label: t("settings.verification.identityLabel", { defaultValue: "Identity Verification" }), value: t("settings.verification.identityValue", { defaultValue: "Government ID" }), verified: false, hint: t("settings.verification.identityHint", { defaultValue: "Upload Aadhaar or PAN to get verified" }) },
-          ].map(item => (
-            <div key={item.label} className={`flex items-center justify-between p-4 rounded-xl border ${item.verified ? "border-green-200 bg-green-50" : "border-[#E2E8F0] bg-[#F8FAFC]"}`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.verified ? "bg-green-100 text-green-600" : "bg-zinc-100 text-zinc-400"}`}>
-                  {item.verified ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#1A1A1A]">{item.label}</p>
-                  <p className="text-xs text-zinc-500">{item.value}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${item.verified ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500"}`}>
-                  {item.verified ? t("settings.verification.verified", { defaultValue: "Verified ✓" }) : t("settings.verification.notVerified", { defaultValue: "Not Verified" })}
-                </span>
-                {!item.verified && <p className="text-[10px] text-zinc-400 mt-1">{item.hint}</p>}
-              </div>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
+      <div className="flex justify-end">
+        <button onClick={saveNotifications} disabled={saving === "notifications"} className="flex items-center gap-2 bg-[#172263] hover:bg-[#11194A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60">
+          <Save size={14} /> {saving === "notifications" ? t("settings.saving", { defaultValue: "Saving..." }) : t("settings.notifications.savePreferences", { defaultValue: "Save Preferences" })}
+        </button>
+      </div>
     </div>
   );
 
   const renderSupport = () => (
     <div className="space-y-6">
-      <SectionCard title={t("settings.support.quickLinks", { defaultValue: "Quick Links" })}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Contact Information */}
+      <SectionCard title={t("settings.support.contactInfo", { defaultValue: "Contact Information" })}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-start gap-3 p-4 bg-[#F8FAFC] rounded-xl">
+            <div className="w-10 h-10 bg-[#172263] rounded-lg flex items-center justify-center shrink-0">
+              <Phone size={18} className="text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#1A1A1A]">{t("settings.support.phone", { defaultValue: "Phone Support" })}</p>
+              <p className="text-xs text-zinc-500 mt-0.5">+91 92093 92096</p>
+              <p className="text-[10px] text-zinc-400 mt-1">{t("settings.support.phoneHours", { defaultValue: "Mon-Sat, 9AM-6PM" })}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-4 bg-[#F8FAFC] rounded-xl">
+            <div className="w-10 h-10 bg-[#E82326] rounded-lg flex items-center justify-center shrink-0">
+              <Mail size={18} className="text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#1A1A1A]">{t("settings.support.email", { defaultValue: "Email Support" })}</p>
+              <p className="text-xs text-zinc-500 mt-0.5">customercare@tractorseva.com</p>
+              <p className="text-[10px] text-zinc-400 mt-1">{t("settings.support.emailResponse", { defaultValue: "Response within 24hrs" })}</p>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Help Resources */}
+      <SectionCard title={t("settings.support.helpResources", { defaultValue: "Help Resources" })}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            { label: t("settings.support.viewProfile", { defaultValue: "View Profile" }), desc: t("settings.support.viewProfileDesc", { defaultValue: "Go to your public profile" }), link: "/profile", icon: <User size={16} className="text-[#172263]" /> },
-            { label: t("settings.support.myHarvesters", { defaultValue: "My Harvesters" }), desc: t("settings.support.myHarvestersDesc", { defaultValue: "Manage your listings" }), link: "/harvesters?tab=mine", icon: <ChevronRight size={16} className="text-[#E82326]" /> },
-            { label: t("settings.support.sendFeedback", { defaultValue: "Send Feedback" }), desc: t("settings.support.sendFeedbackDesc", { defaultValue: "Report issues or suggest features" }), link: "/enquiry", icon: <MessageCircle size={16} className="text-green-600" /> },
-            { label: t("settings.support.goToDashboard", { defaultValue: "Go to Dashboard" }), desc: t("settings.support.goToDashboardDesc", { defaultValue: "Return to your dashboard" }), link: "/dashboard", icon: <ChevronRight size={16} className="text-[#172263]" /> },
+            { label: t("settings.support.gettingStarted", { defaultValue: "Getting Started" }), desc: t("settings.support.gettingStartedDesc", { defaultValue: "Quick start guide" }), icon: <Book size={16} className="text-[#172263]" /> },
+            { label: t("settings.support.faq", { defaultValue: "FAQ" }), desc: t("settings.support.faqDesc", { defaultValue: "Common questions" }), icon: <HelpCircle size={16} className="text-[#E82326]" /> },
+            { label: t("settings.support.videoTutorials", { defaultValue: "Video Tutorials" }), desc: t("settings.support.videoTutorialsDesc", { defaultValue: "Watch & learn" }), icon: <Video size={16} className="text-green-600" /> },
           ].map(item => (
-            <Link key={item.label} to={item.link} className="flex items-center gap-3 p-3.5 bg-[#F8FAFC] hover:bg-[#EAEFF8] border border-[#E2E8F0] hover:border-[#172263]/30 rounded-xl transition-all group">
+            <div key={item.label} className="flex items-center gap-3 p-3.5 bg-[#F8FAFC] hover:bg-[#EAEFF8] border border-[#E2E8F0] hover:border-[#172263]/30 rounded-xl transition-all cursor-pointer group">
               <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-sm">{item.icon}</div>
               <div>
                 <p className="text-sm font-semibold text-[#1A1A1A] group-hover:text-[#172263] transition-colors">{item.label}</p>
                 <p className="text-xs text-zinc-400">{item.desc}</p>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </SectionCard>
 
+      {/* Enquiry Form */}
+      <SectionCard title={t("settings.support.submitEnquiry", { defaultValue: "Submit an Enquiry" })}>
+        <p className="text-sm text-zinc-500 mb-4">{t("settings.support.enquiryDesc", { defaultValue: "Have questions or need assistance? Fill out the form below and we'll get back to you." })}</p>
+        <form onSubmit={submitEnquiry} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.fullName", { defaultValue: "Full Name *" })}</label>
+              <input
+                value={enquiryForm.name}
+                onChange={(e) => setEnquiryForm(f => ({ ...f, name: e.target.value }))}
+                required
+                className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                placeholder={t("enquiry.placeholderName", { defaultValue: "Enter your name" })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.phone", { defaultValue: "Phone Number *" })}</label>
+              <input
+                value={enquiryForm.phone}
+                onChange={(e) => setEnquiryForm(f => ({ ...f, phone: e.target.value }))}
+                required
+                type="tel"
+                className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                placeholder={t("enquiry.placeholderPhone", { defaultValue: "Enter your phone number" })}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.location", { defaultValue: "Location *" })}</label>
+              <input
+                value={enquiryForm.location}
+                onChange={(e) => setEnquiryForm(f => ({ ...f, location: e.target.value }))}
+                required
+                className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                placeholder={t("enquiry.placeholderLocation", { defaultValue: "Enter your city/district" })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.requirement", { defaultValue: "Requirement *" })}</label>
+              <select
+                value={enquiryForm.requirement}
+                onChange={(e) => setEnquiryForm(f => ({ ...f, requirement: e.target.value }))}
+                required
+                className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
+              >
+                <option value="Harvester">{t("enquiry.options.harvester", { defaultValue: "Harvester" })}</option>
+                <option value="Operator">{t("enquiry.options.operator", { defaultValue: "Operator" })}</option>
+                <option value="Both">{t("enquiry.options.both", { defaultValue: "Both (Harvester & Operator)" })}</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.dateNeeded", { defaultValue: "Date Needed *" })}</label>
+            <input
+              value={enquiryForm.dateNeeded}
+              onChange={(e) => setEnquiryForm(f => ({ ...f, dateNeeded: e.target.value }))}
+              required
+              type="date"
+              className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={submittingEnquiry}
+            className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors disabled:opacity-60 flex items-center justify-center gap-2 text-sm font-semibold"
+          >
+            {submittingEnquiry ? (
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              t("enquiry.submit", { defaultValue: "Submit Enquiry" })
+            )}
+          </button>
+        </form>
+      </SectionCard>
+
+      {/* Legal & Policies */}
       <SectionCard title={t("settings.support.legalPolicies", { defaultValue: "Legal & Policies" })}>
         <div className="space-y-3">
           {[
@@ -542,8 +663,6 @@ export function Settings() {
   const sectionContent: Record<string, React.ReactNode> = {
     account: renderAccount(),
     notifications: renderNotifications(),
-    privacy: renderPrivacy(),
-    verification: renderVerification(),
     support: renderSupport(),
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, Fragment } from "react";
-import { Link, useParams, useNavigate, useSearchParams } from "react-router";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
@@ -4720,8 +4720,6 @@ export function Profile() {
 
             {/* Bio / Details */}
             <div className="space-y-1.5 w-full text-center md:text-left">
-              <p className="text-sm text-[#57585A] font-semibold uppercase tracking-wider">{t("profile.communityMember", { defaultValue: "Tractor Seva Community Member" })}</p>
-
               <div className="flex flex-col gap-1 mt-2 text-sm text-[#57585A]">
                 <p className="flex items-center justify-center md:justify-start gap-1.5">
                   <MapPin size={15} className="text-[#E82326]" /> {t("states." + (user.state || "Maharashtra"), { ns: "static", defaultValue: user.state || "Maharashtra" })}{user.state ? "" : ", India"}
@@ -4735,21 +4733,11 @@ export function Profile() {
               </div>
 
               {/* Bio description */}
-              <p className="text-sm text-[#57585A] max-w-md mt-3 leading-relaxed italic">
-                "{user.bio || operatorProfile?.description || t("profile.bioFallback", { defaultValue: "Agriculture enthusiast. Verified operator/harvester member of the Tractor Seva network." })}"
-              </p>
-
-              {/* Mutual followed details */}
-              <div className="flex items-center justify-center md:justify-start gap-2.5 mt-4 pt-3 border-t border-zinc-200">
-                <div className="flex -space-x-1.5">
-                  <div className="w-6 h-6 rounded-full bg-[#172263] border-2 border-white flex items-center justify-center text-[9px] font-bold text-white">TS</div>
-                  <div className="w-6 h-6 rounded-full bg-[#E82326] border-2 border-white flex items-center justify-center text-[9px] font-bold text-white">IN</div>
-                  <div className="w-6 h-6 rounded-full bg-zinc-300 border-2 border-white flex items-center justify-center text-[9px] font-bold text-zinc-700">AG</div>
-                </div>
-                <p className="text-xs text-zinc-500">
-                  {t("profile.activeIn", { defaultValue: "Active in" })} <span className="font-semibold text-zinc-750">{t("states." + (user.state || "Maharashtra"), { ns: "static", defaultValue: user.state || "Maharashtra" })}</span> {t("profile.activeInSub", { defaultValue: "and surrounding agricultural hubs" })}
+              {user.bio || operatorProfile?.description ? (
+                <p className="text-sm text-[#57585A] max-w-md mt-3 leading-relaxed italic">
+                  "{user.bio || operatorProfile?.description}"
                 </p>
-              </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -5734,8 +5722,12 @@ export function AdminPortal() {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {
-          localStorage.removeItem("tractorsewa_token");
-          navigate("/login");
+          if (res.status === 401 || res.status === 403 || res.status === 404) {
+            localStorage.removeItem("tractorsewa_token");
+            navigate("/login");
+          } else {
+            navigate("/dashboard");
+          }
           return;
         }
         const data = await res.json();
