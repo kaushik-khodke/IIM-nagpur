@@ -4809,58 +4809,6 @@ export function Profile() {
           </button>
         </div>
 
-        {/* Quick Actions (Dashboard Action Tiles) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-8">
-          {[
-            {
-              label: t("profile.operatorProfile", { defaultValue: "Operator Profile" }),
-              desc: t("profile.myOperatorDesc", { defaultValue: "View operator details" }),
-              icon: <UserCheck size={20} className="text-[#475569]" />,
-              action: () => setActiveTab("operator")
-            },
-            {
-              label: t("profile.harvesterListings", { defaultValue: "Harvester Listings" }),
-              desc: t("profile.myHarvestersDesc", { defaultValue: "View listed equipment" }),
-              icon: <Tractor size={20} className="text-[#C2410C]" />,
-              action: () => setActiveTab("listings")
-            },
-            {
-              label: t("shared.addOperator", { ns: "pages", defaultValue: "Add Operator" }),
-              desc: t("profile.addOperatorDesc", { defaultValue: "List a new operator" }),
-              icon: <Plus size={20} className="text-[#475569]" />,
-              link: "/add-operator"
-            },
-            {
-              label: t("messages.title", { ns: "pages", defaultValue: "Messages" }),
-              desc: t("profile.messagesDesc", { defaultValue: "Chat with users" }),
-              icon: <MessageSquare size={20} className="text-[#475569]" />,
-              link: "/messages"
-            },
-          ].map((hl, i) => {
-            const cardInner = (
-              <div className="flex items-center gap-4 p-5 bg-[#F8FAFC] hover:bg-[#EAEFF8] rounded-2xl border border-zinc-200/80 hover:border-zinc-300 transition-all duration-200 h-full group text-left shadow-sm">
-                <div className="w-12 h-12 rounded-xl bg-white border border-zinc-200 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform duration-200">
-                  {hl.icon}
-                </div>
-                <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-[#1A1A1A] font-sora truncate">{hl.label}</h4>
-                  <p className="text-xs text-zinc-500 mt-0.5 truncate">{hl.desc}</p>
-                </div>
-              </div>
-            );
-
-            return hl.link ? (
-              <Link key={i} to={hl.link} className="block h-full">
-                {cardInner}
-              </Link>
-            ) : (
-              <div key={i} onClick={hl.action} className="cursor-pointer h-full">
-                {cardInner}
-              </div>
-            );
-          })}
-        </div>
-
         {/* Tab Selection (Segmented Control) */}
         <div ref={listingsRef} className="flex justify-center mt-10 mb-6">
           <div className="bg-[#F4F6FA] p-1.5 rounded-xl border border-zinc-200/80 flex gap-1 select-none">
@@ -7387,8 +7335,8 @@ export function AdminPortal() {
                         <th className="px-6 py-3.5">Name</th>
                         <th className="px-6 py-3.5">Phone</th>
                         <th className="px-6 py-3.5">Location</th>
-                        <th className="px-6 py-3.5">Requirement</th>
-                        <th className="px-6 py-3.5">Date Needed</th>
+                        <th className="px-6 py-3.5">Category</th>
+                        <th className="px-6 py-3.5">Message / Details</th>
                         <th className="px-6 py-3.5">Status</th>
                         <th className="px-6 py-3.5 text-right">Actions</th>
                       </tr>
@@ -7401,7 +7349,7 @@ export function AdminPortal() {
                             <td className="px-6 py-4">{enq.phone}</td>
                             <td className="px-6 py-4">{enq.location}</td>
                             <td className="px-6 py-4">{enq.requirement}</td>
-                            <td className="px-6 py-4">{enq.date_needed ? new Date(enq.date_needed).toLocaleDateString() : "-"}</td>
+                            <td className="px-6 py-4 max-w-[250px] truncate" title={enq.message}>{enq.message || "-"}</td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                                 enq.status === 'Fulfilled' 

@@ -150,6 +150,7 @@ async function initializeDatabase() {
         phone VARCHAR(20) NOT NULL,
         location VARCHAR(255) NOT NULL,
         requirement VARCHAR(50) NOT NULL,
+        message TEXT DEFAULT NULL,
         date_needed DATE DEFAULT NULL,
         status VARCHAR(50) DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -190,6 +191,13 @@ async function initializeDatabase() {
       console.log("Successfully migrated Pending or NULL enquiries to Active.");
     } catch (err) {
       // safe to ignore
+    }
+
+    try {
+      await activePool.query('ALTER TABLE enquiries ADD COLUMN message TEXT DEFAULT NULL AFTER requirement');
+      console.log('Successfully added message column to enquiries table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
     }
 
     try {
@@ -321,6 +329,7 @@ async function initializeDatabase() {
         phone VARCHAR(20) NOT NULL,
         location VARCHAR(255) NOT NULL,
         requirement TEXT NOT NULL,
+        message TEXT DEFAULT NULL,
         date_needed DATE DEFAULT NULL,
         status VARCHAR(50) DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

@@ -79,7 +79,7 @@ function MessageNotifier() {
     };
 
     checkUnread();
-    const interval = setInterval(checkUnread, 5000);
+    const interval = setInterval(checkUnread, 10000);
     return () => clearInterval(interval);
   }, [location.pathname]);
 

@@ -71,7 +71,7 @@ app.use(express.urlencoded({ extended: true }));
 // 4. Rate Limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
+  max: 2000, // Increased from 100 to 2000 to accommodate message notification polling (which makes 180 requests/15 mins per tab)
   message: 'Too many requests, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
@@ -1186,8 +1186,8 @@ app.post('/api/blogs/:id/comments', authenticateToken, async (req, res) => {
 
 // 9. Enquiry Routes
 app.post('/api/enquiries', async (req, res) => {
-  const { name, phone, location, requirement, dateNeeded } = req.body;
-  if (!name || !phone || !location || !requirement) {
+  const { name, phone, location, requirement, message, dateNeeded } = req.body;
+  if (!name || !phone || !location || !requirement || !message) {
     return res.status(400).json({ error: 'Please provide all required fields' });
   }
 
@@ -1210,8 +1210,8 @@ app.post('/api/enquiries', async (req, res) => {
     }
 
     await db.query(
-      'INSERT INTO enquiries (id, name, phone, location, requirement, date_needed, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [enquiryId, name, cleanedPhone, location, requirement, formattedDate, 'Active']
+      'INSERT INTO enquiries (id, name, phone, location, requirement, message, date_needed, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [enquiryId, name, cleanedPhone, location, requirement, message, formattedDate, 'Active']
     );
     res.status(201).json({ message: 'Enquiry submitted successfully' });
   } catch (error) {

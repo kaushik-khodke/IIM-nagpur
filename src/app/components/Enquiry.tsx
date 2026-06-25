@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { Navbar } from "./shared";
@@ -13,8 +13,8 @@ export function EnquiryPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
-  const [requirement, setRequirement] = useState("Harvester");
-  const [dateNeeded, setDateNeeded] = useState("");
+  const [requirement, setRequirement] = useState("Provide Feedback");
+  const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,7 +37,7 @@ export function EnquiryPage() {
       const res = await fetch("/api/enquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone: finalPhone, location, requirement, dateNeeded }),
+        body: JSON.stringify({ name, phone: finalPhone, location, requirement, message }),
       });
 
       if (res.ok) {
@@ -82,7 +82,7 @@ export function EnquiryPage() {
           <h1 className="text-3xl font-bold text-[#1A1A1A] mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>
             {t("enquiry.title", { defaultValue: "Submit an Enquiry" })}
           </h1>
-          <p className="text-[#57585A]">{t("enquiry.subtitle", { defaultValue: "Looking for Harvesters or Operators? Let us know your requirements." })}</p>
+          <p className="text-[#57585A]">{t("enquiry.subtitle", { defaultValue: "Have questions, feedback, or a complaint? Let us know below." })}</p>
         </div>
  
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] p-8 space-y-5 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
@@ -121,27 +121,28 @@ export function EnquiryPage() {
           </div>
 
           <div>
-            <label className="text-sm text-[#57585A] block mb-1.5">{t("enquiry.requirement", { defaultValue: "Requirement *" })}</label>
+            <label className="text-sm text-[#57585A] block mb-1.5">{t("enquiry.category", { defaultValue: "Inquiry Category *" })}</label>
             <select
               value={requirement}
               onChange={(e) => setRequirement(e.target.value)}
               required
               className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
             >
-              <option value="Harvester">{t("enquiry.options.harvester", { defaultValue: "Harvester" })}</option>
-              <option value="Operator">{t("enquiry.options.operator", { defaultValue: "Operator" })}</option>
-              <option value="Both">{t("enquiry.options.both", { defaultValue: "Both (Harvester & Operator)" })}</option>
+              <option value="Share Experience">{t("enquiry.options.experience", { defaultValue: "Share Experience" })}</option>
+              <option value="Provide Feedback">{t("enquiry.options.feedback", { defaultValue: "Provide Feedback" })}</option>
+              <option value="Submit a Complaint">{t("enquiry.options.complaint", { defaultValue: "Submit a Complaint" })}</option>
             </select>
           </div>
 
           <div>
-            <label className="text-sm text-[#57585A] block mb-1.5">{t("enquiry.dateNeeded", { defaultValue: "Date Needed *" })}</label>
-            <input 
-              value={dateNeeded} 
-              onChange={(e) => setDateNeeded(e.target.value)} 
+            <label className="text-sm text-[#57585A] block mb-1.5">{t("enquiry.message", { defaultValue: "Message / Description *" })}</label>
+            <textarea 
+              value={message} 
+              onChange={(e) => setMessage(e.target.value)} 
               required 
-              type="date"
-              className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]" 
+              rows={4}
+              className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none" 
+              placeholder={t("enquiry.placeholderMessage", { defaultValue: "Please describe your experience, feedback, or complaint in detail..." })}
             />
           </div>
 

@@ -525,16 +525,16 @@ export function Landing() {
                         {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={18} />
                       </Link>
                       <Link
-                        to="/operators"
-                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
-                      >
-                        <User size={18} /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
-                      </Link>
-                      <Link
                         to="/harvesters"
                         className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
                       >
-                        <Tractor size={18} /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
+                        <Tractor size={18} /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
+                      </Link>
+                      <Link
+                        to="/operators"
+                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
+                      >
+                        <User size={18} /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
                       </Link>
                     </>
                   ) : (
@@ -546,22 +546,22 @@ export function Landing() {
                         {t("landing.submitEnquiry", { ns: "pages", defaultValue: "Submit Enquiry" })} <ArrowRight size={18} />
                       </Link>
                       <Link
-                        to="/operators"
-                        onClick={() => {
-                          localStorage.setItem("tractorsewa_preview_mode", "true");
-                        }}
-                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
-                      >
-                        <User size={18} /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
-                      </Link>
-                      <Link
                         to="/harvesters"
                         onClick={() => {
                           localStorage.setItem("tractorsewa_preview_mode", "true");
                         }}
                         className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
                       >
-                        <Tractor size={18} /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
+                        <Tractor size={18} /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
+                      </Link>
+                      <Link
+                        to="/operators"
+                        onClick={() => {
+                          localStorage.setItem("tractorsewa_preview_mode", "true");
+                        }}
+                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
+                      >
+                        <User size={18} /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
                       </Link>
                     </>
                   )}

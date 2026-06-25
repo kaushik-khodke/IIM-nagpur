@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -23,6 +23,7 @@ import {
   ChevronUp,
   Tractor,
   UserCheck,
+  ShieldCheck,
 } from "lucide-react";
 import { Navbar } from "./shared";
 
@@ -196,7 +197,7 @@ export function Settings() {
   const [saving, setSaving] = useState<string | null>(null);
 
   // Enquiry form state
-  const [enquiryForm, setEnquiryForm] = useState({ name: "", phone: "", location: "", requirement: "Harvester", dateNeeded: "" });
+  const [enquiryForm, setEnquiryForm] = useState({ name: "", phone: "", location: "", requirement: "Provide Feedback", message: "" });
   const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
 
   const token = localStorage.getItem("tractorsewa_token");
@@ -305,13 +306,13 @@ export function Settings() {
           phone: finalPhone,
           location: enquiryForm.location,
           requirement: enquiryForm.requirement,
-          dateNeeded: enquiryForm.dateNeeded,
+          message: enquiryForm.message,
         }),
       });
 
       if (res.ok) {
         toast.success(t("enquiry.successToast", { defaultValue: "Enquiry submitted successfully! We will contact you soon." }));
-        setEnquiryForm({ name: "", phone: "", location: "", requirement: "Harvester", dateNeeded: "" });
+        setEnquiryForm({ name: "", phone: "", location: "", requirement: "Provide Feedback", message: "" });
       } else {
         const data = await res.json();
         toast.error(data.error || t("enquiry.errorToast", { defaultValue: "Failed to submit enquiry" }));
@@ -443,10 +444,14 @@ export function Settings() {
                 {!item.verified && <p className="text-[10px] text-zinc-400 mt-1">{item.hint}</p>}
               </div>
             </div>
-          </div>
+          ))}
         </div>
       </SectionCard>
+    </div>
+  );
 
+  const renderSupport = () => (
+    <div className="space-y-6">
       {/* Help Resources */}
       <SectionCard title={t("settings.support.helpResources", { defaultValue: "Help Resources" })}>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -457,13 +462,13 @@ export function Settings() {
             { label: t("settings.support.sendFeedback", { defaultValue: "Send Feedback" }), desc: t("settings.support.sendFeedbackDesc", { defaultValue: "Report issues or suggest features" }), link: "/enquiry?from=settings", icon: <MessageCircle size={16} className="text-green-600" /> },
             { label: t("settings.support.goToDashboard", { defaultValue: "Go to Dashboard" }), desc: t("settings.support.goToDashboardDesc", { defaultValue: "Return to your dashboard" }), link: "/dashboard", icon: <ChevronRight size={16} className="text-[#172263]" /> },
           ].map(item => (
-            <div key={item.label} className="flex items-center gap-3 p-3.5 bg-[#F8FAFC] hover:bg-[#EAEFF8] border border-[#E2E8F0] hover:border-[#172263]/30 rounded-xl transition-all cursor-pointer group">
+            <Link key={item.label} to={item.link} className="flex items-center gap-3 p-3.5 bg-[#F8FAFC] hover:bg-[#EAEFF8] border border-[#E2E8F0] hover:border-[#172263]/30 rounded-xl transition-all cursor-pointer group">
               <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-sm">{item.icon}</div>
               <div>
                 <p className="text-sm font-semibold text-[#1A1A1A] group-hover:text-[#172263] transition-colors">{item.label}</p>
                 <p className="text-xs text-zinc-400">{item.desc}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </SectionCard>
@@ -507,27 +512,28 @@ export function Settings() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.requirement", { defaultValue: "Requirement *" })}</label>
+              <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.category", { defaultValue: "Inquiry Category *" })}</label>
               <select
                 value={enquiryForm.requirement}
                 onChange={(e) => setEnquiryForm(f => ({ ...f, requirement: e.target.value }))}
                 required
                 className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
               >
-                <option value="Harvester">{t("enquiry.options.harvester", { defaultValue: "Harvester" })}</option>
-                <option value="Operator">{t("enquiry.options.operator", { defaultValue: "Operator" })}</option>
-                <option value="Both">{t("enquiry.options.both", { defaultValue: "Both (Harvester & Operator)" })}</option>
+                <option value="Share Experience">{t("enquiry.options.experience", { defaultValue: "Share Experience" })}</option>
+                <option value="Provide Feedback">{t("enquiry.options.feedback", { defaultValue: "Provide Feedback" })}</option>
+                <option value="Submit a Complaint">{t("enquiry.options.complaint", { defaultValue: "Submit a Complaint" })}</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.dateNeeded", { defaultValue: "Date Needed *" })}</label>
-            <input
-              value={enquiryForm.dateNeeded}
-              onChange={(e) => setEnquiryForm(f => ({ ...f, dateNeeded: e.target.value }))}
+            <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.message", { defaultValue: "Message / Description *" })}</label>
+            <textarea
+              value={enquiryForm.message}
+              onChange={(e) => setEnquiryForm(f => ({ ...f, message: e.target.value }))}
               required
-              type="date"
-              className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+              rows={3}
+              className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263] resize-none"
+              placeholder={t("enquiry.placeholderMessage", { defaultValue: "Please describe your experience, feedback, or complaint in detail..." })}
             />
           </div>
           <button
