@@ -13,6 +13,8 @@ import {
   ArrowRight,
   Tractor,
   User,
+  Users,
+  UserPlus,
   Trash2,
   Pencil,
   Plus,
@@ -4660,136 +4662,171 @@ export function Profile() {
           </Link>
         </div>
         {/* Header Info Section */}
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-16 pb-8 border-b border-zinc-200">
-          {/* Left: Avatar with modern rounded-2xl border and shadow */}
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-8 pb-8 border-b border-zinc-200">
+          {/* Left: Circular Avatar */}
           <div className="relative shrink-0 select-none">
-            <div className="w-24 h-24 sm:w-36 sm:h-36 rounded-2xl bg-gradient-to-tr from-[#172263] via-[#E82326] to-amber-500 p-[3px] shadow-md">
-              <div className="w-full h-full rounded-2xl bg-[#ffffff] p-[3px]">
-                <div className="w-full h-full rounded-xl bg-[#F4F6FA] flex items-center justify-center overflow-hidden border border-zinc-200 shadow-inner group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
-                  {user.imagePath || operatorProfile?.image_path ? (
-                    <img src={user.imagePath || operatorProfile.image_path} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-[#172263] text-3xl sm:text-5xl font-extrabold" style={{ fontFamily: "'Sora', sans-serif" }}>
-                      {user.name?.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-              </div>
+            <div className="w-32 h-32 rounded-full border-4 border-[#172263] flex items-center justify-center overflow-hidden bg-[#F4F6FA] shadow-sm">
+              {user.imagePath || operatorProfile?.image_path ? (
+                <img src={user.imagePath || operatorProfile.image_path} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[#172263] text-5xl font-extrabold" style={{ fontFamily: "'Sora', sans-serif" }}>
+                  {user.name?.charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
           </div>
 
           {/* Right: User Information */}
           <div className="flex-1 flex flex-col items-center md:items-start w-full">
             {/* Username row */}
-            <div className="flex items-center gap-4 mb-4">
-              <h2 className="text-xl font-bold text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif" }}>
+            <div className="flex items-center gap-3 mb-3">
+              <h2 className="text-3xl font-bold text-[#1A1A1A]" style={{ fontFamily: "'Sora', sans-serif" }}>
                 {user.name}
               </h2>
               <button
-                onClick={() => navigate("/profile/edit")}
-                className="p-1.5 text-zinc-400 hover:text-[#172263] hover:bg-zinc-100 rounded-full transition-colors"
-                title="Edit Profile Settings"
+                onClick={() => navigate("/settings")}
+                className="p-1.5 text-zinc-400 hover:text-[#172263] rounded-full transition-colors"
+                title="Settings"
               >
-                <Settings size={18} />
+                <Settings size={20} />
               </button>
             </div>
 
             {/* Stats Metric Badges */}
-            <div className="flex flex-wrap items-center gap-3 mb-5">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
               <button
                 onClick={() => setActiveTab("listings")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-sm font-semibold select-none transition-all duration-200 ${activeTab === "listings"
-                    ? "bg-[#172263] border-[#172263] text-white shadow-sm"
-                    : "bg-[#F4F6FA] border-zinc-200 text-[#57585A] hover:bg-zinc-200/50"
-                  }`}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#172263] text-white text-xs font-semibold shadow-sm transition-all duration-200"
               >
-                <Tractor size={15} className={activeTab === "listings" ? "text-white" : "text-[#E82326]"} />
-                <span><strong className={activeTab === "listings" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.harvesters || 0}</strong> {t("profile.harvesterListings", { defaultValue: "Harvesters" })}</span>
+                <Users size={13} className="text-white" />
+                <span>{harvesters.length} {t("profile.harvesterListings", { defaultValue: "Harvester Listings" })}</span>
               </button>
               <button
                 onClick={() => setActiveTab("operator")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-sm font-semibold select-none transition-all duration-200 ${activeTab === "operator"
-                    ? "bg-[#172263] border-[#172263] text-white shadow-sm"
-                    : "bg-[#F4F6FA] border-zinc-200 text-[#57585A] hover:bg-zinc-200/50"
-                  }`}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#F1F5F9] border border-[#E2E8F0] text-[#475569] text-xs font-semibold transition-all duration-200 hover:bg-slate-200/50"
               >
-                <UserCheck size={15} className={activeTab === "operator" ? "text-white" : "text-[#172263]"} />
-                <span><strong className={activeTab === "operator" ? "text-white" : "text-[#1A1A1A]"}>{user.stats?.operators || 0}</strong> {t("profile.operatorProfile", { defaultValue: "Operator Profile" })}</span>
+                <UserPlus size={13} className="text-[#475569]" />
+                <span>{operatorProfile ? 1 : 0} {t("profile.operatorProfile", { defaultValue: "Operator Profile" })}</span>
               </button>
             </div>
 
-            {/* Bio / Details */}
-            <div className="space-y-1.5 w-full text-center md:text-left">
-              <div className="flex flex-col gap-1 mt-2 text-sm text-[#57585A]">
-                <p className="flex items-center justify-center md:justify-start gap-1.5">
-                  <MapPin size={15} className="text-[#E82326]" /> {t("states." + (user.state || "Maharashtra"), { ns: "static", defaultValue: user.state || "Maharashtra" })}{user.state ? "" : ", India"}
-                </p>
-                <p className="flex items-center justify-center md:justify-start gap-1.5">
-                  <Phone size={15} className="text-zinc-400" /> +91-{user.phone}
-                </p>
-                <p className="flex items-center justify-center md:justify-start gap-1.5">
-                  <Mail size={15} className="text-zinc-400" /> {user.email}
-                </p>
+            {/* Community Label */}
+            <p className="text-[#57585A] text-xs font-bold tracking-wider uppercase mb-5">
+              TRACTOR SEVA COMMUNITY MEMBER
+            </p>
+
+            {/* Detail Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full pt-6 border-t border-zinc-200">
+              {/* Location */}
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-50 border border-zinc-100 rounded-xl shrink-0">
+                  <MapPin size={18} className="text-[#172263]" />
+                </div>
+                <div>
+                  <span className="text-xs text-zinc-400 font-medium block">Location</span>
+                  <span className="text-sm font-semibold text-zinc-800">
+                    {t("states." + (user.state || "Maharashtra"), { ns: "static", defaultValue: user.state || "Maharashtra" })}
+                  </span>
+                </div>
               </div>
 
-              {/* Bio description */}
-              {user.bio || operatorProfile?.description ? (
-                <p className="text-sm text-[#57585A] max-w-md mt-3 leading-relaxed italic">
-                  "{user.bio || operatorProfile?.description}"
-                </p>
-              ) : null}
+              {/* Phone */}
+              <div className="flex items-center gap-3 sm:border-l sm:border-zinc-200 sm:pl-6 md:pl-10">
+                <div className="p-2 bg-slate-50 border border-zinc-100 rounded-xl shrink-0">
+                  <Phone size={18} className="text-[#172263]" />
+                </div>
+                <div>
+                  <span className="text-xs text-zinc-400 font-medium block">Phone</span>
+                  <span className="text-sm font-semibold text-zinc-800">+91-{user.phone}</span>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="flex items-center gap-3 sm:border-l sm:border-zinc-200 sm:pl-6 md:pl-10">
+                <div className="p-2 bg-slate-50 border border-zinc-100 rounded-xl shrink-0">
+                  <Mail size={18} className="text-[#172263]" />
+                </div>
+                <div>
+                  <span className="text-xs text-zinc-400 font-medium block">Email</span>
+                  <span className="text-sm font-semibold text-zinc-800 truncate max-w-[200px]" title={user.email}>
+                    {user.email || "kaushikkhodke29@gmail.com"}
+                  </span>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
 
         {/* Action Buttons Row */}
-        <div className="flex flex-wrap gap-3 mt-6 w-full justify-center md:justify-start">
-          <Link to="/profile/edit" className="flex-1 min-w-[120px]">
-            <button className="w-full bg-[#F4F6FA] hover:bg-zinc-200/80 text-[#1A1A1A] text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors border border-zinc-200/80">
+        <div className="flex flex-col sm:flex-row items-center gap-4 mt-6 py-6 border-b border-zinc-200 w-full">
+          <Link to="/profile/edit" className="w-full sm:w-auto sm:flex-1 max-w-md">
+            <button className="w-full bg-white hover:bg-slate-50 text-[#172263] text-sm font-bold py-3 px-6 rounded-xl transition-all border border-[#172263] shadow-sm">
               {t("profile.editProfile", { defaultValue: "Edit Profile" })}
             </button>
           </Link>
 
-          <div className="flex-1 min-w-[140px] relative group">
-            <button className="w-full bg-[#172263] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-1">
-              {t("shared.addListing", { ns: "pages", defaultValue: "Add Listing" })} <ChevronDown size={14} />
+          <div className="w-full sm:w-auto sm:flex-1 max-w-md relative group">
+            <button className="w-full bg-[#172263] hover:bg-[#11194A] text-white text-sm font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm">
+              {t("shared.addListing", { ns: "pages", defaultValue: "Add Listing" })} <ChevronDown size={16} />
             </button>
-            <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#ffffff] border border-zinc-200 rounded-lg shadow-2xl py-1 z-30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <Link to="/add-harvester" className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
+            <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-zinc-200 rounded-xl shadow-xl py-1.5 z-30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              <Link to="/add-harvester" className="block px-5 py-3 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors font-medium">
                 {t("shared.addHarvester", { ns: "pages", defaultValue: "Add Harvester" })}
               </Link>
-              <div className="h-px bg-zinc-200 my-1" />
-              <Link to="/add-operator" className="block px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors">
-                {t("shared.addOperator", { ns: "pages", defaultValue: "Register Operator" })}
+              <div className="h-px bg-zinc-100 my-1.5" />
+              <Link to="/add-operator" className="block px-5 py-3 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-[#172263] transition-colors font-medium">
+                {t("shared.addOperator", { ns: "pages", defaultValue: "Add Operator" })}
               </Link>
             </div>
           </div>
 
           <button
             onClick={logout}
-            className="bg-[#E82326] hover:bg-opacity-90 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+            className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-1.5 text-[#B91C1C] hover:text-red-700 text-sm font-bold py-3 px-4 transition-colors"
             title={t("shared.logout", { ns: "pages", defaultValue: "Logout" })}
           >
-            <LogOut size={16} /> <span>{t("shared.logout", { ns: "pages", defaultValue: "Logout" })}</span>
+            <LogOut size={16} />
+            <span>{t("shared.logout", { ns: "pages", defaultValue: "Logout" })}</span>
           </button>
         </div>
 
         {/* Quick Actions (Dashboard Action Tiles) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 mt-8 border-b border-zinc-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-8">
           {[
-            { label: t("profile.operatorProfile", { defaultValue: "My Operator" }), desc: t("profile.myOperatorDesc", { defaultValue: "View operator details" }), icon: <UserCheck size={18} className="text-[#172263]" />, action: () => setActiveTab("operator") },
-            { label: t("profile.harvesterListings", { defaultValue: "My Harvesters" }), desc: t("profile.myHarvestersDesc", { defaultValue: "View listed equipment" }), icon: <Tractor size={18} className="text-[#E82326]" />, action: () => setActiveTab("listings") },
-            { label: t("shared.addOperator", { ns: "pages", defaultValue: "Add Operator" }), desc: t("profile.addOperatorDesc", { defaultValue: "List a new operator" }), icon: <Plus size={18} className="text-[#172263]" />, link: "/add-operator" },
-            { label: t("messages.title", { ns: "pages", defaultValue: "Messages" }), desc: t("profile.messagesDesc", { defaultValue: "Chat with users" }), icon: <MessageSquare size={18} className="text-[#1A1A1A]" />, link: "/messages" },
+            {
+              label: t("profile.operatorProfile", { defaultValue: "Operator Profile" }),
+              desc: t("profile.myOperatorDesc", { defaultValue: "View operator details" }),
+              icon: <UserCheck size={20} className="text-[#475569]" />,
+              action: () => setActiveTab("operator")
+            },
+            {
+              label: t("profile.harvesterListings", { defaultValue: "Harvester Listings" }),
+              desc: t("profile.myHarvestersDesc", { defaultValue: "View listed equipment" }),
+              icon: <Tractor size={20} className="text-[#C2410C]" />,
+              action: () => setActiveTab("listings")
+            },
+            {
+              label: t("shared.addOperator", { ns: "pages", defaultValue: "Add Operator" }),
+              desc: t("profile.addOperatorDesc", { defaultValue: "List a new operator" }),
+              icon: <Plus size={20} className="text-[#475569]" />,
+              link: "/add-operator"
+            },
+            {
+              label: t("messages.title", { ns: "pages", defaultValue: "Messages" }),
+              desc: t("profile.messagesDesc", { defaultValue: "Chat with users" }),
+              icon: <MessageSquare size={20} className="text-[#475569]" />,
+              link: "/messages"
+            },
           ].map((hl, i) => {
             const cardInner = (
-              <div className="flex items-center gap-3 p-3.5 bg-[#F4F6FA] hover:bg-[#EAEFF8] rounded-xl border border-zinc-200/60 hover:border-[#172263]/30 transition-all duration-200 h-full group text-left">
-                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-200">
+              <div className="flex items-center gap-4 p-5 bg-[#F8FAFC] hover:bg-[#EAEFF8] rounded-2xl border border-zinc-200/80 hover:border-zinc-300 transition-all duration-200 h-full group text-left shadow-sm">
+                <div className="w-12 h-12 rounded-xl bg-white border border-zinc-200 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform duration-200">
                   {hl.icon}
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-[#1A1A1A] truncate">{hl.label}</h4>
-                  <p className="text-xs text-zinc-500 truncate">{hl.desc}</p>
+                  <h4 className="text-sm font-bold text-[#1A1A1A] font-sora truncate">{hl.label}</h4>
+                  <p className="text-xs text-zinc-500 mt-0.5 truncate">{hl.desc}</p>
                 </div>
               </div>
             );
