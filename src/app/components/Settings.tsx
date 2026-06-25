@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -24,6 +24,8 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
+  Tractor,
+  UserCheck,
 } from "lucide-react";
 import { Navbar } from "./shared";
 
@@ -159,20 +161,36 @@ export function Settings() {
   const { t, i18n } = useTranslation("pages");
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("account");
-  const [mobileOpen, setMobileOpen] = useState<string | null>("account");
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeSection, setActiveSection] = useState(() => {
+    if (tabParam === "support") return "support";
+    if (tabParam === "verification") return "verification";
+    return "account";
+  });
+  const [mobileOpen, setMobileOpen] = useState<string | null>(() => {
+    if (tabParam === "support") return "support";
+    if (tabParam === "verification") return "verification";
+    return "account";
+  });
 
   // Form states
   const [accountForm, setAccountForm] = useState({ name: "", phone: "", whatsappNumber: "", state: "", bio: "" });
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
-  const [notifForm, setNotifForm] = useState({ email: true, sms: true, dndStart: "", dndEnd: "", dndEnabled: false });
-  const [privacyForm, setPrivacyForm] = useState({ visibility: "public" as "public" | "private" | "hidden", showContact: true });
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
 
   const token = localStorage.getItem("tractorsewa_token");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && ["account", "verification", "support"].includes(tab)) {
+      setActiveSection(tab);
+      setMobileOpen(tab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetch_ = async () => {
@@ -182,14 +200,6 @@ export function Settings() {
           const data: UserSettings = await res.json();
           setSettings(data);
           setAccountForm({ name: data.name || "", phone: data.phone || "", whatsappNumber: data.whatsappNumber || "", state: data.state || "", bio: data.bio || "" });
-          setNotifForm({
-            email: data.notificationsEmail,
-            sms: data.notificationsSms,
-            dndStart: data.doNotDisturbStart || "",
-            dndEnd: data.doNotDisturbEnd || "",
-            dndEnabled: !!(data.doNotDisturbStart || data.doNotDisturbEnd),
-          });
-          setPrivacyForm({ visibility: data.profileVisibility || "public", showContact: data.showContactInfo });
         }
       } catch (err) {
         toast.error(t("settings.toasts.loadFailed", { defaultValue: "Failed to load settings" }));
@@ -230,38 +240,6 @@ export function Settings() {
     finally { setSaving(null); }
   };
 
-  const saveNotifications = async () => {
-    setSaving("notifications");
-    try {
-      const res = await fetch("/api/settings/notifications", {
-        method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          notificationsEmail: notifForm.email, notificationsSms: notifForm.sms,
-          doNotDisturbStart: notifForm.dndEnabled ? notifForm.dndStart || null : null,
-          doNotDisturbEnd: notifForm.dndEnabled ? notifForm.dndEnd || null : null,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) toast.success(t("settings.toasts.notifSaved", { defaultValue: "Notification preferences saved!" }));
-      else toast.error(data.error || t("settings.toasts.notifFailed", { defaultValue: "Failed to save" }));
-    } catch { toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" })); }
-    finally { setSaving(null); }
-  };
-
-  const savePrivacy = async () => {
-    setSaving("privacy");
-    try {
-      const res = await fetch("/api/settings/privacy", {
-        method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ profileVisibility: privacyForm.visibility, showContactInfo: privacyForm.showContact }),
-      });
-      const data = await res.json();
-      if (res.ok) toast.success(t("settings.toasts.privacySaved", { defaultValue: "Privacy settings saved!" }));
-      else toast.error(data.error || t("settings.toasts.privacyFailed", { defaultValue: "Failed to save" }));
-    } catch { toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" })); }
-    finally { setSaving(null); }
-  };
-
   const deleteAccount = async () => {
     if (deleteConfirmText !== "DELETE") { toast.error(t("settings.toasts.deleteConfirm", { defaultValue: 'Type "DELETE" to confirm' })); return; }
     setSaving("delete");
@@ -282,8 +260,6 @@ export function Settings() {
 
   const navItems = [
     { id: "account", label: t("settings.menu.account", { defaultValue: "Account" }), icon: <User size={16} /> },
-    { id: "notifications", label: t("settings.menu.notifications", { defaultValue: "Notifications" }), icon: <Bell size={16} /> },
-    { id: "privacy", label: t("settings.menu.privacy", { defaultValue: "Privacy" }), icon: <Eye size={16} /> },
     { id: "verification", label: t("settings.menu.verification", { defaultValue: "Verification" }), icon: <ShieldCheck size={16} /> },
     { id: "support", label: t("settings.menu.support", { defaultValue: "Support & Help" }), icon: <HelpCircle size={16} /> },
   ];
@@ -374,97 +350,7 @@ export function Settings() {
     </div>
   );
 
-  const renderNotifications = () => (
-    <div className="space-y-6">
-      <SectionCard title={t("settings.notifications.channels", { defaultValue: "Notification Channels" })}>
-        <div className="space-y-5">
-          {[
-            { label: t("settings.notifications.emailLabel", { defaultValue: "Email Notifications" }), desc: t("settings.notifications.emailDesc", { defaultValue: "Receive alerts and updates via email" }), key: "email" as const },
-            { label: t("settings.notifications.smsLabel", { defaultValue: "SMS Notifications" }), desc: t("settings.notifications.smsDesc", { defaultValue: "Receive text messages for important alerts" }), key: "sms" as const },
-          ].map(({ label, desc, key }) => (
-            <div key={key} className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-[#1A1A1A]">{label}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{desc}</p>
-              </div>
-              <Toggle checked={notifForm[key]} onChange={v => setNotifForm(f => ({ ...f, [key]: v }))} />
-            </div>
-          ))}
-        </div>
-      </SectionCard>
 
-      <SectionCard title={t("settings.notifications.dndTitle", { defaultValue: "Do Not Disturb" })}>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[#1A1A1A]">{t("settings.notifications.dndLabel", { defaultValue: "Enable Do Not Disturb" })}</p>
-              <p className="text-xs text-zinc-500 mt-0.5">{t("settings.notifications.dndDesc", { defaultValue: "Mute all notifications during selected hours" })}</p>
-            </div>
-            <Toggle checked={notifForm.dndEnabled} onChange={v => setNotifForm(f => ({ ...f, dndEnabled: v }))} />
-          </div>
-          {notifForm.dndEnabled && (
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div>
-                <label className="block text-xs font-semibold text-[#57585A] mb-1.5">{t("settings.notifications.from", { defaultValue: "From" })}</label>
-                <input type="time" value={notifForm.dndStart} onChange={e => setNotifForm(f => ({ ...f, dndStart: e.target.value }))}
-                  className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#172263]/20 focus:border-[#172263]" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#57585A] mb-1.5">{t("settings.notifications.to", { defaultValue: "To" })}</label>
-                <input type="time" value={notifForm.dndEnd} onChange={e => setNotifForm(f => ({ ...f, dndEnd: e.target.value }))}
-                  className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#172263]/20 focus:border-[#172263]" />
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="mt-4 pt-4 border-t border-zinc-100 flex justify-end">
-          <button onClick={saveNotifications} disabled={saving === "notifications"} className="flex items-center gap-2 bg-[#172263] hover:bg-[#11194A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60">
-            <Save size={14} /> {saving === "notifications" ? t("settings.saving", { defaultValue: "Saving..." }) : t("settings.notifications.savePreferences", { defaultValue: "Save Preferences" })}
-          </button>
-        </div>
-      </SectionCard>
-    </div>
-  );
-
-  const renderPrivacy = () => (
-    <div className="space-y-6">
-      <SectionCard title={t("settings.privacy.profileVisibility", { defaultValue: "Profile Visibility" })}>
-        <div className="space-y-3">
-          {([
-            { value: "public", label: t("settings.privacy.publicLabel", { defaultValue: "Public Profile" }), desc: t("settings.privacy.publicDesc", { defaultValue: "Visible to all users and appears in search results" }) },
-            { value: "private", label: t("settings.privacy.privateLabel", { defaultValue: "Private Profile" }), desc: t("settings.privacy.privateDesc", { defaultValue: "Only visible to users you've connected with" }) },
-            { value: "hidden", label: t("settings.privacy.hiddenLabel", { defaultValue: "Hidden Profile" }), desc: t("settings.privacy.hiddenDesc", { defaultValue: "Not visible in search results or directory" }) },
-          ] as { value: "public" | "private" | "hidden"; label: string; desc: string }[]).map(opt => (
-            <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${privacyForm.visibility === opt.value ? "border-[#172263] bg-[#172263]/5" : "border-[#E2E8F0] hover:border-zinc-300"}`}>
-              <input type="radio" name="visibility" value={opt.value} checked={privacyForm.visibility === opt.value}
-                onChange={() => setPrivacyForm(f => ({ ...f, visibility: opt.value }))} className="mt-0.5 accent-[#172263]" />
-              <div>
-                <p className="text-sm font-semibold text-[#1A1A1A]">{opt.label}</p>
-                <p className="text-xs text-zinc-500">{opt.desc}</p>
-              </div>
-            </label>
-          ))}
-        </div>
-      </SectionCard>
-
-      <SectionCard title={t("settings.privacy.contactInfo", { defaultValue: "Contact Information" })}>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[#1A1A1A]">{t("settings.privacy.showContactLabel", { defaultValue: "Show contact details" })}</p>
-              <p className="text-xs text-zinc-500">{t("settings.privacy.showContactDesc", { defaultValue: "Allow other users to see your phone number and WhatsApp" })}</p>
-            </div>
-            <Toggle checked={privacyForm.showContact} onChange={v => setPrivacyForm(f => ({ ...f, showContact: v }))} />
-          </div>
-        </div>
-        <div className="mt-4 pt-4 border-t border-zinc-100 flex justify-end">
-          <button onClick={savePrivacy} disabled={saving === "privacy"} className="flex items-center gap-2 bg-[#172263] hover:bg-[#11194A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60">
-            <Save size={14} /> {saving === "privacy" ? t("settings.saving", { defaultValue: "Saving..." }) : t("settings.privacy.saveSettings", { defaultValue: "Save Privacy Settings" })}
-          </button>
-        </div>
-      </SectionCard>
-    </div>
-  );
 
   const renderVerification = () => (
     <div className="space-y-6">
@@ -504,8 +390,9 @@ export function Settings() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { label: t("settings.support.viewProfile", { defaultValue: "View Profile" }), desc: t("settings.support.viewProfileDesc", { defaultValue: "Go to your public profile" }), link: "/profile", icon: <User size={16} className="text-[#172263]" /> },
-            { label: t("settings.support.myHarvesters", { defaultValue: "My Harvesters" }), desc: t("settings.support.myHarvestersDesc", { defaultValue: "Manage your listings" }), link: "/harvesters?tab=mine", icon: <ChevronRight size={16} className="text-[#E82326]" /> },
-            { label: t("settings.support.sendFeedback", { defaultValue: "Send Feedback" }), desc: t("settings.support.sendFeedbackDesc", { defaultValue: "Report issues or suggest features" }), link: "/enquiry", icon: <MessageCircle size={16} className="text-green-600" /> },
+            { label: t("settings.support.myHarvesters", { defaultValue: "My Harvesters" }), desc: t("settings.support.myHarvestersDesc", { defaultValue: "Manage your listings" }), link: "/profile?tab=listings", icon: <Tractor size={16} className="text-[#E82326]" /> },
+            { label: t("settings.support.myOperators", { defaultValue: "My Operators" }), desc: t("settings.support.myOperatorsDesc", { defaultValue: "Manage your operator profile" }), link: "/profile?tab=operator", icon: <UserCheck size={16} className="text-[#172263]" /> },
+            { label: t("settings.support.sendFeedback", { defaultValue: "Send Feedback" }), desc: t("settings.support.sendFeedbackDesc", { defaultValue: "Report issues or suggest features" }), link: "/enquiry?from=settings", icon: <MessageCircle size={16} className="text-green-600" /> },
             { label: t("settings.support.goToDashboard", { defaultValue: "Go to Dashboard" }), desc: t("settings.support.goToDashboardDesc", { defaultValue: "Return to your dashboard" }), link: "/dashboard", icon: <ChevronRight size={16} className="text-[#172263]" /> },
           ].map(item => (
             <Link key={item.label} to={item.link} className="flex items-center gap-3 p-3.5 bg-[#F8FAFC] hover:bg-[#EAEFF8] border border-[#E2E8F0] hover:border-[#172263]/30 rounded-xl transition-all group">
@@ -541,8 +428,6 @@ export function Settings() {
 
   const sectionContent: Record<string, React.ReactNode> = {
     account: renderAccount(),
-    notifications: renderNotifications(),
-    privacy: renderPrivacy(),
     verification: renderVerification(),
     support: renderSupport(),
   };

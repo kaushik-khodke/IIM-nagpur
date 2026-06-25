@@ -4597,11 +4597,29 @@ export function BlogDetail() {
 export function Profile() {
   const { t } = useTranslation(["pages", "static"]);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const listingsRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<any>(null);
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [operatorProfile, setOperatorProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"listings" | "operator">("listings");
+
+  useEffect(() => {
+    if (tabParam === "listings" || tabParam === "operator") {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  useEffect(() => {
+    if (tabParam && listingsRef.current) {
+      const timer = setTimeout(() => {
+        listingsRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [tabParam]);
 
   const logout = () => {
     localStorage.removeItem("tractorsewa_token");
@@ -4785,41 +4803,8 @@ export function Profile() {
             <LogOut size={16} /> <span>{t("shared.logout", { ns: "pages", defaultValue: "Logout" })}</span>
           </button>
         </div>
-
-        {/* Quick Actions (Dashboard Action Tiles) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 mt-8 border-b border-zinc-200">
-          {[
-            { label: t("profile.operatorProfile", { defaultValue: "My Operator" }), desc: t("profile.myOperatorDesc", { defaultValue: "View operator details" }), icon: <UserCheck size={18} className="text-[#172263]" />, action: () => setActiveTab("operator") },
-            { label: t("profile.harvesterListings", { defaultValue: "My Harvesters" }), desc: t("profile.myHarvestersDesc", { defaultValue: "View listed equipment" }), icon: <Tractor size={18} className="text-[#E82326]" />, action: () => setActiveTab("listings") },
-            { label: t("shared.addOperator", { ns: "pages", defaultValue: "Add Operator" }), desc: t("profile.addOperatorDesc", { defaultValue: "List a new operator" }), icon: <Plus size={18} className="text-[#172263]" />, link: "/add-operator" },
-            { label: t("messages.title", { ns: "pages", defaultValue: "Messages" }), desc: t("profile.messagesDesc", { defaultValue: "Chat with users" }), icon: <MessageSquare size={18} className="text-[#1A1A1A]" />, link: "/messages" },
-          ].map((hl, i) => {
-            const cardInner = (
-              <div className="flex items-center gap-3 p-3.5 bg-[#F4F6FA] hover:bg-[#EAEFF8] rounded-xl border border-zinc-200/60 hover:border-[#172263]/30 transition-all duration-200 h-full group text-left">
-                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-200">
-                  {hl.icon}
-                </div>
-                <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-[#1A1A1A] truncate">{hl.label}</h4>
-                  <p className="text-xs text-zinc-500 truncate">{hl.desc}</p>
-                </div>
-              </div>
-            );
-
-            return hl.link ? (
-              <Link key={i} to={hl.link} className="block h-full">
-                {cardInner}
-              </Link>
-            ) : (
-              <div key={i} onClick={hl.action} className="cursor-pointer h-full">
-                {cardInner}
-              </div>
-            );
-          })}
-        </div>
-
         {/* Tab Selection (Segmented Control) */}
-        <div className="flex justify-center mt-10 mb-6">
+        <div ref={listingsRef} className="flex justify-center mt-10 mb-6">
           <div className="bg-[#F4F6FA] p-1.5 rounded-xl border border-zinc-200/80 flex gap-1 select-none">
             <button
               onClick={() => setActiveTab("listings")}
@@ -5734,8 +5719,12 @@ export function AdminPortal() {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {
-          localStorage.removeItem("tractorsewa_token");
-          navigate("/login");
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("tractorsewa_token");
+            navigate("/login");
+          } else {
+            throw new Error(`Server returned status ${res.status}`);
+          }
           return;
         }
         const data = await res.json();

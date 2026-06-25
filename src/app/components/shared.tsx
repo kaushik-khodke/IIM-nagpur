@@ -22,6 +22,7 @@ import {
   ChevronDown,
   LogOut,
   User,
+  UserCheck,
   Plus,
   Settings,
   FileText,
@@ -709,7 +710,9 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
       })
         .then(res => {
           if (!res.ok) {
-            logout();
+            if (res.status === 401 || res.status === 403) {
+              logout();
+            }
             return null;
           }
           return res.json();
@@ -721,8 +724,6 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
             setUserRole(data.role || "user");
             localStorage.setItem("tractorsewa_user_role", data.role || "user");
             setUserImage(data.imagePath || data.image || null);
-          } else {
-            logout();
           }
         })
         .catch(() => { /* silently handle – token likely expired */ });
@@ -907,8 +908,13 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/harvesters?tab=mine" className="flex items-center gap-2 cursor-pointer">
+                        <Link to="/profile?tab=listings" className="flex items-center gap-2 cursor-pointer">
                           <Tractor size={15} /> {t("exploreHarvesters.myHarvesters", { ns: "pages", defaultValue: "My Harvesters" })}
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile?tab=operator" className="flex items-center gap-2 cursor-pointer">
+                          <UserCheck size={15} /> {t("exploreOperators.myOperators", { ns: "pages", defaultValue: "My Operators" })}
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>

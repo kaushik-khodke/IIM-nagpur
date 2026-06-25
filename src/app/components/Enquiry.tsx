@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { Navbar } from "./shared";
@@ -8,6 +8,8 @@ import { useTranslation } from "react-i18next";
 export function EnquiryPage() {
   const { t } = useTranslation(["pages", "common"]);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isFromSettings = searchParams.get("from") === "settings" || !!localStorage.getItem("tractorsewa_token");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
@@ -40,14 +42,26 @@ export function EnquiryPage() {
 
       if (res.ok) {
         toast.success(t("enquiry.successToast", { defaultValue: "Enquiry submitted successfully! We will contact you soon." }));
-        setTimeout(() => navigate("/"), 2000);
+        setTimeout(() => {
+          if (isFromSettings) {
+            navigate("/settings?tab=support");
+          } else {
+            navigate("/");
+          }
+        }, 2000);
       } else {
         const data = await res.json();
         toast.error(data.error || t("enquiry.errorToast", { defaultValue: "Failed to submit enquiry" }));
+        if (isFromSettings) {
+          setTimeout(() => navigate("/settings?tab=support"), 2000);
+        }
       }
     } catch (err) {
       console.error(err);
       toast.error(t("enquiry.errorGeneric", { defaultValue: "Error submitting enquiry" }));
+      if (isFromSettings) {
+        setTimeout(() => navigate("/settings?tab=support"), 2000);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -58,10 +72,10 @@ export function EnquiryPage() {
       <Navbar variant="auth" />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <button 
-          onClick={() => navigate("/")} 
+          onClick={() => isFromSettings ? navigate("/settings?tab=support") : navigate("/")} 
           className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263]"
         >
-          <ArrowLeft size={16} /> {t("enquiry.backToHome", { defaultValue: "Back to Home" })}
+          <ArrowLeft size={16} /> {isFromSettings ? t("enquiry.backToSettings", { defaultValue: "Back to Settings" }) : t("enquiry.backToHome", { defaultValue: "Back to Home" })}
         </button>
         
         <div className="mb-8">
