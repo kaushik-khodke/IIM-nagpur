@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -120,7 +120,8 @@ export function Dashboard() {
   }, [token, role, navigate]);
 
   useEffect(() => {
-    if (authRequired) {
+    // Only trigger auth dialog if user is not authenticated
+    if (authRequired && !token) {
       window.dispatchEvent(
         new CustomEvent("trigger-auth-required", {
           detail: { redirectPath },
@@ -131,8 +132,14 @@ export function Dashboard() {
       newParams.delete("auth_required");
       newParams.delete("redirect_path");
       setSearchParams(newParams, { replace: true });
+    } else if (authRequired && token) {
+      // User is authenticated, just clean up the URL params
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("auth_required");
+      newParams.delete("redirect_path");
+      setSearchParams(newParams, { replace: true });
     }
-  }, [authRequired, redirectPath, searchParams, setSearchParams]);
+  }, [authRequired, redirectPath, searchParams, setSearchParams, token]);
 
   if (token && role === "admin") {
     return (

@@ -1,11 +1,12 @@
 
 import { useState, useEffect, Suspense, memo, useRef, useMemo } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, useInView } from "motion/react";
 import {
   Search,
   MapPin,
   Users,
+  User,
   Tractor,
   MessageSquare,
   BarChart3,
@@ -516,12 +517,26 @@ export function Landing() {
                 </p>
                 <div className="flex flex-wrap gap-4 mb-8">
                   {localStorage.getItem("tractorsewa_token") ? (
-                    <Link
-                      to="/dashboard"
-                      className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
-                    >
-                      {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={18} />
-                    </Link>
+                    <>
+                      <Link
+                        to="/dashboard"
+                        className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
+                      >
+                        {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={18} />
+                      </Link>
+                      <Link
+                        to="/operators"
+                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
+                      >
+                        <User size={18} /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
+                      </Link>
+                      <Link
+                        to="/harvesters"
+                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
+                      >
+                        <Tractor size={18} /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
+                      </Link>
+                    </>
                   ) : (
                     <>
                       <Link
@@ -531,13 +546,22 @@ export function Landing() {
                         {t("landing.submitEnquiry", { ns: "pages", defaultValue: "Submit Enquiry" })} <ArrowRight size={18} />
                       </Link>
                       <Link
-                        to="/dashboard"
+                        to="/operators"
                         onClick={() => {
                           localStorage.setItem("tractorsewa_preview_mode", "true");
                         }}
                         className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
                       >
-                        {t("landing.exploreDashboard", { ns: "pages" })}
+                        <User size={18} /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
+                      </Link>
+                      <Link
+                        to="/harvesters"
+                        onClick={() => {
+                          localStorage.setItem("tractorsewa_preview_mode", "true");
+                        }}
+                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
+                      >
+                        <Tractor size={18} /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
                       </Link>
                     </>
                   )}

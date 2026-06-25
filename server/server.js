@@ -1642,6 +1642,34 @@ app.post('/api/admin/users/bulk', authenticateToken, isAdmin, csvUpload.single('
 // SETTINGS ROUTES
 // =============================================
 
+const toDbBool = (value) => (value === true || value === 1 || value === '1' ? 1 : 0);
+const fromDbBool = (value) => value === 1 || value === true || value === '1';
+
+const formatTimeForClient = (value) => {
+  if (value == null) return null;
+  if (value instanceof Date) {
+    const hours = value.getUTCHours().toString().padStart(2, '0');
+    const minutes = value.getUTCMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+  const str = String(value).trim();
+  return /^\d{2}:\d{2}/.test(str) ? str.slice(0, 5) : null;
+};
+
+const normalizeTimeForDb = (value) => {
+  if (value == null || value === '') return null;
+  const str = String(value).trim();
+  if (!/^\d{2}:\d{2}(:\d{2})?$/.test(str)) return null;
+  return str.length === 5 ? `${str}:00` : str;
+};
+
+const mapNotificationSettings = (row) => ({
+  notificationsEmail: fromDbBool(row.notifications_email),
+  notificationsSms: fromDbBool(row.notifications_sms),
+  doNotDisturbStart: formatTimeForClient(row.do_not_disturb_start),
+  doNotDisturbEnd: formatTimeForClient(row.do_not_disturb_end),
+});
+
 // GET /api/settings — fetch current user's full settings data
 app.get('/api/settings', authenticateToken, async (req, res) => {
   try {
@@ -1664,12 +1692,9 @@ app.get('/api/settings', authenticateToken, async (req, res) => {
       bio: u.bio,
       imagePath: u.image_path ? (u.image_path.startsWith('http') ? u.image_path : `/uploads/${path.basename(u.image_path)}`) : null,
       createdAt: u.created_at,
-      notificationsEmail: u.notifications_email === 1,
-      notificationsSms: u.notifications_sms === 1,
-      doNotDisturbStart: u.do_not_disturb_start,
-      doNotDisturbEnd: u.do_not_disturb_end,
+      ...mapNotificationSettings(u),
       profileVisibility: u.profile_visibility || 'public',
-      showContactInfo: u.show_contact_info === 1,
+      showContactInfo: fromDbBool(u.show_contact_info),
     });
   } catch (err) {
     console.error(err);
@@ -1719,11 +1744,39 @@ app.post('/api/settings/password', authenticateToken, async (req, res) => {
 app.patch('/api/settings/notifications', authenticateToken, async (req, res) => {
   try {
     const { notificationsEmail, notificationsSms, doNotDisturbStart, doNotDisturbEnd } = req.body;
+
+    if (typeof notificationsEmail !== 'boolean' || typeof notificationsSms !== 'boolean') {
+      return res.status(400).json({ error: 'Email and SMS notification preferences must be true or false' });
+    }
+
+    const dndStart = normalizeTimeForDb(doNotDisturbStart);
+    const dndEnd = normalizeTimeForDb(doNotDisturbEnd);
+
+    if ((dndStart && !dndEnd) || (!dndStart && dndEnd)) {
+      return res.status(400).json({ error: 'Both Do Not Disturb start and end times are required' });
+    }
+
+    if (doNotDisturbStart && !dndStart) {
+      return res.status(400).json({ error: 'Invalid Do Not Disturb start time' });
+    }
+    if (doNotDisturbEnd && !dndEnd) {
+      return res.status(400).json({ error: 'Invalid Do Not Disturb end time' });
+    }
+
     await db.query(
       'UPDATE users SET notifications_email = ?, notifications_sms = ?, do_not_disturb_start = ?, do_not_disturb_end = ? WHERE id = ?',
-      [notificationsEmail ? 1 : 0, notificationsSms ? 1 : 0, doNotDisturbStart || null, doNotDisturbEnd || null, req.user.id]
+      [toDbBool(notificationsEmail), toDbBool(notificationsSms), dndStart, dndEnd, req.user.id]
     );
-    res.json({ message: 'Notification preferences updated' });
+
+    const [rows] = await db.query(
+      'SELECT notifications_email, notifications_sms, do_not_disturb_start, do_not_disturb_end FROM users WHERE id = ?',
+      [req.user.id]
+    );
+
+    res.json({
+      message: 'Notification preferences updated',
+      ...mapNotificationSettings(rows[0]),
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update notifications' });

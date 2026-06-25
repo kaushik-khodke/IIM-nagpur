@@ -6,9 +6,6 @@ import {
   ArrowLeft,
   User,
   Bell,
-  Lock,
-  Eye,
-  ShieldCheck,
   HelpCircle,
   ChevronRight,
   Save,
@@ -44,8 +41,24 @@ interface UserSettings {
   notificationsSms: boolean;
   doNotDisturbStart: string | null;
   doNotDisturbEnd: string | null;
-  profileVisibility: "public" | "private" | "hidden";
-  showContactInfo: boolean;
+}
+
+function formatTimeInput(value: string | null | undefined): string {
+  if (!value) return "";
+  const str = String(value).trim();
+  return /^\d{2}:\d{2}/.test(str) ? str.slice(0, 5) : "";
+}
+
+function buildNotificationForm(data: Pick<UserSettings, "notificationsEmail" | "notificationsSms" | "doNotDisturbStart" | "doNotDisturbEnd">) {
+  const dndStart = formatTimeInput(data.doNotDisturbStart);
+  const dndEnd = formatTimeInput(data.doNotDisturbEnd);
+  return {
+    email: Boolean(data.notificationsEmail),
+    sms: Boolean(data.notificationsSms),
+    dndStart,
+    dndEnd,
+    dndEnabled: Boolean(dndStart || dndEnd),
+  };
 }
 
 // ─── Toggle Component ─────────────────────────────────────────────────────────
@@ -182,6 +195,10 @@ export function Settings() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
 
+  // Enquiry form state
+  const [enquiryForm, setEnquiryForm] = useState({ name: "", phone: "", location: "", requirement: "Harvester", dateNeeded: "" });
+  const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
+
   const token = localStorage.getItem("tractorsewa_token");
 
   useEffect(() => {
@@ -196,19 +213,24 @@ export function Settings() {
     const fetch_ = async () => {
       try {
         const res = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
+        if (res.status === 401) {
+          toast.error(t("settings.toasts.sessionExpired", { defaultValue: "Session expired. Please log in again." }));
+          navigate("/login");
+          return;
+        }
         if (res.ok) {
           const data: UserSettings = await res.json();
           setSettings(data);
           setAccountForm({ name: data.name || "", phone: data.phone || "", whatsappNumber: data.whatsappNumber || "", state: data.state || "", bio: data.bio || "" });
         }
-      } catch (err) {
-        toast.error(t("settings.toasts.loadFailed", { defaultValue: "Failed to load settings" }));
+      } catch {
+        toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" }));
       } finally {
         setLoading(false);
       }
     };
     fetch_();
-  }, [t]);
+  }, [navigate, t, token]);
 
   const saveAccount = async () => {
     setSaving("account");
@@ -256,6 +278,49 @@ export function Settings() {
       } else toast.error(data.error || t("settings.toasts.deletedFailed", { defaultValue: "Failed to delete account" }));
     } catch { toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" })); }
     finally { setSaving(null); setShowDeleteModal(false); }
+  };
+
+  const submitEnquiry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanedPhone = enquiryForm.phone.replace(/\D/g, "");
+    let finalPhone = cleanedPhone;
+    if (cleanedPhone.length === 12 && cleanedPhone.startsWith("91")) {
+      finalPhone = cleanedPhone.substring(2);
+    } else if (cleanedPhone.length === 11 && cleanedPhone.startsWith("0")) {
+      finalPhone = cleanedPhone.substring(1);
+    }
+
+    if (!/^\d{10}$/.test(finalPhone)) {
+      toast.error(t("enquiry.errorPhone", { defaultValue: "Please enter a valid 10-digit mobile number" }));
+      return;
+    }
+
+    setSubmittingEnquiry(true);
+    try {
+      const res = await fetch("/api/enquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: enquiryForm.name,
+          phone: finalPhone,
+          location: enquiryForm.location,
+          requirement: enquiryForm.requirement,
+          dateNeeded: enquiryForm.dateNeeded,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success(t("enquiry.successToast", { defaultValue: "Enquiry submitted successfully! We will contact you soon." }));
+        setEnquiryForm({ name: "", phone: "", location: "", requirement: "Harvester", dateNeeded: "" });
+      } else {
+        const data = await res.json();
+        toast.error(data.error || t("enquiry.errorToast", { defaultValue: "Failed to submit enquiry" }));
+      }
+    } catch {
+      toast.error(t("enquiry.errorGeneric", { defaultValue: "Error submitting enquiry" }));
+    } finally {
+      setSubmittingEnquiry(false);
+    }
   };
 
   const navItems = [
@@ -378,16 +443,13 @@ export function Settings() {
                 {!item.verified && <p className="text-[10px] text-zinc-400 mt-1">{item.hint}</p>}
               </div>
             </div>
-          ))}
+          </div>
         </div>
       </SectionCard>
-    </div>
-  );
 
-  const renderSupport = () => (
-    <div className="space-y-6">
-      <SectionCard title={t("settings.support.quickLinks", { defaultValue: "Quick Links" })}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Help Resources */}
+      <SectionCard title={t("settings.support.helpResources", { defaultValue: "Help Resources" })}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { label: t("settings.support.viewProfile", { defaultValue: "View Profile" }), desc: t("settings.support.viewProfileDesc", { defaultValue: "Go to your public profile" }), link: "/profile", icon: <User size={16} className="text-[#172263]" /> },
             { label: t("settings.support.myHarvesters", { defaultValue: "My Harvesters" }), desc: t("settings.support.myHarvestersDesc", { defaultValue: "Manage your listings" }), link: "/profile?tab=listings", icon: <Tractor size={16} className="text-[#E82326]" /> },
@@ -395,17 +457,94 @@ export function Settings() {
             { label: t("settings.support.sendFeedback", { defaultValue: "Send Feedback" }), desc: t("settings.support.sendFeedbackDesc", { defaultValue: "Report issues or suggest features" }), link: "/enquiry?from=settings", icon: <MessageCircle size={16} className="text-green-600" /> },
             { label: t("settings.support.goToDashboard", { defaultValue: "Go to Dashboard" }), desc: t("settings.support.goToDashboardDesc", { defaultValue: "Return to your dashboard" }), link: "/dashboard", icon: <ChevronRight size={16} className="text-[#172263]" /> },
           ].map(item => (
-            <Link key={item.label} to={item.link} className="flex items-center gap-3 p-3.5 bg-[#F8FAFC] hover:bg-[#EAEFF8] border border-[#E2E8F0] hover:border-[#172263]/30 rounded-xl transition-all group">
+            <div key={item.label} className="flex items-center gap-3 p-3.5 bg-[#F8FAFC] hover:bg-[#EAEFF8] border border-[#E2E8F0] hover:border-[#172263]/30 rounded-xl transition-all cursor-pointer group">
               <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-sm">{item.icon}</div>
               <div>
                 <p className="text-sm font-semibold text-[#1A1A1A] group-hover:text-[#172263] transition-colors">{item.label}</p>
                 <p className="text-xs text-zinc-400">{item.desc}</p>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </SectionCard>
 
+      {/* Enquiry Form */}
+      <SectionCard title={t("settings.support.submitEnquiry", { defaultValue: "Submit an Enquiry" })}>
+        <p className="text-sm text-zinc-500 mb-4">{t("settings.support.enquiryDesc", { defaultValue: "Have questions or need assistance? Fill out the form below and we'll get back to you." })}</p>
+        <form onSubmit={submitEnquiry} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.fullName", { defaultValue: "Full Name *" })}</label>
+              <input
+                value={enquiryForm.name}
+                onChange={(e) => setEnquiryForm(f => ({ ...f, name: e.target.value }))}
+                required
+                className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                placeholder={t("enquiry.placeholderName", { defaultValue: "Enter your name" })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.phone", { defaultValue: "Phone Number *" })}</label>
+              <input
+                value={enquiryForm.phone}
+                onChange={(e) => setEnquiryForm(f => ({ ...f, phone: e.target.value }))}
+                required
+                type="tel"
+                className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                placeholder={t("enquiry.placeholderPhone", { defaultValue: "Enter your phone number" })}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.location", { defaultValue: "Location *" })}</label>
+              <input
+                value={enquiryForm.location}
+                onChange={(e) => setEnquiryForm(f => ({ ...f, location: e.target.value }))}
+                required
+                className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                placeholder={t("enquiry.placeholderLocation", { defaultValue: "Enter your city/district" })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.requirement", { defaultValue: "Requirement *" })}</label>
+              <select
+                value={enquiryForm.requirement}
+                onChange={(e) => setEnquiryForm(f => ({ ...f, requirement: e.target.value }))}
+                required
+                className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#57585A] focus:outline-none focus:border-[#172263]"
+              >
+                <option value="Harvester">{t("enquiry.options.harvester", { defaultValue: "Harvester" })}</option>
+                <option value="Operator">{t("enquiry.options.operator", { defaultValue: "Operator" })}</option>
+                <option value="Both">{t("enquiry.options.both", { defaultValue: "Both (Harvester & Operator)" })}</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-[#57585A] block mb-1.5">{t("enquiry.dateNeeded", { defaultValue: "Date Needed *" })}</label>
+            <input
+              value={enquiryForm.dateNeeded}
+              onChange={(e) => setEnquiryForm(f => ({ ...f, dateNeeded: e.target.value }))}
+              required
+              type="date"
+              className="w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={submittingEnquiry}
+            className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors disabled:opacity-60 flex items-center justify-center gap-2 text-sm font-semibold"
+          >
+            {submittingEnquiry ? (
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              t("enquiry.submit", { defaultValue: "Submit Enquiry" })
+            )}
+          </button>
+        </form>
+      </SectionCard>
+
+      {/* Legal & Policies */}
       <SectionCard title={t("settings.support.legalPolicies", { defaultValue: "Legal & Policies" })}>
         <div className="space-y-3">
           {[
