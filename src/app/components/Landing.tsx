@@ -25,6 +25,7 @@ import {
   WheatWatermark,
   SkeletonCard,
   AuthChooserDialog,
+  getFirstImage,
 } from "./shared";
 import { Canvas } from "@react-three/fiber";
 import { TractorModel } from "@/components/ui/Tractor3D";
@@ -292,7 +293,7 @@ export function Landing() {
                   id: item.id,
                   name: item.machineName,
                   subtitle: item.ownerName,
-                  image: item.imagePath,
+                  image: getFirstImage(item.imagePath),
                   ownerImage: item.ownerProfilePic,
                   type: "harvester",
                   ownerId: item.userId,

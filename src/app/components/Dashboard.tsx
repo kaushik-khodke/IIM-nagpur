@@ -31,6 +31,7 @@ import {
   SkeletonCard,
   WheatWatermark,
   AuthChooserDialog,
+  getFirstImage,
 } from "./shared";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -371,7 +372,7 @@ export function Dashboard() {
                   id: item.id,
                   name: item.machineName,
                   subtitle: item.ownerName,
-                  image: item.imagePath,
+                  image: getFirstImage(item.imagePath),
                   ownerImage: item.ownerProfilePic,
                   type: "harvester",
                   ownerId: item.userId,
