@@ -1,377 +1,331 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { cn } from "@/lib/utils";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
-// Register ScrollTrigger safely for React
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
-
-// -------------------------------------------------------------------------
-// 1. THEME-ADAPTIVE INLINE STYLES
-// -------------------------------------------------------------------------
-const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
-
-.cinematic-footer-wrapper {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  
-  /* Dynamic Variables for Light Theme */
-  --pill-bg-1: rgba(0, 0, 0, 0.02);
-  --pill-bg-2: rgba(0, 0, 0, 0.01);
-  --pill-shadow: rgba(0, 0, 0, 0.05);
-  --pill-highlight: rgba(255, 255, 255, 0.8);
-  --pill-inset-shadow: rgba(0, 0, 0, 0.05);
-  --pill-border: rgba(0, 0, 0, 0.1);
-  
-  --pill-bg-1-hover: rgba(0, 0, 0, 0.05);
-  --pill-bg-2-hover: rgba(0, 0, 0, 0.02);
-  --pill-border-hover: rgba(0, 0, 0, 0.2);
-  --pill-shadow-hover: rgba(0, 0, 0, 0.1);
-  --pill-highlight-hover: rgba(255, 255, 255, 0.9);
-}
-
-@keyframes footer-breathe {
-  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-  100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-}
-
-@keyframes footer-scroll-marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-@keyframes footer-heartbeat {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(232, 114, 12, 0.5)); }
-  15%, 45% { transform: scale(1.2); filter: drop-shadow(0 0 10px rgba(232, 114, 12, 0.8)); }
-  30% { transform: scale(1); }
-}
-
-.animate-footer-breathe {
-  animation: footer-breathe 8s ease-in-out infinite alternate;
-}
-
-.animate-footer-scroll-marquee {
-  animation: footer-scroll-marquee 40s linear infinite;
-}
-
-.animate-footer-heartbeat {
-  animation: footer-heartbeat 2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
-}
-
-/* Theme-adaptive Grid Background */
-.footer-bg-grid {
-  background-size: 60px 60px;
-  background-image: 
-    linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
-  mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
-}
-
-/* Theme-adaptive Aurora Glow */
-.footer-aurora {
-  background: radial-gradient(
-    circle at 50% 50%, 
-    rgba(232, 114, 12, 0.08) 0%, 
-    rgba(23, 34, 99, 0.08) 40%, 
-    transparent 70%
-  );
-}
-
-/* Glass Pill Theming */
-.footer-glass-pill {
-  background: linear-gradient(145deg, var(--pill-bg-1) 0%, var(--pill-bg-2) 100%);
-  box-shadow: 
-      0 10px 30px -10px var(--pill-shadow), 
-      inset 0 1px 1px var(--pill-highlight), 
-      inset 0 -1px 2px var(--pill-inset-shadow);
-  border: 1px solid var(--pill-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  color: #172263;
-}
-
-.footer-glass-pill:hover {
-  background: linear-gradient(145deg, var(--pill-bg-1-hover) 0%, var(--pill-bg-2-hover) 100%);
-  border-color: var(--pill-border-hover);
-  box-shadow: 
-      0 20px 40px -10px var(--pill-shadow-hover), 
-      inset 0 1px 1px var(--pill-highlight-hover);
-  color: #172263;
-}
-
-/* Giant Background Text Masking */
-.footer-giant-bg-text {
-  font-size: 14vw;
-  line-height: 0.75;
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(0,0,0,0.05);
-  background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, transparent 60%);
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
-/* Metallic Text Glow */
-.footer-text-glow {
-  background: linear-gradient(180deg, #172263 0%, rgba(23,34,99,0.7) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0px 0px 20px rgba(23,34,99,0.15));
-}
-`;
-
-// -------------------------------------------------------------------------
-// 2. MAGNETIC BUTTON PRIMITIVE (Zero Dependency)
-// -------------------------------------------------------------------------
-export type MagneticButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & 
-  React.AnchorHTMLAttributes<HTMLAnchorElement> & {
-    as?: React.ElementType;
-  };
-
-const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>(
-  ({ className, children, as: Component = "button", ...props }, forwardedRef) => {
-    const localRef = useRef<HTMLElement>(null);
-
-    useEffect(() => {
-      if (typeof window === "undefined") return;
-      const element = localRef.current;
-      if (!element) return;
-
-      const ctx = gsap.context(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-          const rect = element.getBoundingClientRect();
-          const h = rect.width / 2;
-          const w = rect.height / 2;
-          const x = e.clientX - rect.left - h;
-          const y = e.clientY - rect.top - w;
-
-          gsap.to(element, {
-            x: x * 0.4,
-            y: y * 0.4,
-            rotationX: -y * 0.15,
-            rotationY: x * 0.15,
-            scale: 1.05,
-            ease: "power2.out",
-            duration: 0.4,
-          });
-        };
-
-        const handleMouseLeave = () => {
-          gsap.to(element, {
-            x: 0,
-            y: 0,
-            rotationX: 0,
-            rotationY: 0,
-            scale: 1,
-            ease: "elastic.out(1, 0.3)",
-            duration: 1.2,
-          });
-        };
-
-        element.addEventListener("mousemove", handleMouseMove as any);
-        element.addEventListener("mouseleave", handleMouseLeave);
-
-        return () => {
-          element.removeEventListener("mousemove", handleMouseMove as any);
-          element.removeEventListener("mouseleave", handleMouseLeave);
-        };
-      }, element);
-
-      return () => ctx.revert();
-    },[]);
-
-    return (
-      <Component
-        ref={(node: HTMLElement) => {
-          (localRef as any).current = node;
-          if (typeof forwardedRef === "function") forwardedRef(node);
-          else if (forwardedRef) (forwardedRef as any).current = node;
-        }}
-        className={cn("cursor-pointer", className)}
-        {...props}
-      >
-        {children}
-      </Component>
-    );
-  }
-);
-MagneticButton.displayName = "MagneticButton";
-
-// -------------------------------------------------------------------------
-// 3. MAIN COMPONENT
-// -------------------------------------------------------------------------
-const MarqueeItem = () => {
-  const { t } = useTranslation(["pages", "static"]);
-  return (
-    <div className="flex items-center space-x-12 px-6">
-      <span>{t("footer.marquee.connecting", { defaultValue: "Connecting Farmers" })}</span> <span className="text-[#E8720C]/80">✦</span>
-      <span>{t("footer.marquee.operators", { defaultValue: "Verified Operators" })}</span> <span className="text-[#E8720C]/80">✦</span>
-      <span>{t("footer.marquee.booking", { defaultValue: "Seamless Booking" })}</span> <span className="text-[#E8720C]/80">✦</span>
-      <span>{t("footer.marquee.service", { defaultValue: "Nationwide Service" })}</span> <span className="text-[#E8720C]/80">✦</span>
-      <span>{t("footer.marquee.growth", { defaultValue: "Empowering Growth" })}</span> <span className="text-[#E8720C]/80">✦</span>
-    </div>
-  );
-};
+import { Phone, Mail, MapPin, Facebook, Instagram, Linkedin } from "lucide-react";
+import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
 
 export function CinematicFooter() {
-  const { t } = useTranslation(["pages", "static"]);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const giantTextRef = useRef<HTMLDivElement>(null);
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const linksRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation(["pages", "common", "static"]);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!wrapperRef.current) return;
-
-    // We removed the ScrollTrigger GSAP animations that were hiding the content with opacity: 0
-    // so that the footer UI is always fully visible when scrolled into view.
-    const ctx = gsap.context(() => {}, wrapperRef);
-
-    return () => ctx.revert();
-  },[]);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, anchor: string) => {
+    if (location.pathname === "/") {
+      e.preventDefault();
+      if (anchor === "top") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      if (anchor === "top") {
+        e.preventDefault();
+        navigate("/");
+      } else {
+        e.preventDefault();
+        navigate(`/#${anchor}`);
+      }
+    }
   };
 
   return (
-    <>
-      <style dangerouslySetInnerHTML={{ __html: STYLES }} />
-      
-      {/* 
-        The "Curtain Reveal" Wrapper:
-        It sits in standard flow. Because it has clip-path, its contents
-        are ONLY visible within its bounding box. 
-      */}
-      <div
-        ref={wrapperRef}
-        className="relative h-screen w-full"
-        style={{ clipPath: "polygon(0% 0, 100% 0%, 100% 100%, 0 100%)" }}
-      >
-        {/* The actual footer stays fixed to the viewport underneath everything */}
-        <footer className="fixed bottom-0 left-0 flex h-screen w-full flex-col justify-between overflow-hidden bg-white text-[#172263] cinematic-footer-wrapper">
+    <footer className="w-full bg-[#002855] text-white py-16 px-6 md:px-12 relative overflow-hidden font-sans border-t border-[#001D3D] z-10">
+      {/* Subtle Aurora Glow background overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(232,114,12,0.05),transparent_40%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(23,34,99,0.2),transparent_50%)] pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto relative z-10 space-y-12">
+        {/* 1. Top Section: Have a Question & Franchise Inquiry */}
+        <div className="flex flex-col md:flex-row items-stretch justify-between gap-8 pb-12 border-b border-white/10">
           
-          {/* Ambient Light & Grid Background */}
-          <div className="footer-aurora absolute left-1/2 top-1/2 h-[60vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 animate-footer-breathe rounded-[50%] blur-[80px] pointer-events-none z-0" />
-          <div className="footer-bg-grid absolute inset-0 z-0 pointer-events-none" />
-
-          {/* Giant background text */}
-          <div
-            ref={giantTextRef}
-            className="footer-giant-bg-text absolute -bottom-[5vh] left-1/2 -translate-x-1/2 whitespace-nowrap z-0 pointer-events-none select-none"
-          >
-            TRACTOR SEVA
-          </div>
-
-          {/* 1. Diagonal Sleek Marquee (Top of footer) */}
-          <div className="absolute top-12 left-0 w-full overflow-hidden border-y border-[#172263]/10 bg-white/80 backdrop-blur-md py-4 z-10 -rotate-2 scale-110 shadow-2xl">
-            <div className="flex w-max animate-footer-scroll-marquee text-xs md:text-sm font-bold tracking-[0.3em] text-[#172263]/60 uppercase">
-              <MarqueeItem />
-              <MarqueeItem />
+          {/* Left Block: Have a Question */}
+          <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-between">
+            <div>
+              <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white mb-1">
+                {t("footer.haveQuestion", { defaultValue: "Have a Question?" })}
+              </h3>
+              <p className="text-xl md:text-2xl font-bold text-white/80 mb-6">
+                {t("footer.feelFreeToAsk", { defaultValue: "Feel free to ask" })}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white shrink-0 shadow-sm">
+                <Phone className="w-4 h-4 text-white" />
+              </div>
+              <a 
+                href="tel:+919209392096" 
+                className="text-xl md:text-2xl font-bold text-white hover:text-[#E8720C] transition-colors duration-300"
+              >
+                +91 92093 92096
+              </a>
             </div>
           </div>
 
-          {/* 2. Main Center Content */}
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 mt-20 w-full max-w-5xl mx-auto">
-            <h2
-              ref={headingRef}
-              className="text-5xl md:text-8xl font-black footer-text-glow tracking-tighter mb-12 text-center"
+          {/* Vertical Separator Line (Desktop only) */}
+          <div className="hidden md:block w-px bg-white/10 self-stretch my-2" />
+
+          {/* Right Block: Franchise Inquiry */}
+          <div className="flex-1 flex flex-col md:flex-row items-center justify-between gap-6 md:pl-8">
+            <div className="text-center md:text-left">
+              <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white mb-1">
+                {t("footer.sendInquiry", { defaultValue: "Send Inquiry" })}
+              </h3>
+              <p className="text-xl md:text-2xl font-bold text-white/80">
+                {t("footer.forFranchise", { defaultValue: "For Franchise" })}
+              </p>
+            </div>
+            <Link
+              to="/enquiry"
+              className="px-8 py-3 bg-white text-[#002855] font-extrabold rounded-lg hover:bg-[#E8720C] hover:text-white transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 text-center min-w-[140px]"
             >
-              {t("footer.growHarvest", { defaultValue: "Grow your harvest." })}
-            </h2>
+              {t("shared.inquiry", { defaultValue: "Inquiry" })}
+            </Link>
+          </div>
 
-            {/* Interactive Magnetic Pills Layout */}
-            <div ref={linksRef} className="flex flex-col items-center gap-6 w-full">
-              {/* Main Links */}
-              <div className="flex flex-wrap justify-center gap-4 w-full">
-                <MagneticButton as="a" href="/register" className="footer-glass-pill px-10 py-5 rounded-full text-[#172263] font-bold text-sm md:text-base flex items-center gap-3 group">
-                  <svg className="w-6 h-6 text-[#172263]/50 group-hover:text-[#172263] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                  {t("landing.farmerPill.register", { defaultValue: "Register as Farmer" })}
-                </MagneticButton>
-                
-                <MagneticButton as="a" href="/enquiry" className="footer-glass-pill px-10 py-5 rounded-full text-[#172263] font-bold text-sm md:text-base flex items-center gap-3 group">
-                  <svg className="w-6 h-6 text-[#172263]/50 group-hover:text-green-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {t("shared.enquiry", { defaultValue: "Enquiry" })}
-                </MagneticButton>
+        </div>
 
-                <MagneticButton as="a" href="/register" className="footer-glass-pill px-10 py-5 rounded-full text-[#172263] font-bold text-sm md:text-base flex items-center gap-3 group">
-                  <svg className="w-6 h-6 text-[#172263]/50 group-hover:text-[#E8720C] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        {/* 2. Middle Section: Five Column Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 xl:gap-12 pt-4">
+          
+          {/* Column 1: Logo & Social Media */}
+          <div className="flex flex-col items-center md:items-start space-y-6">
+            <Link to="/" className="flex items-center gap-2 group">
+              <img 
+                src={tractorSevaLogo} 
+                alt="Tractor Seva" 
+                className="h-12 w-auto brightness-0 invert object-contain transition-transform duration-300 group-hover:scale-105" 
+              />
+            </Link>
+            <div className="w-full text-center md:text-left space-y-3">
+              <h4 className="text-xs font-bold text-white/60 tracking-widest uppercase">
+                {t("footer.followUs", { defaultValue: "Follow Us" })}
+              </h4>
+              <div className="flex justify-center md:justify-start gap-3">
+                <a 
+                  href="https://www.facebook.com/tractorsevaindia?mibextid=LQQJ4d" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white hover:bg-[#E8720C] hover:border-[#E8720C] hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm"
+                  title="Facebook"
+                >
+                  <Facebook className="w-4 h-4" />
+                </a>
+                <a 
+                  href="https://www.instagram.com/tractorseva/?igsh=MXBsZGk3ajkyMTA4NQ%3D%3D" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white hover:bg-[#E8720C] hover:border-[#E8720C] hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm"
+                  title="Instagram"
+                >
+                  <Instagram className="w-4 h-4" />
+                </a>
+                <a 
+                  href="https://twitter.com/TractorSeva" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white hover:bg-[#E8720C] hover:border-[#E8720C] hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm"
+                  title="X (Twitter)"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
-                  {t("landing.operatorPill.join", { defaultValue: "Join as Operator" })}
-                </MagneticButton>
+                </a>
+                <a 
+                  href="https://www.linkedin.com/company/tractor-seva/" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white hover:bg-[#E8720C] hover:border-[#E8720C] hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm"
+                  title="LinkedIn"
+                >
+                  <Linkedin className="w-4 h-4" />
+                </a>
               </div>
+            </div>
+          </div>
 
-              {/* Secondary Text Links */}
-              <div className="flex flex-wrap justify-center gap-3 md:gap-6 w-full mt-2">
-                <MagneticButton as="a" href="#" className="footer-glass-pill px-6 py-3 rounded-full text-[#172263]/70 font-medium text-xs md:text-sm hover:text-[#172263]">
+          {/* Column 2: Important Links */}
+          <div className="text-center md:text-left space-y-4">
+            <h4 className="text-base font-bold text-white tracking-wider">
+              {t("footer.importantLinksHeader", { defaultValue: "Important Links" })}
+            </h4>
+            <ul className="space-y-2.5 text-sm text-white/70">
+              <li>
+                <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("footer.termsAndCondition", { defaultValue: "Terms and Condition" })}
+                </a>
+              </li>
+              <li>
+                <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
                   {t("footer.privacyPolicy", { defaultValue: "Privacy Policy" })}
-                </MagneticButton>
-                <MagneticButton as="a" href="#" className="footer-glass-pill px-6 py-3 rounded-full text-[#172263]/70 font-medium text-xs md:text-sm hover:text-[#172263]">
-                  {t("footer.termsOfService", { defaultValue: "Terms of Service" })}
-                </MagneticButton>
-                <MagneticButton as="a" href="#" className="footer-glass-pill px-6 py-3 rounded-full text-[#172263]/70 font-medium text-xs md:text-sm hover:text-[#172263]">
-                  {t("footer.support", { defaultValue: "Support" })}
-                </MagneticButton>
+                </a>
+              </li>
+              <li>
+                <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("footer.serviceAgreement", { defaultValue: "Service Agreement" })}
+                </a>
+              </li>
+              <li>
+                <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("footer.cancellationPolicy", { defaultValue: "Cancellation and Rescheduling Policy" })}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Quick Links */}
+          <div className="text-center md:text-left space-y-4">
+            <h4 className="text-base font-bold text-white tracking-wider">
+              {t("footer.quickLinksHeader", { defaultValue: "Quick Links" })}
+            </h4>
+            <ul className="space-y-2.5 text-sm text-white/70">
+              <li>
+                <a href="#top" onClick={(e) => handleAnchorClick(e, "top")} className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("nav.home", { ns: "common", defaultValue: "Home" })}
+                </a>
+              </li>
+              <li>
+                <a href="#how-it-works" onClick={(e) => handleAnchorClick(e, "how-it-works")} className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("landing.howItWorks", { ns: "pages", defaultValue: "How It Works" })}
+                </a>
+              </li>
+              <li>
+                <a href="#features" onClick={(e) => handleAnchorClick(e, "features")} className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("landing.features", { ns: "pages", defaultValue: "Features" })}
+                </a>
+              </li>
+              <li>
+                <a href="#faq" onClick={(e) => handleAnchorClick(e, "faq")} className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("nav.faq", { ns: "common", defaultValue: "FAQ" })}
+                </a>
+              </li>
+              <li>
+                <a href="#contact" onClick={(e) => handleAnchorClick(e, "contact")} className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("nav.contact", { ns: "common", defaultValue: "Contact" })}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Our Offerings */}
+          <div className="text-center md:text-left space-y-4">
+            <h4 className="text-base font-bold text-white tracking-wider">
+              {t("footer.ourOfferingsHeader", { defaultValue: "Our Offerings" })}
+            </h4>
+            <ul className="space-y-2.5 text-sm text-white/70">
+              <li>
+                <Link to="/harvesters" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("footer.bookService", { defaultValue: "Book Service" })}
+                </Link>
+              </li>
+              <li>
+                <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("footer.buyKits", { defaultValue: "Buy Kits" })}
+                </a>
+              </li>
+              <li>
+                <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("footer.buyPartsAndAccessories", { defaultValue: "Buy Parts & Accessories" })}
+                </a>
+              </li>
+              <li>
+                <a href="https://tractorseva.com/" target="_blank" rel="noopener noreferrer" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                  {t("footer.tractorSevaLink", { defaultValue: "Tractor-seva" })}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 5: Contact Us Details */}
+          <div className="text-center md:text-left space-y-5 lg:col-span-1 md:col-span-2">
+            <h4 className="text-base font-bold text-white tracking-wider">
+              {t("footer.contactUsHeader", { defaultValue: "Contact Us" })}
+            </h4>
+            <div className="space-y-4 text-sm text-white/70">
+              
+              {/* Address */}
+              <div className="flex flex-col md:flex-row items-center md:items-start gap-3">
+                <div className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white shrink-0 mt-0.5">
+                  <MapPin className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-xs md:text-sm text-white/80 leading-relaxed text-center md:text-left">
+                  Bedienung Solution Private Limited (Tractor Seva)<br />
+                  C/o- InFED Indian Institute of Management Nagpur Mihan (Non-Sez), Nagpur, Maharashtra, India - 441108
+                </p>
               </div>
+
+              {/* Email */}
+              <div className="flex flex-col md:flex-row items-center gap-3">
+                <div className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white shrink-0">
+                  <Mail className="w-4 h-4 text-white" />
+                </div>
+                <a href="mailto:customercare@tractorseva.com" className="text-xs md:text-sm text-white/80 hover:text-[#E8720C] transition-colors">
+                  customercare@tractorseva.com
+                </a>
+              </div>
+
+              {/* Phone */}
+              <div className="flex flex-col md:flex-row items-center gap-3">
+                <div className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white shrink-0">
+                  <Phone className="w-4 h-4 text-white" />
+                </div>
+                <a href="tel:+919209392096" className="text-xs md:text-sm text-white/80 hover:text-[#E8720C] transition-colors">
+                  +91 92093 92096
+                </a>
+              </div>
+
             </div>
           </div>
 
-          {/* 3. Bottom Bar / Credits */}
-          <div className="relative z-20 w-full pb-8 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+        </div>
 
-            {/* Contact Information */}
-            <div className="flex flex-col items-center md:items-start gap-2 order-1 md:order-2">
-              <div className="flex items-center gap-2 text-[#172263]/70 text-xs md:text-sm">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span className="font-medium">customercare@tractorseva.com</span>
-              </div>
-              <div className="flex items-center gap-2 text-[#172263]/70 text-xs md:text-sm">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-                <span className="font-medium">+91 92093 92096</span>
-              </div>
+        {/* 3. Bottom Bar: Copyright & Payment Logos */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-white/10">
+          
+          {/* Copyright Text */}
+          <div className="text-xs text-white/60 font-semibold tracking-wide text-center md:text-left">
+            {t("footer.copyrightText", { defaultValue: "All rights reserved to Tractor seva" })}
+          </div>
+
+          {/* Payment Gateways */}
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            
+            {/* UPI Logo */}
+            <div className="px-2.5 py-1 bg-white/5 border border-white/10 rounded flex items-center justify-center h-7" title="UPI">
+              <span className="text-[10px] font-black italic tracking-wider text-white">UPI</span>
             </div>
 
-            {/* Copyright */}
-            <div className="text-[#172263]/60 text-[10px] md:text-xs font-semibold tracking-widest uppercase order-2 md:order-1">
-              {t("footer.copyright", { defaultValue: "© 2025 Tractor Seva. Made for Indian Farmers 🇮🇳" })}
+            {/* RuPay Logo */}
+            <div className="px-2.5 py-1 bg-white/5 border border-white/10 rounded flex items-center justify-center h-7" title="RuPay">
+              <span className="text-[10px] font-black italic text-white flex items-center gap-0.5">
+                RuPay<span className="text-[#E8720C] font-black">▶</span>
+              </span>
             </div>
 
+            {/* Mastercard Logo */}
+            <div className="px-2.5 py-1 bg-white/5 border border-white/10 rounded flex items-center justify-center gap-1 h-7" title="MasterCard">
+              <div className="w-3.5 h-3.5 rounded-full bg-[#EB001B] -mr-2" />
+              <div className="w-3.5 h-3.5 rounded-full bg-[#FF5F00] opacity-80" />
+            </div>
 
-            {/* Back to top */}
-            <MagneticButton
-              as="button"
-              onClick={scrollToTop}
-              className="w-12 h-12 rounded-full footer-glass-pill flex items-center justify-center text-[#172263]/60 hover:text-[#172263] group order-3"
-            >
-              <svg className="w-5 h-5 transform group-hover:-translate-y-1.5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-              </svg>
-            </MagneticButton>
+            {/* Visa Logo */}
+            <div className="px-2.5 py-1 bg-white/5 border border-white/10 rounded flex items-center justify-center h-7" title="Visa">
+              <span className="text-[10px] font-black italic text-white tracking-widest">VISA</span>
+            </div>
+
+            {/* Amex Logo */}
+            <div className="px-2.5 py-1 bg-white/5 border border-white/10 rounded flex items-center justify-center h-7" title="American Express">
+              <span className="text-[8px] font-extrabold text-white tracking-tighter uppercase border border-white/20 px-1 bg-[#0170B9]/20 rounded-sm">
+                AMEX
+              </span>
+            </div>
 
           </div>
-        </footer>
+
+        </div>
+
       </div>
-    </>
+    </footer>
   );
 }
