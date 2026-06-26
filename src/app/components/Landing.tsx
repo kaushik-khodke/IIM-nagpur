@@ -32,6 +32,7 @@ import { TractorModel } from "@/components/ui/Tractor3D";
 import { CinematicFooter } from "@/components/motion-footer";
 import { CardContainer, CardBody, CardItem } from "@/components/ui/3d-card";
 import districtsData from "./districts.json";
+import { cn } from "@/lib/utils";
 
 const INDIAN_STATES = districtsData.states.map((s: any) => s.state);
 
@@ -150,6 +151,36 @@ const Tractor3DCanvas = memo(function Tractor3DCanvas() {
     </Canvas>
   );
 });
+
+function VideoBackground({ src }: { src: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.defaultMuted = true;
+      ref.current.muted = true;
+      ref.current.playsInline = true;
+      const playPromise = ref.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Silent catch for autoplay constraints
+        });
+      }
+    }
+  }, [src]);
+
+  return (
+    <video
+      ref={ref}
+      src={src}
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="w-full h-full object-cover opacity-15 group-hover:opacity-45 transition-opacity duration-700 ease-out"
+    />
+  );
+}
 
 export function Landing() {
   const { t } = useTranslation(["pages", "common", "dashboard"]);
@@ -452,13 +483,48 @@ export function Landing() {
   };
 
   const features = [
-    { icon: Search, title: t("landing.featureList.f1.title"), desc: t("landing.featureList.f1.desc") },
-    { icon: Tractor, title: t("landing.featureList.f2.title"), desc: t("landing.featureList.f2.desc") },
-    { icon: MessageSquare, title: t("landing.featureList.f3.title"), desc: t("landing.featureList.f3.desc") },
-    { icon: CheckCircle, title: t("landing.featureList.f4.title"), desc: t("landing.featureList.f4.desc") },
-    { icon: Filter, title: t("landing.featureList.f5.title"), desc: t("landing.featureList.f5.desc") },
-    { icon: MapPin, title: t("landing.featureList.f6.title"), desc: t("landing.featureList.f6.desc") },
-    { icon: Globe, title: t("landing.featureList.f7.title"), desc: t("landing.featureList.f7.desc") },
+    {
+      icon: Search,
+      title: t("landing.featureList.f1.title", { defaultValue: "Operator Search" }),
+      desc: t("landing.featureList.f1.desc", { defaultValue: "Find verified operators by location, experience & machine type." }),
+      videoUrl: "/videos/operator_search.mp4",
+      colSpan: "md:col-span-4",
+    },
+    {
+      icon: Tractor,
+      title: t("landing.featureList.f2.title", { defaultValue: "Harvester Directory" }),
+      desc: t("landing.featureList.f2.desc", { defaultValue: "Browse machines from all major brands across India." }),
+      videoUrl: "/videos/harvester_directory.mp4",
+      colSpan: "md:col-span-8",
+    },
+    {
+      icon: MessageSquare,
+      title: t("landing.featureList.f3.title", { defaultValue: "Direct Messaging" }),
+      desc: t("landing.featureList.f3.desc", { defaultValue: "Connect directly without middlemen or brokers." }),
+      videoUrl: "/videos/direct_messaging.mp4",
+      colSpan: "md:col-span-6",
+    },
+    {
+      icon: CheckCircle,
+      title: t("landing.featureList.f4.title", { defaultValue: "Availability Tracking" }),
+      desc: t("landing.featureList.f4.desc", { defaultValue: "Real-time availability status for every operator." }),
+      videoUrl: "/videos/availability_tracking.mp4",
+      colSpan: "md:col-span-6",
+    },
+    {
+      icon: Filter,
+      title: t("landing.featureList.f5.title", { defaultValue: "Requirements Board" }),
+      desc: t("landing.featureList.f5.desc", { defaultValue: "Post your seasonal requirements and get applications." }),
+      videoUrl: "/videos/requirements_board.mp4",
+      colSpan: "md:col-span-8",
+    },
+    {
+      icon: MapPin,
+      title: t("landing.featureList.f6.title", { defaultValue: "Location Filters" }),
+      desc: t("landing.featureList.f6.desc", { defaultValue: "Pinpoint operators in your district, state or region." }),
+      videoUrl: "/videos/location_filters.mp4",
+      colSpan: "md:col-span-4",
+    },
   ];
 
   return (
@@ -1050,7 +1116,7 @@ export function Landing() {
                 {t("landing.featuresSub", { ns: "pages", defaultValue: "Built for the realities of Indian agricultural workflow — field-tested, farmer-approved." })}
               </p>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 max-w-6xl mx-auto">
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-12 max-w-6xl mx-auto">
               {features.map((feature, index) => {
                 const Icon = feature.icon;
                 return (
@@ -1058,18 +1124,33 @@ export function Landing() {
                     key={index}
                     initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    whileHover={{ y: -6, scale: 1.02 }}
-                    viewport={{ once: true, amount: 0.2 }}
+                    whileHover={{ y: -6, scale: 1.01 }}
+                    viewport={{ once: true, amount: 0.1 }}
                     transition={{ type: "spring", stiffness: 180, damping: 18, delay: index * 0.05 }}
-                    className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.04)] transition-shadow duration-300 hover:shadow-[0_22px_70px_rgba(15,23,42,0.08)]"
+                    className={cn(
+                      "group relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/80 backdrop-blur-md p-8 shadow-[0_18px_50px_rgba(15,23,42,0.02)] transition-all duration-300 hover:shadow-[0_22px_60px_rgba(23,34,99,0.06)] hover:border-[#172263]/20 flex flex-col justify-between min-h-[240px]",
+                      feature.colSpan
+                    )}
                   >
-                    <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-100 text-slate-900 shadow-sm">
-                      <Icon size={22} />
+                    {/* Background Video */}
+                    <div className="absolute inset-0 z-0 overflow-hidden rounded-[2rem] pointer-events-none bg-slate-50">
+                      <VideoBackground src={feature.videoUrl} />
+                      {/* Gradient Overlay for Text Readability */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent z-10" />
                     </div>
-                    <h3 className="mt-6 text-xl font-semibold text-slate-950" style={{ fontFamily: "'Sora', sans-serif" }}>
-                      {feature.title}
-                    </h3>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">{feature.desc}</p>
+
+                    {/* Content */}
+                    <div className="relative z-20 flex flex-col h-full justify-between">
+                      <div>
+                        <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-100/90 text-slate-900 shadow-xs group-hover:bg-[#172263] group-hover:text-white transition-all duration-300">
+                          <Icon size={24} className="transition-transform duration-300 group-hover:scale-105" />
+                        </div>
+                        <h3 className="mt-6 text-xl font-bold text-slate-950 font-sora group-hover:text-[#172263] transition-colors duration-300" style={{ fontFamily: "'Sora', sans-serif" }}>
+                          {feature.title}
+                        </h3>
+                        <p className="mt-3 text-sm leading-relaxed text-slate-600 max-w-xl">{feature.desc}</p>
+                      </div>
+                    </div>
                   </motion.div>
                 );
               })}
