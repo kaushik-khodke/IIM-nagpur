@@ -30,16 +30,6 @@ import {
 import { Canvas } from "@react-three/fiber";
 import { TractorModel } from "@/components/ui/Tractor3D";
 import { CinematicFooter } from "@/components/motion-footer";
-import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
-import {
-  SearchHeader,
-  TractorHeader,
-  ChatHeader,
-  TrackingHeader,
-  BoardHeader,
-  LocationHeader,
-  GlobeHeader,
-} from "@/components/ui/bento-headers";
 import { CardContainer, CardBody, CardItem } from "@/components/ui/3d-card";
 import districtsData from "./districts.json";
 
@@ -462,13 +452,13 @@ export function Landing() {
   };
 
   const features = [
-    { icon: <Search size={22} />, title: t("landing.featureList.f1.title"), desc: t("landing.featureList.f1.desc"), headerComponent: <SearchHeader /> },
-    { icon: <Tractor size={22} />, title: t("landing.featureList.f2.title"), desc: t("landing.featureList.f2.desc"), headerComponent: <TractorHeader /> },
-    { icon: <MessageSquare size={22} />, title: t("landing.featureList.f3.title"), desc: t("landing.featureList.f3.desc"), headerComponent: <ChatHeader /> },
-    { icon: <CheckCircle size={22} />, title: t("landing.featureList.f4.title"), desc: t("landing.featureList.f4.desc"), headerComponent: <TrackingHeader /> },
-    { icon: <Filter size={22} />, title: t("landing.featureList.f5.title"), desc: t("landing.featureList.f5.desc"), headerComponent: <BoardHeader /> },
-    { icon: <MapPin size={22} />, title: t("landing.featureList.f6.title"), desc: t("landing.featureList.f6.desc"), headerComponent: <LocationHeader /> },
-    { icon: <Globe size={22} />, title: t("landing.featureList.f7.title"), desc: t("landing.featureList.f7.desc"), headerComponent: <GlobeHeader /> },
+    { icon: Search, title: t("landing.featureList.f1.title"), desc: t("landing.featureList.f1.desc") },
+    { icon: Tractor, title: t("landing.featureList.f2.title"), desc: t("landing.featureList.f2.desc") },
+    { icon: MessageSquare, title: t("landing.featureList.f3.title"), desc: t("landing.featureList.f3.desc") },
+    { icon: CheckCircle, title: t("landing.featureList.f4.title"), desc: t("landing.featureList.f4.desc") },
+    { icon: Filter, title: t("landing.featureList.f5.title"), desc: t("landing.featureList.f5.desc") },
+    { icon: MapPin, title: t("landing.featureList.f6.title"), desc: t("landing.featureList.f6.desc") },
+    { icon: Globe, title: t("landing.featureList.f7.title"), desc: t("landing.featureList.f7.desc") },
   ];
 
   return (
@@ -1060,22 +1050,30 @@ export function Landing() {
                 {t("landing.featuresSub", { ns: "pages", defaultValue: "Built for the realities of Indian agricultural workflow — field-tested, farmer-approved." })}
               </p>
             </div>
-            <BentoGrid className="max-w-6xl mx-auto">
-              {features.map((f, i) => (
-                <BentoGridItem
-                  key={i}
-                  title={
-                    <span className="text-[#1A1A1A] text-lg mb-2" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
-                      {f.title}
-                    </span>
-                  }
-                  description={<span className="text-[#57585A] text-sm leading-relaxed">{f.desc}</span>}
-                  header={f.headerComponent}
-                  icon={<div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-[#172263]">{f.icon}</div>}
-                  className={i === 3 || i === 6 ? "md:col-span-2" : ""}
-                />
-              ))}
-            </BentoGrid>
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 max-w-6xl mx-auto">
+              {features.map((feature, index) => {
+                const Icon = feature.icon;
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    whileHover={{ y: -6, scale: 1.02 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{ type: "spring", stiffness: 180, damping: 18, delay: index * 0.05 }}
+                    className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.04)] transition-shadow duration-300 hover:shadow-[0_22px_70px_rgba(15,23,42,0.08)]"
+                  >
+                    <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-100 text-slate-900 shadow-sm">
+                      <Icon size={22} />
+                    </div>
+                    <h3 className="mt-6 text-xl font-semibold text-slate-950" style={{ fontFamily: "'Sora', sans-serif" }}>
+                      {feature.title}
+                    </h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-600">{feature.desc}</p>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         </section>
 
