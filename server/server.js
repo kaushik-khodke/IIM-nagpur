@@ -651,7 +651,15 @@ app.get('/api/harvesters/:id', async (req, res) => {
       description: r.description,
       imagePath: r.image_path,
       ownerName: r.ownerName,
-      ownerProfilePic: r.ownerProfilePic
+      ownerProfilePic: r.ownerProfilePic,
+      serialNo: r.serial_no,
+      chassisNo: r.chassis_no,
+      mfgMonthYear: r.mfg_month_year,
+      engineNo: r.engine_no,
+      enginePower: r.engine_power,
+      engineMake: r.engine_make,
+      engineModel: r.engine_model,
+      serviceHotlineNo: r.service_hotline_no
     });
   } catch (error) {
     console.error(error);
@@ -660,9 +668,13 @@ app.get('/api/harvesters/:id', async (req, res) => {
 });
 
 app.post('/api/harvesters', authenticateToken, async (req, res) => {
-  const { machineName, company, model, year, location, state, phone, whatsapp, description, imagePath } = req.body;
-  if (!machineName || !company || !model || !location || !state) {
-    return res.status(400).json({ error: 'Please provide all required fields' });
+  const { 
+    machineName, company, model, year, location, state, phone, whatsapp, description, imagePath,
+    serialNo, chassisNo, mfgMonthYear, engineNo, enginePower, engineMake, engineModel, serviceHotlineNo 
+  } = req.body;
+
+  if (!machineName || !company || !model || !location || !state || !serialNo || !chassisNo || !mfgMonthYear || !engineNo) {
+    return res.status(400).json({ error: 'Please provide all required fields, including the first 5 specifications' });
   }
 
   const cleanedPhone = phone ? cleanPhone(phone) : null;
@@ -681,8 +693,29 @@ app.post('/api/harvesters', authenticateToken, async (req, res) => {
 
   try {
     await db.query(
-      'INSERT INTO harvesters (id, user_id, machine_name, company, model, year, location, state, phone, whatsapp, description, image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [require('crypto').randomUUID(), req.user.id, machineName, company, model, year ? parseInt(year) : null, location, state, cleanedPhone, cleanedWhatsapp, description || null, imagePath || null]
+      'INSERT INTO harvesters (id, user_id, machine_name, company, model, year, location, state, phone, whatsapp, description, image_path, serial_no, chassis_no, mfg_month_year, engine_no, engine_power, engine_make, engine_model, service_hotline_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        require('crypto').randomUUID(),
+        req.user.id,
+        machineName,
+        company,
+        model,
+        year ? parseInt(year) : null,
+        location,
+        state,
+        cleanedPhone,
+        cleanedWhatsapp,
+        description || null,
+        imagePath || null,
+        serialNo || null,
+        chassisNo || null,
+        mfgMonthYear || null,
+        engineNo || null,
+        enginePower || null,
+        engineMake || null,
+        engineModel || null,
+        serviceHotlineNo || null
+      ]
     );
     res.status(201).json({ message: 'Harvester listed successfully' });
   } catch (error) {
@@ -692,9 +725,13 @@ app.post('/api/harvesters', authenticateToken, async (req, res) => {
 });
 
 app.put('/api/harvesters/:id', authenticateToken, async (req, res) => {
-  const { machineName, company, model, year, location, state, phone, whatsapp, description, imagePath } = req.body;
-  if (!machineName || !company || !model || !location || !state) {
-    return res.status(400).json({ error: 'Please provide all required fields' });
+  const { 
+    machineName, company, model, year, location, state, phone, whatsapp, description, imagePath,
+    serialNo, chassisNo, mfgMonthYear, engineNo, enginePower, engineMake, engineModel, serviceHotlineNo 
+  } = req.body;
+
+  if (!machineName || !company || !model || !location || !state || !serialNo || !chassisNo || !mfgMonthYear || !engineNo) {
+    return res.status(400).json({ error: 'Please provide all required fields, including the first 5 specifications' });
   }
 
   const cleanedPhone = phone ? cleanPhone(phone) : null;
@@ -723,8 +760,28 @@ app.put('/api/harvesters/:id', authenticateToken, async (req, res) => {
     }
 
     await db.query(
-      'UPDATE harvesters SET machine_name = ?, company = ?, model = ?, year = ?, location = ?, state = ?, phone = ?, whatsapp = ?, description = ?, image_path = ? WHERE id = ?',
-      [machineName, company, model, year ? parseInt(year) : null, location, state, cleanedPhone, cleanedWhatsapp, description || null, imagePath !== undefined ? imagePath : harvester.image_path, req.params.id]
+      'UPDATE harvesters SET machine_name = ?, company = ?, model = ?, year = ?, location = ?, state = ?, phone = ?, whatsapp = ?, description = ?, image_path = ?, serial_no = ?, chassis_no = ?, mfg_month_year = ?, engine_no = ?, engine_power = ?, engine_make = ?, engine_model = ?, service_hotline_no = ? WHERE id = ?',
+      [
+        machineName,
+        company,
+        model,
+        year ? parseInt(year) : null,
+        location,
+        state,
+        cleanedPhone,
+        cleanedWhatsapp,
+        description || null,
+        imagePath !== undefined ? imagePath : harvester.image_path,
+        serialNo || null,
+        chassisNo || null,
+        mfgMonthYear || null,
+        engineNo || null,
+        enginePower || null,
+        engineMake || null,
+        engineModel || null,
+        serviceHotlineNo || null,
+        req.params.id
+      ]
     );
     res.json({ message: 'Harvester updated successfully' });
   } catch (error) {

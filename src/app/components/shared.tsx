@@ -370,6 +370,24 @@ export function OperatorCard({
   );
 }
 
+export function getFirstImage(imagePath?: string | null): string {
+  if (!imagePath) return "";
+  const trimmed = imagePath.trim();
+  if (trimmed.startsWith("[")) {
+    try {
+      const arr = JSON.parse(trimmed);
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr[0];
+      }
+    } catch (e) {}
+  }
+  if (trimmed.includes(",")) {
+    const parts = trimmed.split(",");
+    if (parts.length > 0) return parts[0].trim();
+  }
+  return trimmed;
+}
+
 // ---- Harvester Card ----
 export function HarvesterCard({
   id,
@@ -405,12 +423,14 @@ export function HarvesterCard({
     }
   };
 
+  const displayImage = getFirstImage(imagePath);
+
   return (
     <Link to={`/harvesters/${id}`} onClick={handleClick} className="block group">
       <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
         <div className="h-44 bg-gradient-to-br from-blue-50 to-amber-50 flex items-center justify-center relative overflow-hidden">
-          {imagePath ? (
-            <img src={imagePath} alt={machineName} className="w-full h-full object-cover" />
+          {displayImage ? (
+            <img src={displayImage} alt={machineName} className="w-full h-full object-cover" />
           ) : (
             <TractorIllustration size={130} />
           )}

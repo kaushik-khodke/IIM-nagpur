@@ -24,6 +24,8 @@ import {
   Clock,
   XCircle,
   ChevronRight,
+  ChevronLeft,
+  RotateCw,
   LayoutGrid,
   Settings,
   LogOut,
@@ -62,6 +64,7 @@ import { toast } from "sonner";
 import districtsData from "./districts.json";
 import { detectUserLocation, matchLocationWithDistricts } from "./locationHelper";
 import { ImageCropperDialog } from "./ImageCropperDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const INDIAN_STATES = districtsData.states.map(s => s.state);
@@ -391,9 +394,23 @@ export function ExploreHarvesters() {
   );
 }
 
-// ===========================
-// HARVESTER DETAIL
-// ===========================
+function getAllImages(imagePath?: string | null): string[] {
+  if (!imagePath) return [];
+  const trimmed = imagePath.trim();
+  if (trimmed.startsWith("[")) {
+    try {
+      const arr = JSON.parse(trimmed);
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr;
+      }
+    } catch (e) {}
+  }
+  if (trimmed.includes(",")) {
+    return trimmed.split(",").map(p => p.trim()).filter(Boolean);
+  }
+  return [trimmed];
+}
+
 export function HarvesterDetail() {
   const { t } = useTranslation(["pages", "common", "static", "dashboard"]);
   const { id } = useParams();
@@ -402,6 +419,7 @@ export function HarvesterDetail() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const navigate = useNavigate();
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const [ratingsData, setRatingsData] = useState<{ averageRating: string | null, count: number, reviews: any[] }>({
     averageRating: null,
@@ -545,6 +563,7 @@ export function HarvesterDetail() {
   if (!harvester) return <EmptyState title={t("harvesterDetail.noRatingsYet", { defaultValue: "Harvester not found" })} />;
 
   const isOwner = currentUser && (harvester.userId === currentUser.id || harvester.ownerName === currentUser.name);
+  const images = getAllImages(harvester.imagePath);
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
@@ -556,12 +575,64 @@ export function HarvesterDetail() {
 
         <div className="flex flex-col lg:flex-row gap-6 mb-8">
           {/* Harvester Image (Left) */}
-          <div className="w-full lg:w-2/3 h-64 md:h-80 lg:h-96 bg-white rounded-2xl border border-[#E2E8F0] shadow-sm flex items-center justify-center p-6 relative overflow-hidden">
-            <WheatWatermark className="absolute right-10 top-5 pointer-events-none opacity-20" />
-            {harvester.imagePath ? (
-              <img src={harvester.imagePath} alt={harvester.machineName} className="max-w-full max-h-full object-contain drop-shadow-md relative z-10" />
-            ) : (
-              <TractorIllustration size={200} className="relative z-10" />
+          <div className="w-full lg:w-2/3 flex flex-col gap-4">
+            <div className="w-full h-64 md:h-80 lg:h-96 bg-white rounded-2xl border border-[#E2E8F0] shadow-sm flex items-center justify-center p-6 relative overflow-hidden group">
+              <WheatWatermark className="absolute right-10 top-5 pointer-events-none opacity-20" />
+              {images.length > 0 ? (
+                <>
+                  <img
+                    src={images[activeImageIndex]}
+                    alt={`${harvester.machineName} - ${activeImageIndex + 1}`}
+                    className="max-w-full max-h-full object-contain drop-shadow-md relative z-10 transition-all duration-300"
+                  />
+                  {images.length > 1 && (
+                    <>
+                      {/* Left Control */}
+                      <button
+                        onClick={() => setActiveImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-md border border-gray-100 hover:scale-105 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+                      {/* Right Control */}
+                      <button
+                        onClick={() => setActiveImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-md border border-gray-100 hover:scale-105 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                      {/* Indicator Badge */}
+                      <div className="absolute bottom-4 right-4 z-20 px-2.5 py-1 bg-black/60 text-white rounded-full text-xs font-semibold backdrop-blur-sm">
+                        {activeImageIndex + 1} / {images.length}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <TractorIllustration size={200} className="relative z-10" />
+              )}
+            </div>
+            
+            {/* Thumbnails Row */}
+            {images.length > 1 && (
+              <div className="flex flex-wrap gap-2 justify-center">
+                {images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={cn(
+                      "w-16 h-16 rounded-xl border-2 overflow-hidden bg-white shadow-sm transition-all focus:outline-none",
+                      idx === activeImageIndex
+                        ? "border-[#172263] ring-2 ring-blue-100 scale-105"
+                        : "border-[#E2E8F0] hover:border-gray-400 hover:scale-102"
+                    )}
+                  >
+                    <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
@@ -681,6 +752,50 @@ export function HarvesterDetail() {
               <p className="text-[#57585A] text-base leading-relaxed whitespace-pre-line">
                 {harvester.description || t("harvesterDetail.aboutDescription", { company: t("companies." + harvester.company, { ns: "static", defaultValue: harvester.company }), model: harvester.model, defaultValue: `This ${harvester.company} ${harvester.model} is well-maintained and suitable for harvesting wheat, rice, and other Rabi/Kharif crops. Available for seasonal hire with experienced operator on request.` })}
               </p>
+            </div>
+
+            {/* Machine Specifications */}
+            <div className="bg-white rounded-2xl border border-[#E2E8F0] p-8 mb-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+              <h3 className="text-xl text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+                {t("harvesterDetail.machineSpecifications", { defaultValue: "Machine Specifications" })}
+              </h3>
+              <div className="w-12 h-1 bg-[#172263] rounded-full mb-6" />
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { label: t("harvesterDetail.specModel", { defaultValue: "Model" }), value: harvester.model, required: true },
+                  { label: t("harvesterDetail.specSerialNo", { defaultValue: "Serial Number" }), value: harvester.serialNo, required: true },
+                  { label: t("harvesterDetail.specChassisNo", { defaultValue: "Chassis Number" }), value: harvester.chassisNo, required: true },
+                  { label: t("harvesterDetail.specMfgMonthYear", { defaultValue: "Month / Year of MFG" }), value: harvester.mfgMonthYear, required: true },
+                  { label: t("harvesterDetail.specEngineNo", { defaultValue: "Engine Number" }), value: harvester.engineNo, required: true },
+                  { label: t("harvesterDetail.specEnginePower", { defaultValue: "Engine Power" }), value: harvester.enginePower, required: false },
+                  { label: t("harvesterDetail.specEngineMake", { defaultValue: "Engine Make" }), value: harvester.engineMake, required: false },
+                  { label: t("harvesterDetail.specEngineModel", { defaultValue: "Engine Model" }), value: harvester.engineModel, required: false },
+                  { label: t("harvesterDetail.specServiceHotline", { defaultValue: "Service Hotline" }), value: harvester.serviceHotlineNo, required: false },
+                ].map((field, idx) => (
+                  <div 
+                    key={idx} 
+                    className={cn(
+                      "bg-slate-50 border rounded-xl p-4 transition-all hover:bg-slate-100/50 flex flex-col justify-between",
+                      field.required ? "border-amber-200/80 bg-amber-50/10" : "border-[#E2E8F0]"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[11px] text-[#57585A] font-bold uppercase tracking-wider">
+                        {field.label}
+                      </span>
+                      {field.required && (
+                        <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border border-amber-200/50">
+                          Required
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-base text-[#1A1A1A] font-semibold break-words mt-1" style={{ fontFamily: "'Sora', sans-serif" }}>
+                      {field.value || <span className="text-gray-400 font-normal text-sm">—</span>}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Ratings & Reviews Section */}
@@ -1924,6 +2039,189 @@ export function AddOperator() {
 }
 
 // ===========================
+// CAMERA CAPTURE DIALOG
+// ===========================
+export function CameraCaptureDialog({
+  open,
+  onOpenChange,
+  onCapture,
+  title,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCapture: (file: File) => void;
+  title?: string;
+}) {
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [activeDeviceId, setActiveDeviceId] = useState<string>("");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      stopCamera();
+      return;
+    }
+
+    async function initCamera() {
+      try {
+        setError(null);
+        // Request permissions first to ensure devices are enumerated
+        const initialStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        initialStream.getTracks().forEach(t => t.stop());
+
+        const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = mediaDevices.filter(d => d.kind === "videoinput");
+        setDevices(videoDevices);
+
+        // Prefer back camera (environment) if available
+        let defaultDevice = videoDevices.find(d => 
+          d.label.toLowerCase().includes("back") || 
+          d.label.toLowerCase().includes("environment") || 
+          d.label.toLowerCase().includes("rear")
+        );
+        if (!defaultDevice && videoDevices.length > 0) {
+          defaultDevice = videoDevices[0];
+        }
+
+        const deviceIdToUse = defaultDevice ? defaultDevice.deviceId : undefined;
+        if (defaultDevice) {
+          setActiveDeviceId(defaultDevice.deviceId);
+        }
+        await startStream(deviceIdToUse);
+      } catch (err: any) {
+        console.error("Camera access error:", err);
+        setError("Could not access camera. Please make sure permissions are granted.");
+      }
+    }
+
+    initCamera();
+    return () => stopCamera();
+  }, [open]);
+
+  const startStream = async (deviceId?: string) => {
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+    }
+    try {
+      const constraints: MediaStreamConstraints = {
+        video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "environment" }
+      };
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(newStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = newStream;
+      }
+    } catch (err) {
+      console.error("Failed to start camera stream:", err);
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setStream(fallbackStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+        }
+      } catch (fallbackErr: any) {
+        setError("Camera stream failed. " + fallbackErr.message);
+      }
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
+
+  const switchCamera = async () => {
+    if (devices.length < 2) return;
+    const currentIndex = devices.findIndex(d => d.deviceId === activeDeviceId);
+    const nextIndex = (currentIndex + 1) % devices.length;
+    const nextDevice = devices[nextIndex];
+    setActiveDeviceId(nextDevice.deviceId);
+    await startStream(nextDevice.deviceId);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `harvester_photo_${Date.now()}.jpg`, { type: "image/jpeg" });
+          onCapture(file);
+          onOpenChange(false);
+        }
+      }, "image/jpeg", 0.9);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onOpenChange(false); }}>
+      <DialogContent className="max-w-lg bg-[#ffffff] border-[#E2E8F0] p-6 rounded-2xl flex flex-col items-center">
+        <DialogHeader className="w-full">
+          <div className="flex justify-between items-center w-full">
+            <DialogTitle className="text-lg font-bold font-sora text-[#1A1A1A]">{title || "Take Harvester Photo"}</DialogTitle>
+          </div>
+        </DialogHeader>
+
+        <div className="w-full bg-[#1A1A1A] rounded-xl overflow-hidden aspect-[4/3] flex items-center justify-center relative mt-4">
+          {error ? (
+            <p className="text-red-400 text-sm p-4 text-center">{error}</p>
+          ) : (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+            />
+          )}
+        </div>
+
+        <div className="flex gap-4 mt-6 w-full justify-center">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="px-4 py-2 border border-[#E2E8F0] hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-semibold"
+          >
+            Cancel
+          </button>
+          
+          {devices.length > 1 && (
+            <button
+              type="button"
+              onClick={switchCamera}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold flex items-center gap-2"
+            >
+              <RotateCw size={16} /> Switch Camera
+            </button>
+          )}
+
+          {!error && (
+            <button
+              type="button"
+              onClick={capturePhoto}
+              className="px-6 py-2.5 bg-[#172263] text-white hover:bg-[#11194A] rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm"
+            >
+              <Camera size={16} /> Capture
+            </button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ===========================
 // ADD HARVESTER FORM
 // ===========================
 export function AddHarvester() {
@@ -1938,10 +2236,22 @@ export function AddHarvester() {
   const [phone, setPhone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [description, setDescription] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
-  const [cropperOpen, setCropperOpen] = useState(false);
-  const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
+
+  // Specifications
+  const [serialNo, setSerialNo] = useState("");
+  const [chassisNo, setChassisNo] = useState("");
+  const [mfgMonthYear, setMfgMonthYear] = useState("");
+  const [engineNo, setEngineNo] = useState("");
+  const [enginePower, setEnginePower] = useState("");
+  const [engineMake, setEngineMake] = useState("");
+  const [engineModel, setEngineModel] = useState("");
+  const [serviceHotlineNo, setServiceHotlineNo] = useState("");
+
+  // Photos capture up to 5
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [cameraOpen, setCameraOpen] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -1987,6 +2297,28 @@ export function AddHarvester() {
       return;
     }
 
+    // First 5 fields validation (Model, Serial No, Chassis No, Month/Year of MFG, Engine No)
+    if (!finalModel.trim()) {
+      toast.error("Harvester model is required");
+      return;
+    }
+    if (!serialNo.trim()) {
+      toast.error("Serial Number is required");
+      return;
+    }
+    if (!chassisNo.trim()) {
+      toast.error("Chassis Number is required");
+      return;
+    }
+    if (!mfgMonthYear.trim()) {
+      toast.error("Month/Year of Manufacturing is required");
+      return;
+    }
+    if (!engineNo.trim()) {
+      toast.error("Engine Number is required");
+      return;
+    }
+
     const machineName = `${finalCompany} ${finalModel}`;
 
     if (year && (isNaN(Number(year)) || parseInt(year) < 1900 || parseInt(year) > new Date().getFullYear() + 1)) {
@@ -2001,6 +2333,12 @@ export function AddHarvester() {
       toast.error(t("addHarvester.toastSelectDistrict", { defaultValue: "Please select the district location" }));
       return;
     }
+    
+    if (photos.length === 0) {
+      toast.error("Please capture at least one harvester photo");
+      return;
+    }
+
     const cleanedPhone = phone.replace(/\D/g, "");
     let finalPhone = cleanedPhone;
     if (cleanedPhone.length === 12 && cleanedPhone.startsWith("91")) {
@@ -2032,19 +2370,23 @@ export function AddHarvester() {
 
     setLoading(true);
     try {
-      let imagePath = null;
-      if (imageFile) {
+      const uploadedUrls: string[] = [];
+      for (const file of photos) {
         const formData = new FormData();
-        formData.append("image", imageFile);
+        formData.append("image", file);
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
           body: formData
         });
         if (uploadRes.ok) {
           const uploadData = await uploadRes.json();
-          imagePath = uploadData.url;
+          uploadedUrls.push(uploadData.url);
+        } else {
+          throw new Error("Failed to upload photo: " + file.name);
         }
       }
+
+      const imagePath = JSON.stringify(uploadedUrls);
 
       const token = localStorage.getItem("tractorsewa_token");
       const res = await fetch("/api/harvesters", {
@@ -2063,7 +2405,15 @@ export function AddHarvester() {
           phone: finalPhone,
           whatsapp: finalWhatsapp,
           description,
-          imagePath
+          imagePath,
+          serialNo,
+          chassisNo,
+          mfgMonthYear,
+          engineNo,
+          enginePower,
+          engineMake,
+          engineModel,
+          serviceHotlineNo
         })
       });
 
@@ -2074,9 +2424,9 @@ export function AddHarvester() {
         const err = await res.json();
         toast.error(err.error || t("addHarvester.toastFailed", { defaultValue: "Failed to list harvester" }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error(t("addHarvester.toastError", { defaultValue: "Error listing harvester" }));
+      toast.error(err.message || t("addHarvester.toastError", { defaultValue: "Error listing harvester" }));
     } finally {
       setLoading(false);
     }
@@ -2093,31 +2443,103 @@ export function AddHarvester() {
         <PageHeader title={t("addHarvester.title", { defaultValue: "List Your Harvester" })} subtitle={t("addHarvester.subtitle", { defaultValue: "Add your machine to reach thousands of farmers" })} />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
-          <div
-            onClick={() => document.getElementById("harvester-photo")?.click()}
-            className="border-2 border-dashed border-[#172263] rounded-2xl bg-blue-50 py-10 text-center cursor-pointer hover:bg-blue-100 transition-colors relative overflow-hidden h-44 flex flex-col items-center justify-center"
-          >
-            <input
-              type="file"
-              id="harvester-photo"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setCropperImageSrc(URL.createObjectURL(file));
-                  setCropperOpen(true);
-                }
-                e.target.value = "";
-              }}
-            />
-            {imagePreview ? (
-              <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+          
+          {/* Photo Capture up to 5 photos */}
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-[#57585A] block mb-1">Harvester Photos (Take up to 5 photos) *</label>
+            
+            {photoPreviews.length === 0 ? (
+              // Centered Empty State Take Photo Trigger
+              <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border-2 border-dashed border-[#172263] rounded-2xl max-w-sm mx-auto text-center gap-4 transition-all hover:bg-blue-50/20">
+                <div className="p-4 bg-blue-50 rounded-full text-[#172263]">
+                  <Camera size={36} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">No Photos Taken Yet</h4>
+                  <p className="text-xs text-[#57585A] mt-1 px-4">Take the first photo of the harvester to begin listing.</p>
+                </div>
+                <div className="flex flex-col gap-2 w-full px-4">
+                  <button
+                    type="button"
+                    onClick={() => setCameraOpen(true)}
+                    className="w-full py-2.5 bg-[#172263] hover:bg-[#11194A] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                  >
+                    <Camera size={16} /> Take Harvester Photo
+                  </button>
+                  <label className="cursor-pointer w-full py-2 border border-[#E2E8F0] hover:bg-slate-50 text-slate-500 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setPhotos(prev => [...prev, file]);
+                          setPhotoPreviews(prev => [...prev, URL.createObjectURL(file)]);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                    <span>Use Device Camera</span>
+                  </label>
+                </div>
+              </div>
             ) : (
-              <>
-                <Upload size={32} className="text-orange-400 mx-auto mb-2" />
-                <p className="text-sm text-[#57585A]">{t("addHarvester.uploadPhoto", { defaultValue: "Upload machine photo" })}</p>
-              </>
+              // Standard Grid Layout
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {photoPreviews.map((url, idx) => (
+                  <div key={idx} className="relative aspect-[4/3] rounded-xl overflow-hidden border border-[#E2E8F0] bg-slate-50">
+                    <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhotos(prev => prev.filter((_, i) => i !== idx));
+                        setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
+                      }}
+                      className="absolute top-1.5 right-1.5 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 opacity-90 transition-opacity"
+                    >
+                      <X size={12} />
+                    </button>
+                    <span className="absolute bottom-1 left-1.5 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded font-semibold">
+                      {idx === 1 ? "Chassis No. Photo" : `Harvester Photo ${idx === 0 ? 1 : idx}`}
+                    </span>
+                  </div>
+                ))}
+
+                {photoPreviews.length < 5 && (
+                  <div className="flex flex-col gap-2 aspect-[4/3]">
+                    <button
+                      type="button"
+                      onClick={() => setCameraOpen(true)}
+                      className="flex-1 border-2 border-dashed border-[#172263] rounded-xl bg-blue-50/50 hover:bg-blue-100/50 transition-colors flex flex-col items-center justify-center gap-1.5 text-[#172263]"
+                    >
+                      <Camera size={24} className="text-[#172263]" />
+                      <span className="text-[11px] font-bold">
+                        {photoPreviews.length === 1 ? "Take Chassis No. Photo" : "Take Harvester Photo"}
+                      </span>
+                    </button>
+                    
+                    <label className="cursor-pointer border border-[#E2E8F0] hover:bg-slate-50 transition-colors rounded-xl py-1 text-center text-[10px] font-bold text-slate-500 flex items-center justify-center gap-1 shrink-0">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setPhotos(prev => [...prev, file]);
+                            setPhotoPreviews(prev => [...prev, URL.createObjectURL(file)]);
+                          }
+                          e.target.value = "";
+                        }}
+                      />
+                      <span>Use Device Cam</span>
+                    </label>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -2140,7 +2562,7 @@ export function AddHarvester() {
             </div>
 
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.modelLabel", { defaultValue: "Harvester Model" })}</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model *</label>
               <select
                 value={model}
                 onChange={(e) => {
@@ -2173,7 +2595,7 @@ export function AddHarvester() {
 
           {(company === "Other" || model === "Other / Custom Model") && company !== "" && (
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.customModelLabel", { defaultValue: "Custom Model Name *" })}</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">Custom Model Name *</label>
               <input
                 value={customModel}
                 onChange={(e) => setCustomModel(e.target.value)}
@@ -2183,6 +2605,105 @@ export function AddHarvester() {
               />
             </div>
           )}
+
+          {/* Machine Plate Specifications Form Section */}
+          <div className="border-t border-[#E2E8F0] pt-5 space-y-4">
+            <h3 className="text-base font-bold text-[#1A1A1A] font-sora">Machine Plate Specifications</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Serial Number *</label>
+                <input
+                  type="text"
+                  value={serialNo}
+                  onChange={(e) => setSerialNo(e.target.value)}
+                  placeholder="Enter Serial Number"
+                  required
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Chassis Number *</label>
+                <input
+                  type="text"
+                  value={chassisNo}
+                  onChange={(e) => setChassisNo(e.target.value)}
+                  placeholder="Enter Chassis Number"
+                  required
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Month / Year of Mfg *</label>
+                <input
+                  type="text"
+                  value={mfgMonthYear}
+                  onChange={(e) => setMfgMonthYear(e.target.value)}
+                  placeholder="e.g. 05 / 2024"
+                  required
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Number *</label>
+                <input
+                  type="text"
+                  value={engineNo}
+                  onChange={(e) => setEngineNo(e.target.value)}
+                  placeholder="Enter Engine Number"
+                  required
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Power</label>
+                <input
+                  type="text"
+                  value={enginePower}
+                  onChange={(e) => setEnginePower(e.target.value)}
+                  placeholder="e.g. 73.5kw / 2600 / min"
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Make</label>
+                <input
+                  type="text"
+                  value={engineMake}
+                  onChange={(e) => setEngineMake(e.target.value)}
+                  placeholder="e.g. ZHEJIANG XINCHAI CO. LTD."
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Model</label>
+                <input
+                  type="text"
+                  value={engineModel}
+                  onChange={(e) => setEngineModel(e.target.value)}
+                  placeholder="e.g. 4D35ZT"
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Service Hotline Number</label>
+                <input
+                  type="text"
+                  value={serviceHotlineNo}
+                  onChange={(e) => setServiceHotlineNo(e.target.value)}
+                  placeholder="e.g. 9209392096"
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -2296,23 +2817,19 @@ export function AddHarvester() {
           </button>
         </form>
       </div>
-      <ImageCropperDialog
-        open={cropperOpen}
-        onOpenChange={setCropperOpen}
-        imageSrc={cropperImageSrc}
-        aspect={4 / 3}
-        onCropCompleteAction={async (croppedUrl) => {
-          setImagePreview(croppedUrl);
-          const res = await fetch(croppedUrl);
-          const blob = await res.blob();
-          const file = new File([blob], "harvester_photo.jpg", { type: "image/jpeg" });
-          setImageFile(file);
+
+      <CameraCaptureDialog
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        title={photoPreviews.length === 1 ? "Upload Chassis No. Photo" : "Take Harvester Photo"}
+        onCapture={(file) => {
+          setPhotos(prev => [...prev, file]);
+          setPhotoPreviews(prev => [...prev, URL.createObjectURL(file)]);
         }}
       />
     </div>
   );
 }
-
 
 // ===========================
 // EDIT HARVESTER FORM
@@ -2330,10 +2847,23 @@ export function EditHarvester() {
   const [phone, setPhone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [description, setDescription] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
-  const [cropperOpen, setCropperOpen] = useState(false);
-  const [cropperImageSrc, setCropperImageSrc] = useState<string | null>(null);
+
+  // Specifications
+  const [serialNo, setSerialNo] = useState("");
+  const [chassisNo, setChassisNo] = useState("");
+  const [mfgMonthYear, setMfgMonthYear] = useState("");
+  const [engineNo, setEngineNo] = useState("");
+  const [enginePower, setEnginePower] = useState("");
+  const [engineMake, setEngineMake] = useState("");
+  const [engineModel, setEngineModel] = useState("");
+  const [serviceHotlineNo, setServiceHotlineNo] = useState("");
+
+  // Photos
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [cameraOpen, setCameraOpen] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const navigate = useNavigate();
@@ -2361,7 +2891,33 @@ export function EditHarvester() {
           setPhone(data.phone || "");
           setWhatsapp(data.whatsapp || "");
           setDescription(data.description || "");
-          if (data.imagePath) setImagePreview(data.imagePath);
+
+          // Specifications
+          setSerialNo(data.serialNo || "");
+          setChassisNo(data.chassisNo || "");
+          setMfgMonthYear(data.mfgMonthYear || "");
+          setEngineNo(data.engineNo || "");
+          setEnginePower(data.enginePower || "");
+          setEngineMake(data.engineMake || "");
+          setEngineModel(data.engineModel || "");
+          setServiceHotlineNo(data.serviceHotlineNo || "");
+
+          if (data.imagePath) {
+            try {
+              if (data.imagePath.trim().startsWith("[")) {
+                const arr = JSON.parse(data.imagePath);
+                if (Array.isArray(arr)) {
+                  setExistingPhotos(arr);
+                } else {
+                  setExistingPhotos([data.imagePath]);
+                }
+              } else {
+                setExistingPhotos([data.imagePath]);
+              }
+            } catch (e) {
+              setExistingPhotos([data.imagePath]);
+            }
+          }
         } else {
           toast.error(t("editHarvester.toastLoadDetailsFailed", { defaultValue: "Failed to load harvester details" }));
           navigate("/harvesters");
@@ -2411,6 +2967,28 @@ export function EditHarvester() {
       return;
     }
 
+    // First 5 fields validation (Model, Serial No, Chassis No, Month/Year of MFG, Engine No)
+    if (!finalModel.trim()) {
+      toast.error("Harvester model is required");
+      return;
+    }
+    if (!serialNo.trim()) {
+      toast.error("Serial Number is required");
+      return;
+    }
+    if (!chassisNo.trim()) {
+      toast.error("Chassis Number is required");
+      return;
+    }
+    if (!mfgMonthYear.trim()) {
+      toast.error("Month/Year of Manufacturing is required");
+      return;
+    }
+    if (!engineNo.trim()) {
+      toast.error("Engine Number is required");
+      return;
+    }
+
     const machineName = `${finalCompany} ${finalModel}`;
 
     if (year && (isNaN(Number(year)) || parseInt(year) < 1900 || parseInt(year) > new Date().getFullYear() + 1)) {
@@ -2425,6 +3003,12 @@ export function EditHarvester() {
       toast.error(t("editHarvester.toastSelectDistrict", { defaultValue: "Please select the district location" }));
       return;
     }
+
+    if (existingPhotos.length === 0 && photos.length === 0) {
+      toast.error("Please capture at least one harvester photo");
+      return;
+    }
+
     const cleanedPhone = phone.replace(/\D/g, "");
     let finalPhone = cleanedPhone;
     if (cleanedPhone.length === 12 && cleanedPhone.startsWith("91")) {
@@ -2456,19 +3040,23 @@ export function EditHarvester() {
 
     setLoading(true);
     try {
-      let imagePath = undefined;
-      if (imageFile) {
+      const uploadedUrls = [...existingPhotos];
+      for (const file of photos) {
         const formData = new FormData();
-        formData.append("image", imageFile);
+        formData.append("image", file);
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
           body: formData
         });
         if (uploadRes.ok) {
           const uploadData = await uploadRes.json();
-          imagePath = uploadData.url;
+          uploadedUrls.push(uploadData.url);
+        } else {
+          throw new Error("Failed to upload photo: " + file.name);
         }
       }
+
+      const imagePath = JSON.stringify(uploadedUrls);
 
       const token = localStorage.getItem("tractorsewa_token");
       const res = await fetch(`/api/harvesters/${id}`, {
@@ -2487,7 +3075,15 @@ export function EditHarvester() {
           phone: finalPhone,
           whatsapp: finalWhatsapp,
           description,
-          ...(imagePath && { imagePath })
+          imagePath,
+          serialNo,
+          chassisNo,
+          mfgMonthYear,
+          engineNo,
+          enginePower,
+          engineMake,
+          engineModel,
+          serviceHotlineNo
         })
       });
 
@@ -2498,9 +3094,9 @@ export function EditHarvester() {
         const err = await res.json();
         toast.error(err.error || t("editHarvester.toastFailed", { defaultValue: "Failed to update harvester" }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error(t("editHarvester.toastError", { defaultValue: "Error updating harvester" }));
+      toast.error(err.message || t("editHarvester.toastError", { defaultValue: "Error updating harvester" }));
     } finally {
       setLoading(false);
     }
@@ -2519,31 +3115,109 @@ export function EditHarvester() {
         <PageHeader title={t("editHarvester.title", { defaultValue: "Edit Harvester" })} subtitle={t("editHarvester.subtitle", { defaultValue: "Update your machine details" })} />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.06)] p-8 space-y-5">
-          <div
-            onClick={() => document.getElementById("harvester-photo")?.click()}
-            className="border-2 border-dashed border-[#172263] rounded-2xl bg-blue-50 py-10 text-center cursor-pointer hover:bg-blue-100 transition-colors relative overflow-hidden h-44 flex flex-col items-center justify-center"
-          >
-            <input
-              type="file"
-              id="harvester-photo"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setCropperImageSrc(URL.createObjectURL(file));
-                  setCropperOpen(true);
-                }
-                e.target.value = "";
-              }}
-            />
-            {imagePreview ? (
-              <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+          
+          {/* Photo Capture up to 5 photos */}
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-[#57585A] block mb-1">Harvester Photos (Take up to 5 photos) *</label>
+            
+            {(existingPhotos.length + photoPreviews.length) === 0 ? (
+              // Centered Empty State Take Photo Trigger
+              <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border-2 border-dashed border-[#172263] rounded-2xl max-w-sm mx-auto text-center gap-4 transition-all hover:bg-blue-50/20">
+                <div className="p-4 bg-blue-50 rounded-full text-[#172263]">
+                  <Camera size={36} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-[#1A1A1A] font-sora">No Photos Taken Yet</h4>
+                  <p className="text-xs text-[#57585A] mt-1 px-4">Take the first photo of the harvester to begin listing.</p>
+                </div>
+                <div className="flex flex-col gap-2 w-full px-4">
+                  <button
+                    type="button"
+                    onClick={() => setCameraOpen(true)}
+                    className="w-full py-2.5 bg-[#172263] hover:bg-[#11194A] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                  >
+                    <Camera size={16} /> Take Harvester Photo
+                  </button>
+                  <label className="cursor-pointer w-full py-2 border border-[#E2E8F0] hover:bg-slate-50 text-slate-500 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setPhotos(prev => [...prev, file]);
+                          setPhotoPreviews(prev => [...prev, URL.createObjectURL(file)]);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                    <span>Use Device Camera</span>
+                  </label>
+                </div>
+              </div>
             ) : (
-              <>
-                <Upload size={32} className="text-orange-400 mx-auto mb-2" />
-                <p className="text-sm text-[#57585A]">{t("editHarvester.uploadPhoto", { defaultValue: "Upload new machine photo" })}</p>
-              </>
+              // Standard Grid Layout
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {[...existingPhotos, ...photoPreviews].map((url, idx) => (
+                  <div key={idx} className="relative aspect-[4/3] rounded-xl overflow-hidden border border-[#E2E8F0] bg-slate-50">
+                    <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isExisting = idx < existingPhotos.length;
+                        if (isExisting) {
+                          setExistingPhotos(prev => prev.filter((_, i) => i !== idx));
+                        } else {
+                          const newIdx = idx - existingPhotos.length;
+                          setPhotos(prev => prev.filter((_, i) => i !== newIdx));
+                          setPhotoPreviews(prev => prev.filter((_, i) => i !== newIdx));
+                        }
+                      }}
+                      className="absolute top-1.5 right-1.5 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 opacity-90 transition-opacity"
+                    >
+                      <X size={12} />
+                    </button>
+                    <span className="absolute bottom-1 left-1.5 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded font-semibold">
+                      {idx === 1 ? "Chassis No. Photo" : `Harvester Photo ${idx === 0 ? 1 : idx}`}
+                    </span>
+                  </div>
+                ))}
+
+                {(existingPhotos.length + photoPreviews.length) < 5 && (
+                  <div className="flex flex-col gap-2 aspect-[4/3]">
+                    <button
+                      type="button"
+                      onClick={() => setCameraOpen(true)}
+                      className="flex-1 border-2 border-dashed border-[#172263] rounded-xl bg-blue-50/50 hover:bg-blue-100/50 transition-colors flex flex-col items-center justify-center gap-1.5 text-[#172263]"
+                    >
+                      <Camera size={24} className="text-[#172263]" />
+                      <span className="text-[11px] font-bold">
+                        {(existingPhotos.length + photoPreviews.length) === 1 ? "Take Chassis No. Photo" : "Take Harvester Photo"}
+                      </span>
+                    </button>
+                    
+                    <label className="cursor-pointer border border-[#E2E8F0] hover:bg-slate-50 transition-colors rounded-xl py-1 text-center text-[10px] font-bold text-slate-500 flex items-center justify-center gap-1 shrink-0">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setPhotos(prev => [...prev, file]);
+                            setPhotoPreviews(prev => [...prev, URL.createObjectURL(file)]);
+                          }
+                          e.target.value = "";
+                        }}
+                      />
+                      <span>Use Device Cam</span>
+                    </label>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -2566,7 +3240,7 @@ export function EditHarvester() {
             </div>
 
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">{t("editHarvester.modelLabel", { defaultValue: "Harvester Model" })}</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model *</label>
               <select
                 value={model}
                 onChange={(e) => {
@@ -2599,7 +3273,7 @@ export function EditHarvester() {
 
           {(company === "Other" || model === "Other / Custom Model") && company !== "" && (
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">{t("editHarvester.customModelLabel", { defaultValue: "Custom Model Name *" })}</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">Custom Model Name *</label>
               <input
                 value={customModel}
                 onChange={(e) => setCustomModel(e.target.value)}
@@ -2609,6 +3283,105 @@ export function EditHarvester() {
               />
             </div>
           )}
+
+          {/* Machine Plate Specifications Form Section */}
+          <div className="border-t border-[#E2E8F0] pt-5 space-y-4">
+            <h3 className="text-base font-bold text-[#1A1A1A] font-sora">Machine Plate Specifications</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Serial Number *</label>
+                <input
+                  type="text"
+                  value={serialNo}
+                  onChange={(e) => setSerialNo(e.target.value)}
+                  placeholder="Enter Serial Number"
+                  required
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Chassis Number *</label>
+                <input
+                  type="text"
+                  value={chassisNo}
+                  onChange={(e) => setChassisNo(e.target.value)}
+                  placeholder="Enter Chassis Number"
+                  required
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Month / Year of Mfg *</label>
+                <input
+                  type="text"
+                  value={mfgMonthYear}
+                  onChange={(e) => setMfgMonthYear(e.target.value)}
+                  placeholder="e.g. 05 / 2024"
+                  required
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Number *</label>
+                <input
+                  type="text"
+                  value={engineNo}
+                  onChange={(e) => setEngineNo(e.target.value)}
+                  placeholder="Enter Engine Number"
+                  required
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Power</label>
+                <input
+                  type="text"
+                  value={enginePower}
+                  onChange={(e) => setEnginePower(e.target.value)}
+                  placeholder="e.g. 73.5kw / 2600 / min"
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Make</label>
+                <input
+                  type="text"
+                  value={engineMake}
+                  onChange={(e) => setEngineMake(e.target.value)}
+                  placeholder="e.g. ZHEJIANG XINCHAI CO. LTD."
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Model</label>
+                <input
+                  type="text"
+                  value={engineModel}
+                  onChange={(e) => setEngineModel(e.target.value)}
+                  placeholder="e.g. 4D35ZT"
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">Service Hotline Number</label>
+                <input
+                  type="text"
+                  value={serviceHotlineNo}
+                  onChange={(e) => setServiceHotlineNo(e.target.value)}
+                  placeholder="e.g. 9209392096"
+                  className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
+                />
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -2722,17 +3495,14 @@ export function EditHarvester() {
           </button>
         </form>
       </div>
-      <ImageCropperDialog
-        open={cropperOpen}
-        onOpenChange={setCropperOpen}
-        imageSrc={cropperImageSrc}
-        aspect={4 / 3}
-        onCropCompleteAction={async (croppedUrl) => {
-          setImagePreview(croppedUrl);
-          const res = await fetch(croppedUrl);
-          const blob = await res.blob();
-          const file = new File([blob], "harvester_photo.jpg", { type: "image/jpeg" });
-          setImageFile(file);
+
+      <CameraCaptureDialog
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        title={(existingPhotos.length + photoPreviews.length) === 1 ? "Upload Chassis No. Photo" : "Take Harvester Photo"}
+        onCapture={(file) => {
+          setPhotos(prev => [...prev, file]);
+          setPhotoPreviews(prev => [...prev, URL.createObjectURL(file)]);
         }}
       />
     </div>

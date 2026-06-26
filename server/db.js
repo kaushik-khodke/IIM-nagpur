@@ -104,7 +104,6 @@ async function initializeDatabase() {
       )
     `);
 
-    // Create Harvesters Table
     await activePool.query(`
       CREATE TABLE IF NOT EXISTS harvesters (
         id VARCHAR(36) PRIMARY KEY,
@@ -112,13 +111,21 @@ async function initializeDatabase() {
         machine_name VARCHAR(255) NOT NULL,
         company VARCHAR(100) NOT NULL,
         model VARCHAR(100) NOT NULL,
+        serial_no VARCHAR(100) DEFAULT NULL,
+        chassis_no VARCHAR(100) DEFAULT NULL,
+        mfg_month_year VARCHAR(100) DEFAULT NULL,
+        engine_no VARCHAR(100) DEFAULT NULL,
+        engine_power VARCHAR(100) DEFAULT NULL,
+        engine_make VARCHAR(100) DEFAULT NULL,
+        engine_model VARCHAR(100) DEFAULT NULL,
+        service_hotline_no VARCHAR(100) DEFAULT NULL,
         year INT DEFAULT NULL,
         location VARCHAR(255) NOT NULL,
         state VARCHAR(100) NOT NULL,
         phone VARCHAR(20) DEFAULT NULL,
         whatsapp VARCHAR(20) DEFAULT NULL,
         description TEXT DEFAULT NULL,
-        image_path VARCHAR(255) DEFAULT NULL,
+        image_path TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
@@ -243,6 +250,35 @@ async function initializeDatabase() {
     try {
       await activePool.query("ALTER TABLE users ADD COLUMN whatsapp_number VARCHAR(20) DEFAULT NULL AFTER phone");
     } catch (err) { /* already exists */ }
+
+    // Harvesters Table Migrations for specifications and multiple images
+    try {
+      await activePool.query('ALTER TABLE harvesters ADD COLUMN serial_no VARCHAR(100) DEFAULT NULL AFTER model');
+    } catch (err) {}
+    try {
+      await activePool.query('ALTER TABLE harvesters ADD COLUMN chassis_no VARCHAR(100) DEFAULT NULL AFTER serial_no');
+    } catch (err) {}
+    try {
+      await activePool.query('ALTER TABLE harvesters ADD COLUMN mfg_month_year VARCHAR(100) DEFAULT NULL AFTER chassis_no');
+    } catch (err) {}
+    try {
+      await activePool.query('ALTER TABLE harvesters ADD COLUMN engine_no VARCHAR(100) DEFAULT NULL AFTER mfg_month_year');
+    } catch (err) {}
+    try {
+      await activePool.query('ALTER TABLE harvesters ADD COLUMN engine_power VARCHAR(100) DEFAULT NULL AFTER engine_no');
+    } catch (err) {}
+    try {
+      await activePool.query('ALTER TABLE harvesters ADD COLUMN engine_make VARCHAR(100) DEFAULT NULL AFTER engine_power');
+    } catch (err) {}
+    try {
+      await activePool.query('ALTER TABLE harvesters ADD COLUMN engine_model VARCHAR(100) DEFAULT NULL AFTER engine_make');
+    } catch (err) {}
+    try {
+      await activePool.query('ALTER TABLE harvesters ADD COLUMN service_hotline_no VARCHAR(100) DEFAULT NULL AFTER engine_model');
+    } catch (err) {}
+    try {
+      await activePool.query('ALTER TABLE harvesters MODIFY COLUMN image_path TEXT DEFAULT NULL');
+    } catch (err) {}
 
 
     // Seed hardcoded administrator account if not exists
