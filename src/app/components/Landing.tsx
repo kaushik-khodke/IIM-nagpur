@@ -1195,13 +1195,13 @@ export function Landing() {
 
                       <Link
 
-                        to="/enquiry"
+                        to="/dashboard"
 
                         className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
 
                       >
 
-                        {t("landing.submitEnquiry", { ns: "pages", defaultValue: "Submit Enquiry" })} <ArrowRight size={18} />
+                        {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={18} />
 
                       </Link>
 
@@ -1266,6 +1266,22 @@ export function Landing() {
                     </span>
 
                   ))}
+
+                </div>
+
+                <div className="mt-8">
+
+                  <Link
+
+                    to="/enquiry"
+
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
+
+                  >
+
+                    {t("landing.submitEnquiry", { ns: "pages", defaultValue: "Submit Enquiry" })} <ArrowRight size={18} />
+
+                  </Link>
 
                 </div>
 
