@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect, useRef, Fragment, useMemo } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
@@ -45,6 +45,7 @@ import {
   Menu,
   Sparkles,
   HelpCircle,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Navbar,
@@ -1356,10 +1357,13 @@ export function OperatorProfile() {
             </div>
             <div className="pb-2">
               <h1
-                className="text-2xl text-[#1A1A1A]"
+                className="text-2xl text-[#1A1A1A] flex items-center gap-1.5"
                 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
               >
-                {operator.name}
+                <span>{operator.name}</span>
+                {operator.verification_status === 'Approved' && (
+                  <ShieldCheck size={22} className="text-emerald-600 animate-pulse" title="Verified Operator" />
+                )}
               </h1>
               <p className="text-[#57585A] flex items-center gap-1 text-sm">
                 <MapPin size={13} /> {operator.location}
@@ -1695,12 +1699,192 @@ export function AddOperator() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // ID Verification states
+  const [operatorProfile, setOperatorProfile] = useState<any>(null);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyingSuccess, setVerifyingSuccess] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+
+  // Verification stepper states
+  const [verificationStep, setVerificationStep] = useState(1);
+  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+  const [capturedSelfie, setCapturedSelfie] = useState<string | null>(null);
+  const [licenseFrontFile, setLicenseFrontFile] = useState<File | null>(null);
+  const [licenseFrontPreview, setLicenseFrontPreview] = useState("");
+  const [licenseBackFile, setLicenseBackFile] = useState<File | null>(null);
+  const [licenseBackPreview, setLicenseBackPreview] = useState("");
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [isSubmittingVerification, setIsSubmittingVerification] = useState(false);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
   useEffect(() => {
     const defaultState = localStorage.getItem("tractorsewa_default_state");
     const defaultDistrict = localStorage.getItem("tractorsewa_default_district");
     if (defaultState) setState(defaultState);
     if (defaultDistrict) setLocation(defaultDistrict);
   }, []);
+
+  useEffect(() => {
+    const checkVerification = async () => {
+      try {
+        const token = localStorage.getItem("tractorsewa_token");
+        const meRes = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          const opRes = await fetch(`/api/operators?userId=${meData.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (opRes.ok) {
+            const opData = await opRes.json();
+            if (opData.length > 0) {
+              const op = opData[0];
+              setOperatorProfile(op);
+              
+              if (op.verification_status === 'Approved') {
+                if (op.experience > 0) {
+                  // Profile details completed, send to profile settings
+                  navigate('/profile');
+                } else {
+                  // Approved but skeleton details, prefill states
+                  setName(op.name || "");
+                  setExperience(op.experience ? String(op.experience) : "");
+                  setLocation(op.location || "");
+                  setState(op.state || "Maharashtra");
+                  setAvailability(op.availability || "Available");
+                  setDescription(op.description || "");
+                  setPhone(op.phone || "");
+                  setWhatsapp(op.whatsapp || "");
+                }
+              } else if (op.verification_status === 'Pending') {
+                // Stay on pending screen
+              } else if (op.verification_status === 'Rejected') {
+                setShowPopup(true);
+              } else if (!op.selfie_image_path) {
+                setShowPopup(true);
+              }
+            } else {
+              setShowPopup(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error checking operator profile:", err);
+      } finally {
+        setIsCheckingProfile(false);
+      }
+    };
+    checkVerification();
+  }, [navigate]);
+
+  // Webcam Capture Handlers
+  const startWebcam = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      setWebcamStream(stream);
+    } catch (err) {
+      console.error("Failed to access webcam:", err);
+      toast.error("Could not access webcam. Please check your camera permissions.");
+    }
+  };
+
+  useEffect(() => {
+    if (webcamStream && videoRef.current) {
+      videoRef.current.srcObject = webcamStream;
+    }
+  }, [webcamStream]);
+
+  const stopWebcam = () => {
+    if (webcamStream) {
+      webcamStream.getTracks().forEach(track => track.stop());
+      setWebcamStream(null);
+    }
+  };
+
+  const captureSelfie = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth || 640;
+      canvas.height = videoRef.current.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/png');
+        setCapturedSelfie(dataUrl);
+        stopWebcam();
+      }
+    }
+  };
+
+  const handleVerificationSubmit = async () => {
+    if (!capturedSelfie) {
+      toast.error("Please capture your live selfie.");
+      return;
+    }
+    if (!licenseFrontFile || !licenseBackFile) {
+      toast.error("Please upload both driving license front and back sides.");
+      return;
+    }
+    if (!consentChecked) {
+      toast.error("Please check the consent box to proceed.");
+      return;
+    }
+
+    setIsSubmittingVerification(true);
+    try {
+      const dataURLtoBlob = (dataurl: string) => {
+        const arr = dataurl.split(',');
+        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], { type: mime });
+      };
+
+      const formData = new FormData();
+      const selfieBlob = dataURLtoBlob(capturedSelfie);
+      formData.append('selfie', selfieBlob, 'selfie.png');
+      formData.append('licenseFront', licenseFrontFile);
+      formData.append('licenseBack', licenseBackFile);
+      formData.append('consent', 'true');
+
+      const token = localStorage.getItem("tractorsewa_token");
+      const res = await fetch('/api/operators/verify-id', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        toast.success("Verification details submitted successfully!");
+        setVerifyingSuccess(true);
+        // Refresh operator profile status
+        const opRes = await fetch(`/api/operators?userId=me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (opRes.ok) {
+          const opData = await opRes.json();
+          if (opData.length > 0) setOperatorProfile(opData[0]);
+        }
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to submit verification.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error submitting verification.");
+    } finally {
+      setIsSubmittingVerification(false);
+    }
+  };
 
   const handleDetectLocation = async () => {
     const loadingToastId = toast.loading(t("addOperator.toastDetectingLocation", { defaultValue: "Detecting location..." }));
@@ -1816,6 +2000,368 @@ export function AddOperator() {
     t("addOperator.stepSkills", { defaultValue: "Skills & Equipment" }),
     t("addOperator.stepContact", { defaultValue: "Contact" })
   ];
+
+  if (isCheckingProfile) {
+    return (
+      <div className="min-h-screen bg-[#ffffff]">
+        <Navbar variant="auth" />
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-24 text-center space-y-4">
+          <Loader2 size={40} className="animate-spin text-[#172263] mx-auto" />
+          <p className="text-[#57585A] font-semibold text-sm">Checking operator profile verification status...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (operatorProfile?.verification_status === 'Pending') {
+    return (
+      <div className="min-h-screen bg-[#ffffff]">
+        <Navbar variant="auth" />
+        <div className="max-w-md mx-auto px-4 sm:px-6 py-16 text-center space-y-6 bg-white border border-zinc-200 shadow-sm rounded-3xl mt-12">
+          <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-600 border border-amber-100">
+            <Clock size={32} className="animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-extrabold text-[#1A1A1A] font-sora">ID Verification Pending</h3>
+            <p className="text-sm text-zinc-550 leading-relaxed font-sora">
+              Your identity verification documents are currently being reviewed by our administrators.
+              Once your account is verified, you will be able to complete your skills and availability details.
+            </p>
+          </div>
+          {operatorProfile.verification_feedback && (
+            <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-left text-xs text-zinc-650 leading-relaxed font-sora">
+              <strong className="block text-zinc-800 mb-1">Previous Rejection Reason:</strong>
+              {operatorProfile.verification_feedback}
+            </div>
+          )}
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="w-full py-3 bg-[#172263] hover:bg-opacity-90 text-white rounded-xl text-xs font-bold transition shadow-sm font-sora"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (verifyingSuccess) {
+    return (
+      <div className="min-h-screen bg-[#ffffff]">
+        <Navbar variant="auth" />
+        <div className="max-w-md mx-auto px-4 sm:px-6 py-16 text-center space-y-6 bg-white border border-zinc-200 shadow-sm rounded-3xl mt-12">
+          <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto text-emerald-600 border border-emerald-100 animate-bounce">
+            <ShieldCheck size={32} />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-extrabold text-[#1A1A1A] font-sora">Verification Submitted</h3>
+            <p className="text-sm text-zinc-550 leading-relaxed font-sora">
+              Your documents have been submitted securely and cryptographically signed.
+              The administrator will verify your profile shortly. You will be notified of the decision.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="w-full py-3 bg-[#172263] hover:bg-opacity-90 text-white rounded-xl text-xs font-bold transition shadow-sm font-sora"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showPopup && !verifying) {
+    return (
+      <div className="min-h-screen bg-[#ffffff]">
+        <Navbar variant="auth" />
+        <div className="max-w-md mx-auto px-4 sm:px-6 py-16 text-center space-y-6 bg-white border border-zinc-200 shadow-sm rounded-3xl mt-12">
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto text-blue-600 border border-blue-100">
+            <UserCheck size={32} />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-extrabold text-[#1A1A1A] font-sora">Identity Verification Required</h3>
+            <p className="text-sm text-zinc-550 leading-relaxed font-sora">
+              To build a trusted community, all tractor operators must verify their driving license and submit a live selfie. 
+              This is a quick, one-time manual verification process.
+            </p>
+          </div>
+          {operatorProfile?.verification_status === 'Rejected' && operatorProfile?.verification_feedback && (
+            <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-left text-xs text-rose-700 leading-relaxed font-sora">
+              <strong className="block text-rose-800 mb-1">Rejection Feedback:</strong>
+              {operatorProfile.verification_feedback}
+            </div>
+          )}
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex-1 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-bold transition font-sora"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setVerifying(true);
+                startWebcam();
+              }}
+              className="flex-1 py-3 bg-[#172263] hover:bg-opacity-90 text-white rounded-xl text-xs font-bold transition shadow-sm font-sora"
+            >
+              Verify Now
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (verifying) {
+    const vSteps = [
+      "Live Selfie",
+      "Driving License Files",
+      "Consent & Submit"
+    ];
+    return (
+      <div className="min-h-screen bg-[#ffffff]">
+        <Navbar variant="auth" />
+        <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
+          <button 
+            onClick={() => { stopWebcam(); setVerifying(false); navigate('/dashboard'); }}
+            className="inline-flex items-center gap-2 text-[#57585A] text-sm mb-6 hover:text-[#172263] transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
+          <PageHeader 
+            title="Operator Identity Verification" 
+            subtitle="Please complete these 3 simple steps to verify your operator profile." 
+          />
+
+          {/* Stepper */}
+          <div className="flex items-center gap-2 mb-8">
+            {vSteps.map((s, i) => (
+              <div key={i} className="flex items-center gap-2 flex-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${verificationStep > i + 1 ? "bg-green-600 text-white" : verificationStep === i + 1 ? "bg-[#172263] text-white" : "bg-[#E2E8F0] text-[#57585A]"}`}
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                  {verificationStep > i + 1 ? "✓" : i + 1}
+                </div>
+                <span className={`text-xs hidden sm:block ${verificationStep === i + 1 ? "text-[#172263]" : "text-[#57585A]"}`}>{s}</span>
+                {i < vSteps.length - 1 && <div className={`flex-1 h-0.5 ${verificationStep > i + 1 ? "bg-green-400" : "bg-[#E2E8F0]"}`} />}
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm p-8">
+            {/* Step 1: Live Selfie Capture */}
+            {verificationStep === 1 && (
+              <div className="space-y-6 text-center">
+                <div className="space-y-2">
+                  <h4 className="text-lg font-bold text-[#1A1A1A] font-sora">Step 1: Capture Live Selfie</h4>
+                  <p className="text-xs text-[#57585A] leading-relaxed max-w-sm mx-auto">
+                    Please face the camera and ensure your face is fully visible and well-lit. We use a live capture to prevent fake profile photos.
+                  </p>
+                </div>
+
+                <div className="aspect-video max-w-sm mx-auto w-full bg-slate-100 rounded-2xl overflow-hidden border border-zinc-200 relative flex items-center justify-center">
+                  {capturedSelfie ? (
+                    <img src={capturedSelfie} alt="Selfie preview" className="w-full h-full object-cover" />
+                  ) : webcamStream ? (
+                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-zinc-400 italic text-xs">
+                      <Camera size={40} className="text-zinc-300" />
+                      Camera stream not started
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-center gap-3">
+                  {!capturedSelfie ? (
+                    <>
+                      {!webcamStream && (
+                        <button
+                          onClick={startWebcam}
+                          className="px-6 py-2.5 bg-[#172263] text-white text-xs font-bold rounded-xl shadow-sm hover:bg-opacity-90"
+                        >
+                          Start Camera
+                        </button>
+                      )}
+                      {webcamStream && (
+                        <button
+                          onClick={captureSelfie}
+                          className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl shadow-sm"
+                        >
+                          Capture Selfie
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setCapturedSelfie(null);
+                        startWebcam();
+                      }}
+                      className="px-6 py-2.5 bg-zinc-200 text-zinc-800 text-xs font-bold rounded-xl hover:bg-zinc-300"
+                    >
+                      Retake Photo
+                    </button>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-zinc-150 flex justify-end">
+                  <button
+                    onClick={() => { stopWebcam(); setVerificationStep(2); }}
+                    disabled={!capturedSelfie}
+                    className="px-6 py-2.5 bg-[#172263] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-90 text-white text-xs font-bold rounded-xl shadow-sm font-sora"
+                  >
+                    Next Step
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Driving License Front & Back */}
+            {verificationStep === 2 && (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <h4 className="text-lg font-bold text-[#1A1A1A] font-sora">Step 2: Upload Driving License</h4>
+                  <p className="text-xs text-[#57585A] leading-relaxed max-w-sm mx-auto">
+                    Please upload clear photos of your Driving License from both sides for admin manual review.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Front Upload */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-zinc-600">License FRONT Side</label>
+                    <div 
+                      onClick={() => document.getElementById('license-front-input')?.click()}
+                      className="border-2 border-dashed border-zinc-300 rounded-2xl bg-zinc-50 hover:bg-zinc-100 cursor-pointer h-36 flex flex-col items-center justify-center relative overflow-hidden transition"
+                    >
+                      <input 
+                        type="file" 
+                        id="license-front-input" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setLicenseFrontFile(file);
+                            setLicenseFrontPreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                      {licenseFrontPreview ? (
+                        <img src={licenseFrontPreview} alt="License Front" className="absolute inset-0 w-full h-full object-cover" />
+                      ) : (
+                        <div className="text-center p-4">
+                          <Upload size={24} className="text-zinc-400 mx-auto mb-1" />
+                          <span className="text-[10px] text-zinc-500 font-semibold block">Click to upload Front</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Back Upload */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-zinc-600">License BACK Side</label>
+                    <div 
+                      onClick={() => document.getElementById('license-back-input')?.click()}
+                      className="border-2 border-dashed border-zinc-300 rounded-2xl bg-zinc-50 hover:bg-zinc-100 cursor-pointer h-36 flex flex-col items-center justify-center relative overflow-hidden transition"
+                    >
+                      <input 
+                        type="file" 
+                        id="license-back-input" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setLicenseBackFile(file);
+                            setLicenseBackPreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                      {licenseBackPreview ? (
+                        <img src={licenseBackPreview} alt="License Back" className="absolute inset-0 w-full h-full object-cover" />
+                      ) : (
+                        <div className="text-center p-4">
+                          <Upload size={24} className="text-zinc-400 mx-auto mb-1" />
+                          <span className="text-[10px] text-zinc-500 font-semibold block">Click to upload Back</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-zinc-150 flex justify-between">
+                  <button
+                    onClick={() => { setVerificationStep(1); startWebcam(); }}
+                    className="px-6 py-2.5 bg-zinc-200 hover:bg-zinc-300 text-zinc-800 text-xs font-bold rounded-xl"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => setVerificationStep(3)}
+                    disabled={!licenseFrontFile || !licenseBackFile}
+                    className="px-6 py-2.5 bg-[#172263] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-90 text-white text-xs font-bold rounded-xl shadow-sm"
+                  >
+                    Next Step
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Consent & Submit */}
+            {verificationStep === 3 && (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <h4 className="text-lg font-bold text-[#1A1A1A] font-sora">Step 3: Legal Consent & Submit</h4>
+                  <p className="text-xs text-[#57585A] leading-relaxed max-w-sm mx-auto">
+                    Please read and accept our verification policy terms to complete your submission.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-4">
+                  <p className="text-xs leading-relaxed text-zinc-600 font-medium">
+                    I hereby explicitly consent to Tractor Seva collecting and processing my live selfie and driving license images solely for the purpose of verifying my profile. I understand this data will be stored securely and reviewed manually by the system administrator.
+                  </p>
+                  <div className="flex items-start gap-2.5 pt-2 border-t border-blue-100">
+                    <input 
+                      type="checkbox" 
+                      id="consent-checkbox" 
+                      checked={consentChecked} 
+                      onChange={(e) => setConsentChecked(e.target.checked)} 
+                      className="mt-0.5 rounded text-[#172263] focus:ring-[#172263]"
+                    />
+                    <label htmlFor="consent-checkbox" className="text-[11px] text-zinc-700 font-bold leading-tight cursor-pointer">
+                      I agree and give my cryptographic legal consent for ID verification.
+                    </label>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-zinc-150 flex justify-between">
+                  <button
+                    onClick={() => setVerificationStep(2)}
+                    className="px-6 py-2.5 bg-zinc-200 hover:bg-zinc-300 text-zinc-800 text-xs font-bold rounded-xl"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleVerificationSubmit}
+                    disabled={isSubmittingVerification || !consentChecked}
+                    className="px-6 py-2.5 bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5"
+                  >
+                    {isSubmittingVerification && <Loader2 size={12} className="animate-spin" />}
+                    Submit Verification
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
@@ -5465,6 +6011,62 @@ export function BlogDetail() {
   );
 }
 
+const getStatusBadge = (status?: string) => {
+  const currentStatus = status || "Pending";
+  switch (currentStatus) {
+    case "Approved":
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-sm">
+          <CheckCircle2 size={13} className="text-emerald-600" />
+          Approved
+        </span>
+      );
+    case "Rejected":
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold shadow-sm">
+          <XCircle size={13} className="text-rose-600" />
+          Rejected
+        </span>
+      );
+    case "Pending":
+    default:
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold shadow-sm">
+          <Clock size={13} className="text-amber-600 animate-pulse" />
+          Pending Approval
+        </span>
+      );
+  }
+};
+
+const getUserVerificationStatusBadge = (status?: string) => {
+  const currentStatus = status || "Pending";
+  switch (currentStatus) {
+    case "Approved":
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-sm">
+          <CheckCircle2 size={13} className="text-emerald-600" />
+          Verified
+        </span>
+      );
+    case "Rejected":
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold shadow-sm">
+          <XCircle size={13} className="text-rose-600" />
+          Unverified
+        </span>
+      );
+    case "Pending":
+    default:
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold shadow-sm">
+          <Clock size={13} className="text-amber-600 animate-pulse" />
+          Pending
+        </span>
+      );
+  }
+};
+
 // ===========================
 // PROFILE
 // ===========================
@@ -5479,6 +6081,7 @@ export function Profile() {
   const [operatorProfile, setOperatorProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"listings" | "operator">("listings");
+  const [statusFilter, setStatusFilter] = useState<"All" | "Approved" | "Pending" | "Rejected">("All");
 
   useEffect(() => {
     if (tabParam === "listings" || tabParam === "operator") {
@@ -5522,7 +6125,7 @@ export function Profile() {
           if (opData.length > 0) setOperatorProfile(opData[0]);
         }
 
-        const harvsRes = await fetch(`/api/harvesters`, {
+        const harvsRes = await fetch(`/api/harvesters?userId=${userData.id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (harvsRes.ok) {
@@ -5710,9 +6313,39 @@ export function Profile() {
         {/* Grid Content */}
         {activeTab === "listings" && (
           <div>
-            {harvesters.length > 0 ? (
+            {/* Status Filter Tabs */}
+            <div className="flex flex-wrap gap-2 mb-6 justify-start border-b border-zinc-200 pb-4">
+              {(["All", "Approved", "Pending", "Rejected"] as const).map((status) => {
+                const count = status === "All" 
+                  ? harvesters.length 
+                  : harvesters.filter(h => status === "Pending" ? (!h.verification_status || h.verification_status === "Pending") : h.verification_status === status).length;
+                return (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                      statusFilter === status
+                        ? "bg-[#172263] border-[#172263] text-white shadow-sm"
+                        : "bg-white border-zinc-200 text-zinc-650 hover:bg-zinc-50"
+                    }`}
+                  >
+                    {status} ({count})
+                  </button>
+                );
+              })}
+            </div>
+
+            {harvesters.filter(h => {
+              if (statusFilter === "All") return true;
+              if (statusFilter === "Pending") return !h.verification_status || h.verification_status === "Pending";
+              return h.verification_status === statusFilter;
+            }).length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
-                {harvesters.map((h) => (
+                {harvesters.filter(h => {
+                  if (statusFilter === "All") return true;
+                  if (statusFilter === "Pending") return !h.verification_status || h.verification_status === "Pending";
+                  return h.verification_status === statusFilter;
+                }).map((h) => (
                   <Link
                     key={h.id}
                     to={`/harvesters/${h.id}`}
@@ -5726,10 +6359,13 @@ export function Profile() {
                           <Tractor size={32} className="text-zinc-400 group-hover:scale-110 transition-transform duration-300" />
                         </div>
                       )}
-                      <div className="absolute top-2.5 right-2.5">
+                      <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-1.5">
                         <span className="px-2 py-0.5 bg-[#E82326]/10 text-[#E82326] border border-[#E82326]/20 rounded text-[9px] font-bold uppercase tracking-wider">
                           {t("companies." + h.company, { ns: "static", defaultValue: h.company })}
                         </span>
+                        <div className="scale-90 origin-top-right">
+                          {getStatusBadge(h.verification_status)}
+                        </div>
                       </div>
                     </div>
 
@@ -5741,6 +6377,12 @@ export function Profile() {
                         <p className="text-xs text-[#57585A] flex items-center gap-1.5 mt-1.5 font-medium">
                           <MapPin size={12} className="text-[#E82326]" /> {h.location}, {t("states." + h.state, { ns: "static", defaultValue: h.state })}
                         </p>
+                        {h.verification_status === "Rejected" && h.verification_feedback && (
+                          <div className="mt-3 p-2.5 bg-rose-50 border border-rose-100 rounded-xl text-[11px] text-rose-700 font-medium">
+                            <strong className="block text-rose-800 mb-0.5">Admin Feedback:</strong>
+                            {h.verification_feedback}
+                          </div>
+                        )}
                       </div>
                       <div className="h-px bg-zinc-100 my-3.5" />
                       <div className="flex items-center justify-between text-[11px] text-[#57585A]">
@@ -5782,8 +6424,20 @@ export function Profile() {
                       <p className="text-[10px] text-zinc-400">{operatorProfile.location || t("profile.noLocation", { defaultValue: "Location not specified" })}</p>
                     </div>
                   </div>
-                  <AvailabilityBadge status={operatorProfile.availability || "Available"} />
+                  <div className="flex flex-col items-end gap-1.5">
+                    <AvailabilityBadge status={operatorProfile.availability || "Available"} />
+                    <div className="scale-90 origin-top-right">
+                      {getStatusBadge(operatorProfile.verification_status)}
+                    </div>
+                  </div>
                 </div>
+
+                {operatorProfile.verification_status === "Rejected" && operatorProfile.verification_feedback && (
+                  <div className="p-3.5 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-700 font-medium space-y-1">
+                    <strong className="block text-rose-800">Verification Rejected by Admin:</strong>
+                    <p>{operatorProfile.verification_feedback}</p>
+                  </div>
+                )}
 
                 <div className="space-y-4 text-sm text-[#57585A]">
                   <div className="grid grid-cols-2 gap-4">
@@ -6050,32 +6704,50 @@ export function Messages() {
                   {t("messages.noConversations", { defaultValue: "No conversations yet. Open a machine or operator listing to message the owner!" })}
                 </div>
               ) : (
-                chatPartners.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => setActive(m)}
-                    className={`w-full p-4 flex items-center gap-3 transition-all text-left ${
-                      active?.id === m.id 
-                        ? "bg-[#f5eee5] border-l-4 border-l-[#172263]" 
-                        : "hover:bg-[#fcfbf9]"
-                    }`}
-                  >
-                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-100">
-                      {m.imagePath ? (
-                        <img src={m.imagePath} alt={m.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-white font-extrabold text-sm">{m.name?.charAt(0)}</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm text-[#1A1A1A] font-extrabold font-sora truncate">{m.name}</p>
-                        <span className="text-[10px] font-bold text-[#57585A]/80 shrink-0">{formatTime(m.lastMessageTime)}</span>
+                chatPartners.map((m) => {
+                  const isAdminUser = m.role === 'admin';
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => setActive(m)}
+                      className={`w-full p-4 flex items-center gap-3 transition-all text-left ${
+                        active?.id === m.id 
+                          ? "bg-[#f5eee5] border-l-4 border-l-[#172263]" 
+                          : "hover:bg-[#fcfbf9]"
+                      }`}
+                    >
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-100 ${
+                        isAdminUser 
+                          ? "bg-gradient-to-br from-emerald-600 to-green-500 text-white" 
+                          : "bg-gradient-to-br from-[#172263] to-[#D97706] text-white"
+                      }`}>
+                        {isAdminUser ? (
+                          <ShieldCheck size={20} className="text-white" />
+                        ) : m.imagePath ? (
+                          <img src={m.imagePath} alt={m.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-white font-extrabold text-sm">{m.name?.charAt(0)}</span>
+                        )}
                       </div>
-                      <p className="text-xs text-[#57585A] truncate">{m.lastMessage || t("messages.noMessages", { defaultValue: "No messages yet" })}</p>
-                    </div>
-                  </button>
-                ))
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className={`text-sm font-extrabold font-sora truncate flex items-center gap-1 ${
+                            isAdminUser ? "text-emerald-700 font-extrabold" : "text-[#1A1A1A]"
+                          }`}>
+                            {m.name}
+                            {isAdminUser && (
+                              <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider scale-90 origin-left">
+                                Admin
+                              </span>
+                            )}
+                          </p>
+                          <span className="text-[10px] font-bold text-[#57585A]/80 shrink-0">{formatTime(m.lastMessageTime)}</span>
+                        </div>
+                        <p className="text-xs text-[#57585A] truncate">{m.lastMessage || t("messages.noMessages", { defaultValue: "No messages yet" })}</p>
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
@@ -6089,15 +6761,30 @@ export function Messages() {
                   <button className="md:hidden p-1 mr-1 text-[#57585A] hover:text-[#172263] hover:bg-slate-100 rounded-lg transition-colors" onClick={() => setActive(null)}>
                     <ArrowLeft size={20} />
                   </button>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-100">
-                    {active.imagePath ? (
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-100 ${
+                    active.role === 'admin' 
+                      ? "bg-gradient-to-br from-emerald-600 to-green-500 text-white" 
+                      : "bg-gradient-to-br from-[#172263] to-[#D97706] text-white"
+                  }`}>
+                    {active.role === 'admin' ? (
+                      <ShieldCheck size={18} className="text-white" />
+                    ) : active.imagePath ? (
                       <img src={active.imagePath} alt={active.name} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-white font-extrabold text-sm">{active.name?.charAt(0)}</span>
                     )}
                   </div>
                   <div>
-                    <p className="text-sm text-[#1A1A1A] font-extrabold font-sora">{active.name}</p>
+                    <p className={`text-sm font-extrabold font-sora flex items-center gap-1.5 ${
+                      active.role === 'admin' ? "text-emerald-700" : "text-[#1A1A1A]"
+                    }`}>
+                      {active.name}
+                      {active.role === 'admin' && (
+                        <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                          Admin
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[10px] font-bold text-[#57585A] capitalize tracking-wide">
                       {active.role ? t("roles." + active.role.toLowerCase(), { ns: "static", defaultValue: active.role }) : t("roles.user", { ns: "static", defaultValue: "User" })}
                     </p>
@@ -6110,15 +6797,26 @@ export function Messages() {
                 {chat.map((msg, i) => {
                   const isMe = msg.sender_id === currentUser?.id;
                   const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+                  const isMsgFromAdmin = !isMe && msg.senderRole === 'admin';
                   return (
-                    <div key={i} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                    <div key={i} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                      {isMsgFromAdmin && (
+                        <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-bold mb-0.5 ml-2">
+                          <ShieldCheck size={11} />
+                          <span>Verified Admin</span>
+                        </div>
+                      )}
                       <div className={`max-w-xs sm:max-w-md px-4 py-2.5 rounded-2xl text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] relative pb-6 ${
                         isMe 
                           ? "bg-[#172263] text-white rounded-tr-none" 
-                          : "bg-white border border-[#E7E0D5] text-[#1A1A1A] rounded-tl-none"
+                          : isMsgFromAdmin
+                            ? "bg-emerald-50/80 border border-emerald-200 text-emerald-950 rounded-tl-none font-medium shadow-[0_1px_3px_rgba(16,185,129,0.08)]"
+                            : "bg-white border border-[#E7E0D5] text-[#1A1A1A] rounded-tl-none"
                       }`}>
                         <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                        <span className={`absolute bottom-1 right-2.5 text-[9px] font-medium shrink-0 ${isMe ? "text-white/60" : "text-slate-400"}`}>
+                        <span className={`absolute bottom-1 right-2.5 text-[9px] font-medium shrink-0 ${
+                          isMe ? "text-white/60" : isMsgFromAdmin ? "text-emerald-700/60" : "text-slate-400"
+                        }`}>
                           {msgTime}
                         </span>
                       </div>
@@ -6539,6 +7237,52 @@ export function AdminPortal() {
   const [selectedListingDetail, setSelectedListingDetail] = useState<any | null>(null);
   const [selectedListingType, setSelectedListingType] = useState<'harvester' | 'operator' | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [operatorVerificationDetails, setOperatorVerificationDetails] = useState<any | null>(null);
+  const [loadingVerificationDetails, setLoadingVerificationDetails] = useState(false);
+
+  // Verification states
+  const [harvesterStatusFilter, setHarvesterStatusFilter] = useState<"All" | "Approved" | "Pending" | "Rejected">("Pending");
+  const [operatorStatusFilter, setOperatorStatusFilter] = useState<"All" | "Approved" | "Pending" | "Rejected">("Pending");
+  const [verificationStatusFilter, setVerificationStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("Pending");
+  const [verificationSearchTerm, setVerificationSearchTerm] = useState("");
+  const [adminFeedback, setAdminFeedback] = useState("");
+  const [submittingVerification, setSubmittingVerification] = useState(false);
+
+  // Advanced Filter/Sort states
+  // Users directory filters states
+  const [userLocationFilter, setUserLocationFilter] = useState("");
+  const [userSortFilter, setUserSortFilter] = useState("");
+  const [userStatusFilter, setUserStatusFilter] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState("");
+
+  // Harvesters Tab filters states
+  const [harvesterCompanyFilter, setHarvesterCompanyFilter] = useState("");
+  const [harvesterModelFilter, setHarvesterModelFilter] = useState("");
+  const [harvesterOwnerFilter, setHarvesterOwnerFilter] = useState("");
+  const [harvesterStateFilter, setHarvesterStateFilter] = useState("");
+  const [harvesterSortFilter, setHarvesterSortFilter] = useState("");
+  const [harvesterGroupByOwner, setHarvesterGroupByOwner] = useState(false);
+
+  // Operators Tab filters states
+  const [operatorStateFilter, setOperatorStateFilter] = useState("");
+  const [operatorAvailabilityFilter, setOperatorAvailabilityFilter] = useState("");
+  const [operatorSortFilter, setOperatorSortFilter] = useState("");
+
+  // Requests Tab filters states
+  const [requestStateFilter, setRequestStateFilter] = useState("");
+  const [requestSortFilter, setRequestSortFilter] = useState("");
+
+  // Enquiries Tab filters states
+  const [enquiryStatusFilter, setEnquiryStatusFilter] = useState("");
+  const [enquirySortFilter, setEnquirySortFilter] = useState("");
+
+  // Blogs Tab filters states
+  const [blogCategoryFilter, setBlogCategoryFilter] = useState("");
+  const [blogSortFilter, setBlogSortFilter] = useState("");
+
+  // FAQs Tab filters states
+  const [faqStatusFilter, setFaqStatusFilter] = useState("");
+  const [faqSortFilter, setFaqSortFilter] = useState("");
 
   // Blog Comments Moderation States
   const [activeBlogForComments, setActiveBlogForComments] = useState<any | null>(null);
@@ -6742,7 +7486,9 @@ export function AdminPortal() {
 
   const fetchHarvesters = async () => {
     try {
-      const res = await fetch("/api/harvesters");
+      const res = await fetch("/api/harvesters", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
         setHarvesters(data);
@@ -6794,7 +7540,9 @@ export function AdminPortal() {
 
   const fetchAdminOperators = async () => {
     try {
-      const res = await fetch("/api/operators");
+      const res = await fetch("/api/operators", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
         setAdminOperators(data);
@@ -6890,10 +7638,63 @@ export function AdminPortal() {
     }
   };
 
-  const openListingDetail = (type: 'harvester' | 'operator', listing: any) => {
+  const openListingDetail = async (type: 'harvester' | 'operator', listing: any) => {
     setSelectedListingType(type);
     setSelectedListingDetail(listing);
+    setAdminFeedback(listing.verification_feedback || "");
     setShowDetailModal(true);
+
+    if (type === 'operator') {
+      setLoadingVerificationDetails(true);
+      setOperatorVerificationDetails(null);
+      try {
+        const token = localStorage.getItem("tractorsewa_token");
+        const res = await fetch(`/api/admin/operators/${listing.id}/verification-details`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setOperatorVerificationDetails(data);
+        }
+      } catch (err) {
+        console.error("Error fetching operator verification details:", err);
+      } finally {
+        setLoadingVerificationDetails(false);
+      }
+    }
+  };
+
+  const handleVerifyListing = async (status: 'Approved' | 'Rejected') => {
+    if (!selectedListingDetail || !selectedListingType) return;
+    
+    setSubmittingVerification(true);
+    try {
+      const res = await fetch(`/api/admin/listings/${selectedListingType}/${selectedListingDetail.id}/verify`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status,
+          feedback: adminFeedback.trim() || null
+        })
+      });
+
+      if (res.ok) {
+        toast.success(`Listing successfully ${status.toLowerCase()}!`);
+        setShowDetailModal(false);
+        refreshAllData();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to update verification status.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error updating verification status.");
+    } finally {
+      setSubmittingVerification(false);
+    }
   };
 
   const openBlogComments = async (blog: any) => {
@@ -7235,11 +8036,264 @@ export function AdminPortal() {
     setConfirmOpen(true);
   };
 
-  const filteredUsers = allUsers.filter(u =>
-    u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-    (u.phone && u.phone.includes(userSearchTerm))
-  );
+  const filteredUsers = useMemo(() => {
+    let result = [...allUsers];
+
+    // Search term filter
+    if (userSearchTerm.trim()) {
+      const term = userSearchTerm.toLowerCase();
+      result = result.filter(u =>
+        u.name.toLowerCase().includes(term) ||
+        u.email.toLowerCase().includes(term) ||
+        (u.phone && u.phone.includes(term))
+      );
+    }
+
+    // Location (State) filter
+    if (userLocationFilter) {
+      result = result.filter(u => u.state === userLocationFilter);
+    }
+
+    // Status filter
+    if (userStatusFilter === "active") {
+      result = result.filter(u => !u.is_blocked);
+    } else if (userStatusFilter === "blocked") {
+      result = result.filter(u => u.is_blocked);
+    }
+
+    // Role filter
+    if (userRoleFilter === "operator") {
+      result = result.filter(u => u.isOperator > 0);
+    } else if (userRoleFilter === "non_operator") {
+      result = result.filter(u => u.isOperator === 0);
+    }
+
+    // Sorting
+    if (userSortFilter === "name_asc") {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (userSortFilter === "name_desc") {
+      result.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (userSortFilter === "date_newest") {
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (userSortFilter === "date_oldest") {
+      result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    } else if (userSortFilter === "highest_posts") {
+      result.sort((a, b) => {
+        const postsA = (a.harvesterCount || 0) + (a.requestCount || 0);
+        const postsB = (b.harvesterCount || 0) + (b.requestCount || 0);
+        return postsB - postsA;
+      });
+    }
+
+    return result;
+  }, [allUsers, userSearchTerm, userLocationFilter, userSortFilter, userStatusFilter, userRoleFilter]);
+
+  const filteredHarv = useMemo(() => {
+    let result = [...harvesters];
+
+    // Status filter (from existing tabs)
+    if (harvesterStatusFilter !== "All") {
+      result = result.filter(h => {
+        if (harvesterStatusFilter === "Pending") return !h.verification_status || h.verification_status === "Pending";
+        return h.verification_status === harvesterStatusFilter;
+      });
+    }
+
+    // Company filter
+    if (harvesterCompanyFilter) {
+      result = result.filter(h => h.company === harvesterCompanyFilter);
+    }
+
+    // Model filter
+    if (harvesterModelFilter) {
+      result = result.filter(h => h.model === harvesterModelFilter);
+    }
+
+    // Owner filter
+    if (harvesterOwnerFilter) {
+      result = result.filter(h => h.ownerName === harvesterOwnerFilter);
+    }
+
+    // State filter
+    if (harvesterStateFilter) {
+      result = result.filter(h => h.state === harvesterStateFilter);
+    }
+
+    // Sorting
+    if (harvesterSortFilter === "name_asc") {
+      result.sort((a, b) => a.machineName.localeCompare(b.machineName));
+    } else if (harvesterSortFilter === "name_desc") {
+      result.sort((a, b) => b.machineName.localeCompare(a.machineName));
+    } else if (harvesterSortFilter === "date_newest") {
+      result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    } else if (harvesterSortFilter === "date_oldest") {
+      result.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+    } else if (harvesterSortFilter === "year_newest") {
+      result.sort((a, b) => (b.year || 0) - (a.year || 0));
+    } else if (harvesterSortFilter === "year_oldest") {
+      result.sort((a, b) => (a.year || 0) - (b.year || 0));
+    }
+
+    return result;
+  }, [harvesters, harvesterStatusFilter, harvesterCompanyFilter, harvesterModelFilter, harvesterOwnerFilter, harvesterStateFilter, harvesterSortFilter]);
+
+  const groupedHarvesters = useMemo(() => {
+    if (!harvesterGroupByOwner) return null;
+    const groups: { [key: string]: any[] } = {};
+    filteredHarv.forEach(h => {
+      const owner = h.ownerName || "Unknown Owner";
+      if (!groups[owner]) groups[owner] = [];
+      groups[owner].push(h);
+    });
+    return groups;
+  }, [filteredHarv, harvesterGroupByOwner]);
+
+  const filteredOps = useMemo(() => {
+    // Only show completed operator profiles (those that are real listings)
+    let result = adminOperators.filter(op => op.is_profile_completed === 1);
+
+    // Status filter (from existing tabs)
+    if (operatorStatusFilter !== "All") {
+      result = result.filter(op => {
+        if (operatorStatusFilter === "Pending") return !op.verification_status || op.verification_status === "Pending";
+        return op.verification_status === operatorStatusFilter;
+      });
+    }
+
+    // State filter
+    if (operatorStateFilter) {
+      result = result.filter(op => op.state === operatorStateFilter);
+    }
+
+    // Availability filter
+    if (operatorAvailabilityFilter) {
+      result = result.filter(op => op.availability === operatorAvailabilityFilter);
+    }
+
+    // Sorting
+    if (operatorSortFilter === "name_asc") {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (operatorSortFilter === "name_desc") {
+      result.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (operatorSortFilter === "rating_desc") {
+      result.sort((a, b) => parseFloat(b.avgRating || 0) - parseFloat(a.avgRating || 0));
+    } else if (operatorSortFilter === "rating_asc") {
+      result.sort((a, b) => parseFloat(a.avgRating || 0) - parseFloat(b.avgRating || 0));
+    } else if (operatorSortFilter === "date_newest") {
+      result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    } else if (operatorSortFilter === "date_oldest") {
+      result.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+    } else if (operatorSortFilter === "exp_desc") {
+      result.sort((a, b) => b.experience - a.experience);
+    } else if (operatorSortFilter === "exp_asc") {
+      result.sort((a, b) => a.experience - b.experience);
+    }
+
+    return result;
+  }, [adminOperators, operatorStatusFilter, operatorStateFilter, operatorAvailabilityFilter, operatorSortFilter]);
+
+  const filteredVerifications = useMemo(() => {
+    // Only show operators who have uploaded verification files
+    let result = adminOperators.filter(op => op.selfie_image_path);
+
+    if (verificationStatusFilter !== "All") {
+      result = result.filter(op => {
+        if (verificationStatusFilter === "Pending") return !op.verification_status || op.verification_status === "Pending";
+        return op.verification_status === verificationStatusFilter;
+      });
+    }
+
+    if (verificationSearchTerm) {
+      const term = verificationSearchTerm.toLowerCase();
+      result = result.filter(op => op.name.toLowerCase().includes(term) || op.email?.toLowerCase().includes(term));
+    }
+
+    return result;
+  }, [adminOperators, verificationStatusFilter, verificationSearchTerm]);
+
+  const filteredReqs = useMemo(() => {
+    let result = [...requests];
+
+    // Filter by state
+    if (requestStateFilter) {
+      result = result.filter(r => r.state === requestStateFilter);
+    }
+
+    // Sort by Date, Type, Location
+    if (requestSortFilter === "date_newest") {
+      result.sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime());
+    } else if (requestSortFilter === "date_oldest") {
+      result.sort((a, b) => new Date(a.startDate || 0).getTime() - new Date(b.startDate || 0).getTime());
+    } else if (requestSortFilter === "type_asc") {
+      result.sort((a, b) => a.type.localeCompare(b.type));
+    } else if (requestSortFilter === "location_asc") {
+      result.sort((a, b) => a.location.localeCompare(b.location));
+    }
+
+    return result;
+  }, [requests, requestStateFilter, requestSortFilter]);
+
+  const filteredEnqs = useMemo(() => {
+    let result = [...enquiries];
+
+    // Filter by Status
+    if (enquiryStatusFilter) {
+      result = result.filter(e => e.status === enquiryStatusFilter);
+    }
+
+    // Sort by Date, Name
+    if (enquirySortFilter === "date_newest") {
+      result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    } else if (enquirySortFilter === "date_oldest") {
+      result.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+    } else if (enquirySortFilter === "name_asc") {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return result;
+  }, [enquiries, enquiryStatusFilter, enquirySortFilter]);
+
+  const filteredBlogs = useMemo(() => {
+    let result = [...adminBlogs];
+
+    // Filter by Category
+    if (blogCategoryFilter) {
+      result = result.filter(b => b.category === blogCategoryFilter);
+    }
+
+    // Sort by Date, Title
+    if (blogSortFilter === "title_asc") {
+      result.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (blogSortFilter === "title_desc") {
+      result.sort((a, b) => b.title.localeCompare(a.title));
+    } else if (blogSortFilter === "date_newest") {
+      result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    } else if (blogSortFilter === "date_oldest") {
+      result.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+    }
+
+    return result;
+  }, [adminBlogs, blogCategoryFilter, blogSortFilter]);
+
+  const filteredFaqs = useMemo(() => {
+    let result = [...adminFaqs];
+
+    // Filter by answered status
+    if (faqStatusFilter === "answered") {
+      result = result.filter(f => f.answer && f.answer.trim());
+    } else if (faqStatusFilter === "unanswered") {
+      result = result.filter(f => !f.answer || !f.answer.trim());
+    }
+
+    // Sort by Question text
+    if (faqSortFilter === "question_asc") {
+      result.sort((a, b) => a.question.localeCompare(b.question));
+    } else if (faqSortFilter === "question_desc") {
+      result.sort((a, b) => b.question.localeCompare(a.question));
+    }
+
+    return result;
+  }, [adminFaqs, faqStatusFilter, faqSortFilter]);
 
   const pendingEnquiriesCount = enquiries.filter((enq: any) => enq.status === 'Active' || enq.status === 'Pending' || !enq.status).length;
 
@@ -7331,6 +8385,7 @@ export function AdminPortal() {
                 { id: "directory", label: t("admin.nav.directory", { defaultValue: "User Directory" }), icon: <User size={18} /> },
                 { id: "harvesters", label: t("admin.nav.machines", { defaultValue: "Machines" }), icon: <Tractor size={18} /> },
                 { id: "operators", label: t("admin.nav.operators", { defaultValue: "Operators" }), icon: <UserCheck size={18} /> },
+                { id: "verifications", label: "ID Verifications", icon: <ShieldCheck size={18} /> },
                 { id: "requests", label: t("admin.nav.requests", { defaultValue: "Requests" }), icon: <FileText size={18} /> },
                 { id: "enquiries", label: t("admin.nav.enquiries", { defaultValue: "Enquiries" }), icon: <MessageSquare size={18} /> },
                 { id: "blogs", label: t("admin.nav.blogs", { defaultValue: "Blogs Management" }), icon: <BookOpen size={18} /> },
@@ -7760,17 +8815,97 @@ export function AdminPortal() {
           {activeTab === "directory" && (
             <div className="space-y-6">
               <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
-                <div className="p-6 border-b border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Registered Users Account Directory</h3>
-                  <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-3 top-3 text-[#57585A]" size={16} />
-                    <input
-                      type="text"
-                      value={userSearchTerm}
-                      onChange={(e) => setUserSearchTerm(e.target.value)}
-                      placeholder="Search users..."
-                      className="w-full pl-9 pr-4 py-2 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-[#172263]"
-                    />
+                <div className="p-6 border-b border-[#E2E8F0] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Registered Users Account Directory</h3>
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute left-3 top-3 text-[#57585A]" size={16} />
+                      <input
+                        type="text"
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        placeholder="Search users..."
+                        className="w-full pl-9 pr-4 py-2 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-[#172263]"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Filters Row */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2 text-xs">
+                    {/* Location Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Location</span>
+                      <select
+                        value={userLocationFilter}
+                        onChange={(e) => setUserLocationFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All States (Select All)</option>
+                        {Array.from(new Set(allUsers.map(u => u.state).filter(Boolean))).map(state => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Status Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Status</span>
+                      <select
+                        value={userStatusFilter}
+                        onChange={(e) => setUserStatusFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All Statuses (Select All)</option>
+                        <option value="active">Active</option>
+                        <option value="blocked">Blocked</option>
+                      </select>
+                    </div>
+
+                    {/* Role Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Role</span>
+                      <select
+                        value={userRoleFilter}
+                        onChange={(e) => setUserRoleFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All Roles (Select All)</option>
+                        <option value="operator">Operator Profile Exist</option>
+                        <option value="non_operator">General User Only</option>
+                      </select>
+                    </div>
+
+                    {/* Sorting */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Sort By</span>
+                      <select
+                        value={userSortFilter}
+                        onChange={(e) => setUserSortFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">Default Sort (Off)</option>
+                        <option value="name_asc">Alphabetical: A-Z</option>
+                        <option value="name_desc">Alphabetical: Z-A</option>
+                        <option value="date_newest">Date Joined: Newest</option>
+                        <option value="date_oldest">Date Joined: Oldest</option>
+                        <option value="highest_posts">Highest Posts Count</option>
+                      </select>
+                    </div>
+
+                    {/* Reset Button */}
+                    {(userLocationFilter || userStatusFilter || userRoleFilter || userSortFilter) && (
+                      <button
+                        onClick={() => {
+                          setUserLocationFilter("");
+                          setUserStatusFilter("");
+                          setUserRoleFilter("");
+                          setUserSortFilter("");
+                        }}
+                        className="mt-4 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold rounded-lg transition"
+                      >
+                        Reset Filters
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -7855,143 +8990,531 @@ export function AdminPortal() {
           {/* ================================== */}
           {/* TAB: MACHINES MODERATION           */}
           {/* ================================== */}
-          {activeTab === "harvesters" && (
-            <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
-              <div className="p-6 border-b border-[#E2E8F0]">
-                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Active Machine Listings ({harvesters.length})</h3>
-              </div>
+          {activeTab === "harvesters" && (() => {
+            return (
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-[#E2E8F0] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Machine Listings Moderation</h3>
+                    
+                    <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-zinc-200 rounded-xl">
+                      {(["All", "Pending", "Approved", "Rejected"] as const).map((status) => {
+                        const count = status === "All" 
+                          ? harvesters.length 
+                          : harvesters.filter(h => status === "Pending" ? (!h.verification_status || h.verification_status === "Pending") : h.verification_status === status).length;
+                        return (
+                          <button
+                            key={status}
+                            onClick={() => setHarvesterStatusFilter(status)}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                              harvesterStatusFilter === status
+                                ? "bg-[#172263] text-white shadow-sm"
+                                : "text-[#57585A] hover:bg-zinc-100"
+                            }`}
+                          >
+                            {status} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-[#57585A]">
-                  <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
-                    <tr>
-                      <th className="px-6 py-3.5">Machine Details</th>
-                      <th className="px-6 py-3.5">Manufacturer</th>
-                      <th className="px-6 py-3.5">Model</th>
-                      <th className="px-6 py-3.5">Location</th>
-                      <th className="px-6 py-3.5">Listed Owner</th>
-                      <th className="px-6 py-3.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
-                    {harvesters.length > 0 ? (
-                      harvesters.map((h) => (
-                        <tr key={h.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{h.machineName}</td>
-                          <td className="px-6 py-4">{h.company}</td>
-                          <td className="px-6 py-4">{h.model}</td>
-                          <td className="px-6 py-4">{h.location}, {h.state}</td>
-                          <td className="px-6 py-4">{h.ownerName}</td>
-                          <td className="px-6 py-4 text-right space-x-2">
-                            <button
-                              onClick={() => openListingDetail("harvester", h)}
-                              className="px-3 py-1.5 bg-[#f5eee5] text-[#172263] border border-[#e8dfd2] rounded-xl text-xs font-bold hover:bg-[#e8dfd2] transition cursor-pointer"
-                            >
-                              View Details
-                            </button>
-                            <button
-                              onClick={() => openConfirmModal("deleteHarv", h.id, h.machineName)}
-                              className="px-3 py-1.5 bg-red-55 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition cursor-pointer"
-                            >
-                              Remove Listing
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-[#57585A]/70">
-                          No active machine listings in the database.
-                        </td>
-                      </tr>
+                  {/* Filters Row */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2 text-xs">
+                    {/* Company Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Company</span>
+                      <select
+                        value={harvesterCompanyFilter}
+                        onChange={(e) => setHarvesterCompanyFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All Companies (Select All)</option>
+                        {Array.from(new Set(harvesters.map(h => h.company).filter(Boolean))).map(company => (
+                          <option key={company} value={company}>{company}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Model Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Model</span>
+                      <select
+                        value={harvesterModelFilter}
+                        onChange={(e) => setHarvesterModelFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All Models (Select All)</option>
+                        {Array.from(new Set(harvesters.map(h => h.model).filter(Boolean))).map(model => (
+                          <option key={model} value={model}>{model}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Owner Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Owner</span>
+                      <select
+                        value={harvesterOwnerFilter}
+                        onChange={(e) => setHarvesterOwnerFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All Owners (Select All)</option>
+                        {Array.from(new Set(harvesters.map(h => h.ownerName).filter(Boolean))).map(owner => (
+                          <option key={owner} value={owner}>{owner}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* State Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">State</span>
+                      <select
+                        value={harvesterStateFilter}
+                        onChange={(e) => setHarvesterStateFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All States (Select All)</option>
+                        {Array.from(new Set(harvesters.map(h => h.state).filter(Boolean))).map(state => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Sort Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Sort By</span>
+                      <select
+                        value={harvesterSortFilter}
+                        onChange={(e) => setHarvesterSortFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">Default Sort (Off)</option>
+                        <option value="name_asc">Machine Name: A-Z</option>
+                        <option value="name_desc">Machine Name: Z-A</option>
+                        <option value="date_newest">Date Listed: Newest</option>
+                        <option value="date_oldest">Date Listed: Oldest</option>
+                        <option value="year_newest">Mfg Year: Newest</option>
+                        <option value="year_oldest">Mfg Year: Oldest</option>
+                      </select>
+                    </div>
+
+                    {/* Group By Owner Toggle */}
+                    <div className="flex items-center gap-1.5 mt-5">
+                      <input
+                        type="checkbox"
+                        id="groupByOwnerCheck"
+                        checked={harvesterGroupByOwner}
+                        onChange={(e) => setHarvesterGroupByOwner(e.target.checked)}
+                        className="w-4 h-4 text-[#172263] border-zinc-300 rounded focus:ring-[#172263]"
+                      />
+                      <label htmlFor="groupByOwnerCheck" className="font-bold text-[#172263] cursor-pointer">
+                        Group by Owner
+                      </label>
+                    </div>
+
+                    {/* Reset Button */}
+                    {(harvesterCompanyFilter || harvesterModelFilter || harvesterOwnerFilter || harvesterStateFilter || harvesterSortFilter || harvesterGroupByOwner) && (
+                      <button
+                        onClick={() => {
+                          setHarvesterCompanyFilter("");
+                          setHarvesterModelFilter("");
+                          setHarvesterOwnerFilter("");
+                          setHarvesterStateFilter("");
+                          setHarvesterSortFilter("");
+                          setHarvesterGroupByOwner(false);
+                        }}
+                        className="mt-4 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold rounded-lg transition"
+                      >
+                        Reset Filters
+                      </button>
                     )}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-[#57585A]">
+                    <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                      <tr>
+                        <th className="px-6 py-3.5">Machine Details</th>
+                        <th className="px-6 py-3.5">Manufacturer</th>
+                        <th className="px-6 py-3.5">Model</th>
+                        <th className="px-6 py-3.5">Location</th>
+                        <th className="px-6 py-3.5">Listed Owner</th>
+                        <th className="px-6 py-3.5 text-center">Status</th>
+                        <th className="px-6 py-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                      {harvesterGroupByOwner ? (
+                        groupedHarvesters && Object.keys(groupedHarvesters).length > 0 ? (
+                          Object.keys(groupedHarvesters).map((ownerName) => (
+                            <Fragment key={ownerName}>
+                              <tr className="bg-slate-50/80 font-bold border-y border-[#E2E8F0] text-[#172263] select-none">
+                                <td colSpan={7} className="px-6 py-2.5 text-xs uppercase tracking-wider font-sora">
+                                  👤 Listed by: <strong className="text-zinc-800">{ownerName}</strong> ({groupedHarvesters[ownerName].length} listings)
+                                </td>
+                              </tr>
+                              {groupedHarvesters[ownerName].map((h) => (
+                                <tr key={h.id} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora pl-10">{h.machineName}</td>
+                                  <td className="px-6 py-4">{h.company}</td>
+                                  <td className="px-6 py-4">{h.model}</td>
+                                  <td className="px-6 py-4">{h.location}, {h.state}</td>
+                                  <td className="px-6 py-4">{h.ownerName}</td>
+                                  <td className="px-6 py-4 text-center">
+                                    {getStatusBadge(h.verification_status)}
+                                  </td>
+                                  <td className="px-6 py-4 text-right space-x-2">
+                                    <button
+                                      onClick={() => openListingDetail("harvester", h)}
+                                      className="px-3 py-1.5 bg-[#f5eee5] text-[#172263] border border-[#e8dfd2] rounded-xl text-xs font-bold hover:bg-[#e8dfd2] transition cursor-pointer"
+                                    >
+                                      View Details
+                                    </button>
+                                    <button
+                                      onClick={() => openConfirmModal("deleteHarv", h.id, h.machineName)}
+                                      className="px-3 py-1.5 bg-red-55 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition cursor-pointer"
+                                    >
+                                      Remove Listing
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </Fragment>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={7} className="px-6 py-12 text-center text-[#57585A]/70">
+                              No listings in this category.
+                            </td>
+                          </tr>
+                        )
+                      ) : (
+                        filteredHarv.length > 0 ? (
+                          filteredHarv.map((h) => (
+                            <tr key={h.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{h.machineName}</td>
+                              <td className="px-6 py-4">{h.company}</td>
+                              <td className="px-6 py-4">{h.model}</td>
+                              <td className="px-6 py-4">{h.location}, {h.state}</td>
+                              <td className="px-6 py-4">{h.ownerName}</td>
+                              <td className="px-6 py-4 text-center">
+                                {getStatusBadge(h.verification_status)}
+                              </td>
+                              <td className="px-6 py-4 text-right space-x-2">
+                                <button
+                                  onClick={() => openListingDetail("harvester", h)}
+                                  className="px-3 py-1.5 bg-[#f5eee5] text-[#172263] border border-[#e8dfd2] rounded-xl text-xs font-bold hover:bg-[#e8dfd2] transition cursor-pointer"
+                                >
+                                  View Details
+                                </button>
+                                <button
+                                  onClick={() => openConfirmModal("deleteHarv", h.id, h.machineName)}
+                                  className="px-3 py-1.5 bg-red-55 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition cursor-pointer"
+                                >
+                                  Remove Listing
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={7} className="px-6 py-12 text-center text-[#57585A]/70">
+                              No listings in this category.
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ================================== */}
           {/* TAB: OPERATORS MODERATION          */}
           {/* ================================== */}
-          {activeTab === "operators" && (
-            <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
-              <div className="p-6 border-b border-[#E2E8F0]">
-                <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Active Operator Listings ({adminOperators.length})</h3>
-              </div>
+          {activeTab === "operators" && (() => {
+            return (
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-[#E2E8F0] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Operator Listings Moderation</h3>
+                    
+                    <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-zinc-200 rounded-xl">
+                      {(["All", "Pending", "Approved", "Rejected"] as const).map((status) => {
+                        const completedOps = adminOperators.filter(op => op.is_profile_completed === 1);
+                        const count = status === "All" 
+                          ? completedOps.length 
+                          : completedOps.filter(op => status === "Pending" ? (!op.verification_status || op.verification_status === "Pending") : op.verification_status === status).length;
+                        return (
+                          <button
+                            key={status}
+                            onClick={() => setOperatorStatusFilter(status)}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                              operatorStatusFilter === status
+                                ? "bg-[#172263] text-white shadow-sm"
+                                : "text-[#57585A] hover:bg-zinc-100"
+                            }`}
+                          >
+                            {status} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-[#57585A]">
-                  <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
-                    <tr>
-                      <th className="px-6 py-3.5">Operator</th>
-                      <th className="px-6 py-3.5">Experience</th>
-                      <th className="px-6 py-3.5">Availability</th>
-                      <th className="px-6 py-3.5">Location</th>
-                      <th className="px-6 py-3.5">Contact Details</th>
-                      <th className="px-6 py-3.5 text-right font-bold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
-                    {adminOperators.length > 0 ? (
-                      adminOperators.map((op) => (
-                        <tr key={op.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora flex items-center gap-3">
-                            <img
-                              src={op.image_path || "/avatar-placeholder.png"}
-                              alt={op.name}
-                              className="w-8 h-8 rounded-full object-cover border border-[#E2E8F0]"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=80";
-                              }}
-                            />
-                            {op.name}
-                          </td>
-                          <td className="px-6 py-4">{op.experience} Years</td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                              op.availability === 'Available' 
-                                ? "bg-emerald-50 border-emerald-200 text-emerald-600" 
-                                : "bg-zinc-50 border-zinc-200 text-zinc-600"
-                            }`}>
-                              {op.availability}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">{op.location}, {op.state}</td>
-                          <td className="px-6 py-4">
-                            <div className="text-xs text-[#57585A]">
-                              <div>P: {op.phone || "N/A"}</div>
-                              <div>W: {op.whatsapp || "N/A"}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
-                            <button
-                              onClick={() => openListingDetail("operator", op)}
-                              className="px-3 py-1.5 bg-[#f5eee5] text-[#172263] border border-[#e8dfd2] rounded-xl text-xs font-bold hover:bg-[#e8dfd2] transition cursor-pointer"
-                            >
-                              View Details
-                            </button>
-                            <button
-                              onClick={() => openConfirmModal("deleteOp", op.id, op.name)}
-                              className="px-3 py-1.5 bg-red-55 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition cursor-pointer"
-                            >
-                              Remove Listing
-                            </button>
+                  {/* Filters Row */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2 text-xs">
+                    {/* Location Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Location</span>
+                      <select
+                        value={operatorStateFilter}
+                        onChange={(e) => setOperatorStateFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All States (Select All)</option>
+                        {Array.from(new Set(adminOperators.map(op => op.state).filter(Boolean))).map(state => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Availability Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Availability</span>
+                      <select
+                        value={operatorAvailabilityFilter}
+                        onChange={(e) => setOperatorAvailabilityFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All Availabilities (Select All)</option>
+                        <option value="Available">Available</option>
+                        <option value="Busy">Busy</option>
+                      </select>
+                    </div>
+
+                    {/* Sort Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Sort By</span>
+                      <select
+                        value={operatorSortFilter}
+                        onChange={(e) => setOperatorSortFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">Default Sort (Off)</option>
+                        <option value="name_asc">Name: A-Z</option>
+                        <option value="name_desc">Name: Z-A</option>
+                        <option value="rating_desc">Rating: Highest</option>
+                        <option value="rating_asc">Rating: Lowest</option>
+                        <option value="date_newest">Date Listed: Newest</option>
+                        <option value="date_oldest">Date Listed: Oldest</option>
+                        <option value="exp_desc">Experience: Highest</option>
+                        <option value="exp_asc">Experience: Lowest</option>
+                      </select>
+                    </div>
+
+                    {/* Reset Button */}
+                    {(operatorStateFilter || operatorAvailabilityFilter || operatorSortFilter) && (
+                      <button
+                        onClick={() => {
+                          setOperatorStateFilter("");
+                          setOperatorAvailabilityFilter("");
+                          setOperatorSortFilter("");
+                        }}
+                        className="mt-4 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold rounded-lg transition"
+                      >
+                        Reset Filters
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-[#57585A]">
+                    <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                      <tr>
+                        <th className="px-6 py-3.5">Operator</th>
+                        <th className="px-6 py-3.5">Experience</th>
+                        <th className="px-6 py-3.5">Availability</th>
+                        <th className="px-6 py-3.5">Location</th>
+                        <th className="px-6 py-3.5 text-center">Status</th>
+                        <th className="px-6 py-3.5 text-right font-bold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                      {filteredOps.length > 0 ? (
+                        filteredOps.map((op) => (
+                          <tr key={op.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora flex items-center gap-3">
+                              <img
+                                src={op.image_path || "/avatar-placeholder.png"}
+                                alt={op.name}
+                                className="w-8 h-8 rounded-full object-cover border border-[#E2E8F0]"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=80";
+                                }}
+                              />
+                              {op.name}
+                            </td>
+                            <td className="px-6 py-4">{op.experience} Years</td>
+                            <td className="px-6 py-4">
+                              <AvailabilityBadge status={op.availability} />
+                            </td>
+                            <td className="px-6 py-4">{op.location}, {op.state}</td>
+                            <td className="px-6 py-4 text-center">
+                              {getStatusBadge(op.verification_status)}
+                            </td>
+                            <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                              <button
+                                onClick={() => openListingDetail("operator", op)}
+                                className="px-3 py-1.5 bg-[#f5eee5] text-[#172263] border border-[#e8dfd2] rounded-xl text-xs font-bold hover:bg-[#e8dfd2] transition cursor-pointer"
+                              >
+                                View Details
+                              </button>
+                              <button
+                                onClick={() => openConfirmModal("deleteOp", op.id, op.name)}
+                                className="px-3 py-1.5 bg-red-55 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition cursor-pointer"
+                              >
+                                Remove Listing
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-12 text-center text-[#57585A]/70">
+                            No operator listings in this category.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-[#57585A]/70">
-                          No active operator listings in the database.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
+
+          {/* ================================== */}
+          {/* TAB: IDENTITY VERIFICATION REQUESTS*/}
+          {/* ================================== */}
+          {activeTab === "verifications" && (() => {
+            return (
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
+                <div className="p-6 border-b border-[#E2E8F0] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Operator Identity Verification Requests</h3>
+                    
+                    <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-zinc-200 rounded-xl">
+                      {(["All", "Pending", "Approved", "Rejected"] as const).map((status) => {
+                        const count = status === "All" 
+                          ? adminOperators.filter(op => op.selfie_image_path).length 
+                          : adminOperators.filter(op => op.selfie_image_path && (status === "Pending" ? (!op.verification_status || op.verification_status === "Pending") : op.verification_status === status)).length;
+                        return (
+                          <button
+                            key={status}
+                            onClick={() => setVerificationStatusFilter(status)}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                              verificationStatusFilter === status
+                                ? "bg-[#172263] text-white shadow-sm"
+                                : "text-[#57585A] hover:bg-zinc-100"
+                            }`}
+                          >
+                            {status} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Filters Row */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2 text-xs">
+                    <div className="flex flex-col gap-1 w-full sm:w-64">
+                      <span className="font-semibold text-zinc-500">Search Operators</span>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+                          <Search size={14} />
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Search name or email..."
+                          value={verificationSearchTerm}
+                          onChange={(e) => setVerificationSearchTerm(e.target.value)}
+                          className="bg-white border border-zinc-200 rounded-lg pl-8 pr-3 py-2 w-full focus:outline-none focus:border-[#172263]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-[#57585A]">
+                    <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                      <tr>
+                        <th className="px-6 py-3.5">User</th>
+                        <th className="px-6 py-3.5">Location</th>
+                        <th className="px-6 py-3.5 text-center">Selfie Capture</th>
+                        <th className="px-6 py-3.5 text-center">Consent Signature</th>
+                        <th className="px-6 py-3.5 text-center">Verification Status</th>
+                        <th className="px-6 py-3.5 text-right font-bold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
+                      {filteredVerifications.length > 0 ? (
+                        filteredVerifications.map((op) => (
+                          <tr key={op.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4">
+                              <div>
+                                <p className="font-bold text-[#1A1A1A] font-sora">{op.name}</p>
+                                <p className="text-xs text-zinc-400 font-medium">{op.email || "No email"}</p>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">{op.location}, {op.state}</td>
+                            <td className="px-6 py-4 text-center">
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-lg border border-green-150">
+                                <Camera size={12} /> Captured
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              {op.consent_signature ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-lg border border-blue-150" title={op.consent_signature}>
+                                  ✓ Signed
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 text-xs font-semibold rounded-lg border border-red-150">
+                                  ✗ Missing
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              {getUserVerificationStatusBadge(op.verification_status)}
+                            </td>
+                            <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                              <button
+                                onClick={() => openListingDetail("operator", op)}
+                                className="px-4 py-2 bg-[#172263] text-white rounded-xl text-xs font-bold hover:bg-[#11194a] shadow-sm transition cursor-pointer"
+                              >
+                                Review ID & Verify
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-12 text-center text-[#57585A]/70">
+                            No verification requests found in this category.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ================================== */}
           {/* TAB: REQUESTS MODERATION           */}
@@ -8025,10 +9548,59 @@ export function AdminPortal() {
               </div>
 
               <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
-                <div className="p-6 border-b border-[#E2E8F0]">
-                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">
-                    {adminRequestsTab === "pending" ? "Pending Crop Requirements" : "Processed Crop Requirements"}
-                  </h3>
+                <div className="p-6 border-b border-[#E2E8F0] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">
+                      {adminRequestsTab === "pending" ? "Pending Crop Requirements" : "Processed Crop Requirements"}
+                    </h3>
+                  </div>
+
+                  {/* Filters Row */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2 text-xs">
+                    {/* State Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">State</span>
+                      <select
+                        value={requestStateFilter}
+                        onChange={(e) => setRequestStateFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All States (Select All)</option>
+                        {Array.from(new Set(requests.map(r => r.state).filter(Boolean))).map(state => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Sort Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Sort By</span>
+                      <select
+                        value={requestSortFilter}
+                        onChange={(e) => setRequestSortFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">Default Sort (Off)</option>
+                        <option value="date_newest">Job Start: Newest First</option>
+                        <option value="date_oldest">Job Start: Oldest First</option>
+                        <option value="type_asc">Type: A-Z</option>
+                        <option value="location_asc">Location Name: A-Z</option>
+                      </select>
+                    </div>
+
+                    {/* Reset Button */}
+                    {(requestStateFilter || requestSortFilter) && (
+                      <button
+                        onClick={() => {
+                          setRequestStateFilter("");
+                          setRequestSortFilter("");
+                        }}
+                        className="mt-4 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold rounded-lg transition"
+                      >
+                        Reset Filters
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -8047,12 +9619,12 @@ export function AdminPortal() {
                     </thead>
                     <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
                       {(adminRequestsTab === "pending"
-                        ? requests.filter(r => r.status === "Pending" || r.status === "Open")
-                        : requests.filter(r => r.status === "Accepted" || r.status === "Rejected")
+                        ? filteredReqs.filter(r => r.status === "Pending" || r.status === "Open")
+                        : filteredReqs.filter(r => r.status === "Accepted" || r.status === "Rejected")
                       ).length > 0 ? (
                         (adminRequestsTab === "pending"
-                          ? requests.filter(r => r.status === "Pending" || r.status === "Open")
-                          : requests.filter(r => r.status === "Accepted" || r.status === "Rejected")
+                          ? filteredReqs.filter(r => r.status === "Pending" || r.status === "Open")
+                          : filteredReqs.filter(r => r.status === "Accepted" || r.status === "Rejected")
                         ).map((r) => (
                           <Fragment key={r.id}>
                             <tr
@@ -8197,8 +9769,56 @@ export function AdminPortal() {
           {activeTab === "enquiries" && (
             <div className="space-y-6">
               <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
-                <div className="p-6 border-b border-[#E2E8F0]">
-                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">General Enquiries</h3>
+                <div className="p-6 border-b border-[#E2E8F0] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">General Enquiries</h3>
+                  </div>
+
+                  {/* Filters Row */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2 text-xs">
+                    {/* Status Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Status</span>
+                      <select
+                        value={enquiryStatusFilter}
+                        onChange={(e) => setEnquiryStatusFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All Statuses (Select All)</option>
+                        <option value="Active">Active</option>
+                        <option value="Fulfilled">Fulfilled</option>
+                        <option value="Over">Over</option>
+                      </select>
+                    </div>
+
+                    {/* Sort Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Sort By</span>
+                      <select
+                        value={enquirySortFilter}
+                        onChange={(e) => setEnquirySortFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">Default Sort (Off)</option>
+                        <option value="date_newest">Date Submitted: Newest</option>
+                        <option value="date_oldest">Date Submitted: Oldest</option>
+                        <option value="name_asc">Name: A-Z</option>
+                      </select>
+                    </div>
+
+                    {/* Reset Button */}
+                    {(enquiryStatusFilter || enquirySortFilter) && (
+                      <button
+                        onClick={() => {
+                          setEnquiryStatusFilter("");
+                          setEnquirySortFilter("");
+                        }}
+                        className="mt-4 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold rounded-lg transition"
+                      >
+                        Reset Filters
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left text-[#57585A]">
@@ -8214,8 +9834,8 @@ export function AdminPortal() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
-                      {enquiries.length > 0 ? (
-                        enquiries.map((enq) => (
+                      {filteredEnqs.length > 0 ? (
+                        filteredEnqs.map((enq) => (
                           <tr key={enq.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="px-6 py-4 font-bold text-[#1A1A1A] font-sora">{enq.name}</td>
                             <td className="px-6 py-4">{enq.phone}</td>
@@ -8497,34 +10117,83 @@ export function AdminPortal() {
               ) : (
                 /* Blogs Listing Table & Directory */
                 <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-sm">
-                  <div className="p-6 border-b border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                      <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Blogs Directory</h3>
-                      <p className="text-xs text-[#57585A] mt-0.5">Manage and track views analytics for all articles.</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
-                        <input
-                          type="text"
-                          value={adminBlogsSearch}
-                          onChange={(e) => setAdminBlogsSearch(e.target.value)}
-                          placeholder="Search articles..."
-                          className="pl-9 pr-4 py-2 bg-white border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263]"
-                        />
+                  <div className="p-6 border-b border-[#E2E8F0] space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Blogs Directory</h3>
+                        <p className="text-xs text-[#57585A] mt-0.5">Manage and track views analytics for all articles.</p>
                       </div>
-                      <button
-                        onClick={startAiGenerateBlog}
-                        className="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Sparkles size={14} /> Generate with AI
-                      </button>
-                      <button
-                        onClick={startCreateBlog}
-                        className="px-4 py-2 bg-[#172263] hover:bg-[#11194A] text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Plus size={14} /> Add Blog Post
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
+                          <input
+                            type="text"
+                            value={adminBlogsSearch}
+                            onChange={(e) => setAdminBlogsSearch(e.target.value)}
+                            placeholder="Search articles..."
+                            className="pl-9 pr-4 py-2 bg-white border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#172263]"
+                          />
+                        </div>
+                        <button
+                          onClick={startAiGenerateBlog}
+                          className="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Sparkles size={14} /> Generate with AI
+                        </button>
+                        <button
+                          onClick={startCreateBlog}
+                          className="px-4 py-2 bg-[#172263] hover:bg-[#11194A] text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Plus size={14} /> Add Blog Post
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Filters Row */}
+                    <div className="flex flex-wrap items-center gap-3 pt-2 text-xs">
+                      {/* Category Filter */}
+                      <div className="flex flex-col gap-1">
+                        <span className="font-semibold text-zinc-500">Category</span>
+                        <select
+                          value={blogCategoryFilter}
+                          onChange={(e) => setBlogCategoryFilter(e.target.value)}
+                          className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                        >
+                          <option value="">All Categories (Select All)</option>
+                          {categories.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Sort Filter */}
+                      <div className="flex flex-col gap-1">
+                        <span className="font-semibold text-zinc-500">Sort By</span>
+                        <select
+                          value={blogSortFilter}
+                          onChange={(e) => setBlogSortFilter(e.target.value)}
+                          className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                        >
+                          <option value="">Default Sort (Off)</option>
+                          <option value="title_asc">Title: A-Z</option>
+                          <option value="title_desc">Title: Z-A</option>
+                          <option value="date_newest">Date Published: Newest</option>
+                          <option value="date_oldest">Date Published: Oldest</option>
+                        </select>
+                      </div>
+
+                      {/* Reset Button */}
+                      {(blogCategoryFilter || blogSortFilter) && (
+                        <button
+                          onClick={() => {
+                            setBlogCategoryFilter("");
+                            setBlogSortFilter("");
+                          }}
+                          className="mt-4 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold rounded-lg transition"
+                        >
+                          Reset Filters
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -8542,9 +10211,9 @@ export function AdminPortal() {
                           <th className="px-6 py-3.5 text-right font-bold">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#E2E8F0]/50 bg-white">
-                        {adminBlogs.filter(b => b.title?.toLowerCase().includes(adminBlogsSearch.toLowerCase()) || b.category?.toLowerCase().includes(adminBlogsSearch.toLowerCase())).length > 0 ? (
-                          adminBlogs
+                      <tbody className="divide-y divide-[#E2E8F0]/50 bg-white font-medium">
+                        {filteredBlogs.filter(b => b.title?.toLowerCase().includes(adminBlogsSearch.toLowerCase()) || b.category?.toLowerCase().includes(adminBlogsSearch.toLowerCase())).length > 0 ? (
+                          filteredBlogs
                             .filter(b => b.title?.toLowerCase().includes(adminBlogsSearch.toLowerCase()) || b.category?.toLowerCase().includes(adminBlogsSearch.toLowerCase()))
                             .map((blog) => (
                               <tr key={blog.id} className="hover:bg-slate-50/50 transition-colors">
@@ -8631,6 +10300,52 @@ export function AdminPortal() {
 
               {/* FAQs Listing & Actions */}
               <div className="bg-white border border-[#E2E8F0] rounded-3xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+                <div className="p-6 border-b border-[#E2E8F0] space-y-4">
+                  {/* Filters Row */}
+                  <div className="flex flex-wrap items-center gap-3 text-xs">
+                    {/* Status Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Status</span>
+                      <select
+                        value={faqStatusFilter}
+                        onChange={(e) => setFaqStatusFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">All Statuses (Select All)</option>
+                        <option value="answered">Answered</option>
+                        <option value="unanswered">Unanswered</option>
+                      </select>
+                    </div>
+
+                    {/* Sort Filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-zinc-500">Sort By</span>
+                      <select
+                        value={faqSortFilter}
+                        onChange={(e) => setFaqSortFilter(e.target.value)}
+                        className="bg-white border border-zinc-200 rounded-lg p-2 focus:outline-none focus:border-[#172263]"
+                      >
+                        <option value="">Default Sort (Off)</option>
+                        <option value="question_asc">Question: A-Z</option>
+                        <option value="question_desc">Question: Z-A</option>
+                      </select>
+                    </div>
+
+                    {/* Reset Button */}
+                    {(faqStatusFilter || faqSortFilter) && (
+                      <button
+                        onClick={() => {
+                          setFaqStatusFilter("");
+                          setFaqSortFilter("");
+                        }}
+                        className="mt-4 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold rounded-lg transition"
+                      >
+                        Reset Filters
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left text-[#57585A]">
                     <thead className="text-xs uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
@@ -8643,8 +10358,8 @@ export function AdminPortal() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E2E8F0]/50 bg-white font-medium font-sora">
-                      {adminFaqs.length > 0 ? (
-                        adminFaqs.map((faq) => (
+                      {filteredFaqs.length > 0 ? (
+                        filteredFaqs.map((faq) => (
                           <tr key={faq.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="px-6 py-4 max-w-xs font-semibold text-[#1A1A1A] break-words">
                               {faq.question}
@@ -8806,9 +10521,9 @@ export function AdminPortal() {
             {/* Banner/Header Cover Image */}
             <div className="h-56 bg-slate-100 relative shrink-0">
               {selectedListingType === 'harvester' ? (
-                selectedListingDetail.imagePath ? (
+                getAllImages(selectedListingDetail.imagePath).length > 0 ? (
                   <img
-                    src={selectedListingDetail.imagePath}
+                    src={getAllImages(selectedListingDetail.imagePath)[0]}
                     alt={selectedListingDetail.machineName}
                     className="w-full h-full object-cover"
                   />
@@ -8875,6 +10590,38 @@ export function AdminPortal() {
                       <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Model Year</span>
                       <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.year || 'N/A'}</span>
                     </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Serial No</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.serialNo || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Chassis No</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.chassisNo || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Mfg Month/Year</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.mfgMonthYear || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Engine No</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.engineNo || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Engine Power</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.enginePower || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Engine Make</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.engineMake || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Engine Model</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.engineModel || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-[#57585A] tracking-wider block">Service Hotline</span>
+                      <span className="text-sm font-bold text-[#1A1A1A] font-sora mt-0.5 block">{selectedListingDetail.serviceHotlineNo || 'N/A'}</span>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -8892,6 +10639,29 @@ export function AdminPortal() {
                 )}
               </div>
 
+              {/* Listing Gallery (All Images) */}
+              {selectedListingType === 'harvester' && (
+                <div className="border-t border-[#E2E8F0]/80 pt-5 space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#57585A] font-sora">Listing Gallery</h4>
+                  {getAllImages(selectedListingDetail.imagePath).length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {getAllImages(selectedListingDetail.imagePath).map((imgUrl: string, idx: number) => (
+                        <div key={idx} className="aspect-video w-full rounded-xl overflow-hidden bg-slate-100 border border-zinc-200 shadow-sm relative group">
+                          <img
+                            src={imgUrl}
+                            alt={`${selectedListingDetail.machineName} - Photo ${idx + 1}`}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-zoom-in"
+                            onClick={() => window.open(imgUrl, '_blank')}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[#57585A] italic">No photos uploaded for this listing.</p>
+                  )}
+                </div>
+              )}
+
               {/* Machine Expertise if Operator */}
               {selectedListingType === 'operator' && selectedListingDetail.machineExpertise && selectedListingDetail.machineExpertise.length > 0 && (
                 <div className="space-y-2">
@@ -8906,6 +10676,96 @@ export function AdminPortal() {
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Operator ID Verification Files Comparison & Audit Receipt */}
+              {selectedListingType === 'operator' && (
+                <div className="border-t border-[#E2E8F0]/80 pt-5 space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#57585A] flex items-center gap-1.5 font-sora">
+                    <ShieldCheck size={14} className="text-[#172263]" /> Operator ID Verification Details
+                  </h4>
+                  
+                  {loadingVerificationDetails ? (
+                    <div className="py-8 text-center flex flex-col items-center gap-2">
+                      <Loader2 size={24} className="animate-spin text-[#172263]" />
+                      <span className="text-xs text-[#57585A] font-semibold">Loading secure verification files...</span>
+                    </div>
+                  ) : operatorVerificationDetails ? (
+                    <div className="space-y-4">
+                      {/* Side by Side Images */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-slate-50 border border-zinc-200 rounded-2xl p-3 flex flex-col items-center">
+                          <span className="text-[10px] uppercase font-bold text-zinc-500 mb-2">Live Selfie Capture</span>
+                          {operatorVerificationDetails.verificationFiles.selfieUrl ? (
+                            <img
+                              src={operatorVerificationDetails.verificationFiles.selfieUrl}
+                              alt="Selfie"
+                              className="w-full aspect-square object-cover rounded-xl border border-zinc-200 hover:scale-105 transition-transform cursor-zoom-in"
+                              onClick={() => window.open(operatorVerificationDetails.verificationFiles.selfieUrl, '_blank')}
+                            />
+                          ) : (
+                            <div className="w-full aspect-square bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-450 italic text-xs">
+                              No selfie uploaded
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="bg-slate-50 border border-zinc-200 rounded-2xl p-3 flex flex-col items-center">
+                          <span className="text-[10px] uppercase font-bold text-zinc-500 mb-2">License Front</span>
+                          {operatorVerificationDetails.verificationFiles.licenseFrontUrl ? (
+                            <img
+                              src={operatorVerificationDetails.verificationFiles.licenseFrontUrl}
+                              alt="License Front"
+                              className="w-full aspect-square object-cover rounded-xl border border-zinc-200 hover:scale-105 transition-transform cursor-zoom-in"
+                              onClick={() => window.open(operatorVerificationDetails.verificationFiles.licenseFrontUrl, '_blank')}
+                            />
+                          ) : (
+                            <div className="w-full aspect-square bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-455 italic text-xs">
+                              No image
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="bg-slate-50 border border-zinc-200 rounded-2xl p-3 flex flex-col items-center">
+                          <span className="text-[10px] uppercase font-bold text-zinc-500 mb-2">License Back</span>
+                          {operatorVerificationDetails.verificationFiles.licenseBackUrl ? (
+                            <img
+                              src={operatorVerificationDetails.verificationFiles.licenseBackUrl}
+                              alt="License Back"
+                              className="w-full aspect-square object-cover rounded-xl border border-zinc-200 hover:scale-105 transition-transform cursor-zoom-in"
+                              onClick={() => window.open(operatorVerificationDetails.verificationFiles.licenseBackUrl, '_blank')}
+                            />
+                          ) : (
+                            <div className="w-full aspect-square bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-456 italic text-xs">
+                              No image
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Cryptographic Consent Audit Logs */}
+                      {operatorVerificationDetails.auditLog && (
+                        <div className="bg-blue-50/50 border border-blue-200/50 p-4 rounded-2xl text-xs space-y-2">
+                          <div className="font-bold text-[#172263] uppercase tracking-wider text-[10px] border-b border-blue-200/50 pb-1.5 flex items-center justify-between font-sora">
+                            <span>Consent Audit Receipt (Tamper-Proof)</span>
+                            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 font-bold lowercase font-sora">signature verified</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 text-zinc-600 font-semibold">
+                            <p><strong>Signed Timestamp:</strong> {new Date(operatorVerificationDetails.auditLog.timestamp).toLocaleString()}</p>
+                            <p><strong>IP Address:</strong> <code className="bg-blue-100/50 px-1.5 py-0.5 rounded text-[10px] font-mono">{operatorVerificationDetails.auditLog.ip_address}</code></p>
+                            <p className="md:col-span-2"><strong>User Agent:</strong> <code className="bg-blue-100/50 px-1.5 py-0.5 rounded text-[10px] block truncate font-mono" title={operatorVerificationDetails.auditLog.user_agent}>{operatorVerificationDetails.auditLog.user_agent}</code></p>
+                            <p className="md:col-span-2"><strong>Consent Text Given:</strong> <span className="italic block mt-1 bg-white p-2.5 rounded border border-zinc-200 leading-relaxed text-zinc-650 font-medium font-sora">"{operatorVerificationDetails.auditLog.consent_text}"</span></p>
+                            <p className="md:col-span-2"><strong>Consent Log signature (HMAC):</strong> <code className="bg-zinc-100 px-1.5 py-1 rounded block break-all font-mono text-[9px] text-zinc-800 mt-1">{operatorVerificationDetails.auditLog.signature}</code></p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-700 font-semibold text-center italic font-sora">
+                      This operator has not completed ID verification or secure files are currently unavailable.
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -8946,6 +10806,54 @@ export function AdminPortal() {
                 <p className="text-sm text-[#57585A] leading-relaxed whitespace-pre-line bg-[#fcfbf9] p-4 border border-[#e8dfd2]/30 rounded-2xl font-semibold">
                   {selectedListingDetail.description || 'No description provided.'}
                 </p>
+              </div>
+
+              {/* Verification & Moderation Console */}
+              <div className="border-t border-[#E2E8F0]/80 pt-5 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#57585A] flex items-center gap-1.5">
+                  🛡️ Verification Status: {selectedListingType === 'operator' ? getUserVerificationStatusBadge(selectedListingDetail.verification_status) : getStatusBadge(selectedListingDetail.verification_status)}
+                </h4>
+                {selectedListingDetail.verification_status === 'Pending' ? (
+                  <div className="bg-slate-50 border border-zinc-200 p-4 rounded-2xl space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-500 mb-1.5">
+                        {selectedListingType === 'operator' ? "Verification Feedback / Rejection Reason (Optional for verification, recommended for rejection)" : "Verification Feedback / Rejection Reason (Optional for approval, highly recommended for rejection)"}
+                      </label>
+                      <textarea
+                        value={adminFeedback}
+                        onChange={(e) => setAdminFeedback(e.target.value)}
+                        placeholder={selectedListingType === 'operator' ? "e.g. Please upload a clearer photo of the license, or details are incomplete." : "e.g. Please upload a clear photo of the harvester license plate, or contact details are invalid."}
+                        rows={3}
+                        className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-xs text-zinc-800 focus:outline-none focus:border-[#172263] leading-relaxed"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleVerifyListing("Approved")}
+                        disabled={submittingVerification}
+                        className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <CheckCircle2 size={14} /> {selectedListingType === 'operator' ? "Mark as Verified" : "Approve Listing"}
+                      </button>
+                      <button
+                        onClick={() => handleVerifyListing("Rejected")}
+                        disabled={submittingVerification}
+                        className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <XCircle size={14} /> {selectedListingType === 'operator' ? "Mark as Unverified" : "Reject Listing"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  (selectedListingDetail.verificationFeedback || selectedListingDetail.verification_feedback) ? (
+                    <div className="bg-[#fcfbf9] border border-zinc-200 p-4 rounded-2xl">
+                      <span className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Feedback Given</span>
+                      <p className="text-xs text-[#1A1A1A] font-semibold leading-relaxed">
+                        {selectedListingDetail.verificationFeedback || selectedListingDetail.verification_feedback}
+                      </p>
+                    </div>
+                  ) : null
+                )}
               </div>
 
             </div>

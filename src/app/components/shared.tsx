@@ -32,6 +32,7 @@ import {
   AlertCircle,
   InboxIcon,
   Globe,
+  ShieldCheck,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -273,6 +274,7 @@ export function OperatorCard({
   imagePath,
   image_path,
   isOwner,
+  verification_status,
 }: {
   id: string | number;
   name: string;
@@ -283,6 +285,7 @@ export function OperatorCard({
   imagePath?: string;
   image_path?: string;
   isOwner?: boolean;
+  verification_status?: string;
 }) {
   const { t } = useTranslation(["pages", "static", "shared"]);
   const finalImage = imagePath || image_path;
@@ -319,10 +322,13 @@ export function OperatorCard({
 
             {/* Name */}
             <h3
-              className="text-[#1A1A1A] text-sm font-bold line-clamp-1 mb-0.5"
+              className="text-[#1A1A1A] text-sm font-bold line-clamp-1 mb-0.5 flex items-center gap-1"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              {name}
+              <span>{name}</span>
+              {verification_status === 'Approved' && (
+                <ShieldCheck size={14} className="text-emerald-600 shrink-0 animate-pulse" title="Verified Operator" />
+              )}
             </h3>
 
             {/* Location */}
