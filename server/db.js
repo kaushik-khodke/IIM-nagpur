@@ -99,7 +99,7 @@ async function initializeDatabase() {
         whatsapp VARCHAR(20) DEFAULT NULL,
         description TEXT DEFAULT NULL,
         image_path VARCHAR(255) DEFAULT NULL,
-        verification_status VARCHAR(50) DEFAULT 'Pending',
+        verification_status VARCHAR(50) DEFAULT 'Unverified',
         verification_feedback TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -294,7 +294,7 @@ async function initializeDatabase() {
 
     // Operators Table Migrations for verification status
     try {
-      await activePool.query("ALTER TABLE operators ADD COLUMN verification_status VARCHAR(50) DEFAULT 'Pending' AFTER created_at");
+      await activePool.query("ALTER TABLE operators ADD COLUMN verification_status VARCHAR(50) DEFAULT 'Unverified' AFTER created_at");
     } catch (err) {}
     try {
       await activePool.query("ALTER TABLE operators ADD COLUMN verification_feedback TEXT DEFAULT NULL AFTER verification_status");
@@ -317,7 +317,12 @@ async function initializeDatabase() {
     try {
       await activePool.query("ALTER TABLE operators ADD COLUMN is_profile_completed TINYINT DEFAULT 0");
     } catch (err) {}
+    try {
       await activePool.query("UPDATE operators SET is_profile_completed = 1 WHERE experience > 0 AND location != 'Not Specified' AND name != 'Operator Profile'");
+    } catch (err) {}
+    try {
+      await activePool.query("UPDATE operators SET verification_status = 'Unverified' WHERE verification_status = 'Pending' AND selfie_image_path IS NULL");
+    } catch (err) {}
 
     // Create operator_consent_logs table
     try {
