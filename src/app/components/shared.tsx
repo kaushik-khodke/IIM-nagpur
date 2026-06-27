@@ -288,17 +288,8 @@ export function OperatorCard({
   const finalImage = imagePath || image_path;
   const isPreview = !localStorage.getItem("tractorsewa_token") && localStorage.getItem("tractorsewa_preview_mode") === "true";
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (isPreview) {
-      e.preventDefault();
-      window.dispatchEvent(new CustomEvent("trigger-auth-required", {
-        detail: { redirectPath: `/operators/${id}` }
-      }));
-    }
-  };
-
   return (
-    <Link to={`/operators/${id}`} onClick={handleClick} className="block group h-full">
+    <Link to={`/operators/${id}`} className="block group h-full">
       <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-[0_2px_12px_rgba(23,34,99,0.04)] hover:shadow-[0_8px_24px_rgba(23,34,99,0.08)] transition-all duration-300 hover:scale-[1.01] h-full flex flex-col justify-between">
         {/* Top Cover Block */}
         <div className="h-16 bg-gradient-to-r from-[#172263]/5 to-[#E82326]/5 relative shrink-0">
@@ -414,19 +405,10 @@ export function HarvesterCard({
   const { t } = useTranslation(["pages", "static", "shared"]);
   const isPreview = !localStorage.getItem("tractorsewa_token") && localStorage.getItem("tractorsewa_preview_mode") === "true";
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (isPreview) {
-      e.preventDefault();
-      window.dispatchEvent(new CustomEvent("trigger-auth-required", {
-        detail: { redirectPath: `/harvesters/${id}` }
-      }));
-    }
-  };
-
   const displayImage = getFirstImage(imagePath);
 
   return (
-    <Link to={`/harvesters/${id}`} onClick={handleClick} className="block group">
+    <Link to={`/harvesters/${id}`} className="block group">
       <div className="bg-white rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-[0_2px_16px_rgba(232,114,12,0.08)] hover:shadow-[0_8px_32px_rgba(232,114,12,0.15)] transition-all duration-300 hover:scale-[1.02]">
         <div className="h-44 bg-gradient-to-br from-blue-50 to-amber-50 flex items-center justify-center relative overflow-hidden">
           {displayImage ? (
@@ -1097,8 +1079,15 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
 
   if (isPreview) {
-    // Allow preview mode only on dashboard
-    if (location.pathname === "/dashboard") {
+    // Allow preview mode on dashboard, harvester listing/details, operator listing/details
+    const path = location.pathname;
+    const isAllowed = path === "/dashboard" ||
+                      path === "/harvesters" ||
+                      path === "/operators" ||
+                      (path.startsWith("/harvesters/") && !path.endsWith("/edit")) ||
+                      (path.startsWith("/operators/") && !path.endsWith("/edit"));
+
+    if (isAllowed) {
       return <>{children}</>;
     }
     // Redirect to dashboard with auth required flag for other protected routes
@@ -1115,16 +1104,30 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   // No token and not in preview mode - show login screen
   return (
     <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
-      <div className="text-center">
-        <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }} className="text-2xl text-[#1A1A1A] mb-4">
-          Please login to continue
+      <div className="text-center max-w-md px-6">
+        <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }} className="text-2xl text-[#1A1A1A] mb-2">
+          Explore Tractor Seva
         </h2>
-        <Link
-          to="/login"
-          className="px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors"
-        >
-          Go to Login
-        </Link>
+        <p className="text-[#57585A] text-sm mb-6">
+          Log in or register to connect with farmers and operators, or explore the platform first.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+          <Link
+            to="/login"
+            className="px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all font-medium text-sm shadow-md"
+          >
+            Log In / Register
+          </Link>
+          <button
+            onClick={() => {
+              localStorage.setItem("tractorsewa_preview_mode", "true");
+              window.location.reload();
+            }}
+            className="px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors font-medium text-sm cursor-pointer"
+          >
+            Continue without Login
+          </button>
+        </div>
       </div>
     </div>
   );
