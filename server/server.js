@@ -21,13 +21,27 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // 1. Environment Variables Check
-const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECRET'];
+const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_BUCKET_NAME'];
 requiredEnvVars.forEach(envVar => {
   if (!process.env[envVar]) {
     console.error(`FATAL: Environment variable ${envVar} is not set`);
     process.exit(1);
   }
 });
+
+// Initialize Supabase Client
+const { createClient } = require('@supabase/supabase-js');
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseBucket = process.env.SUPABASE_BUCKET_NAME;
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false
+  }
+});
+console.log('Supabase storage client initialized successfully.');
 if (JWT_SECRET.length < 32) {
   console.error('FATAL: JWT_SECRET must be at least 32 characters long');
   process.exit(1);
@@ -462,6 +476,11 @@ app.get('/api/operators', async (req, res) => {
   `;
   const queryParams = [];
 
+  // Exclude skeleton profiles from general browsing for non-admins
+  if (userRole !== 'admin' && !userId) {
+    queryStr += ' AND o.is_profile_completed = 1';
+  }
+
   // Enforce manual verification filtering
   if (userRole === 'admin') {
     // Admin sees all by default, or filtered by requested status
@@ -603,12 +622,12 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
 
     if (existing.length > 0) {
       result = await db.query(
-        'UPDATE operators SET name = ?, experience = ?, location = ?, state = ?, machine_expertise = ?, availability = ?, description = ?, phone = ?, whatsapp = ?, image_path = ?, verification_status = \'Pending\', verification_feedback = NULL WHERE user_id = ?',
+        'UPDATE operators SET name = ?, experience = ?, location = ?, state = ?, machine_expertise = ?, availability = ?, description = ?, phone = ?, whatsapp = ?, image_path = ?, verification_status = \'Pending\', verification_feedback = NULL, is_profile_completed = 1 WHERE user_id = ?',
         [name, experience, location, state, expertiseStr, availability || 'Available', description || null, cleanedPhone, cleanedWhatsapp, imagePath || null, req.user.id]
       );
     } else {
       result = await db.query(
-        'INSERT INTO operators (id, user_id, name, experience, location, state, machine_expertise, availability, description, phone, whatsapp, image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO operators (id, user_id, name, experience, location, state, machine_expertise, availability, description, phone, whatsapp, image_path, is_profile_completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
         [require('crypto').randomUUID(), req.user.id, name, experience, location, state, expertiseStr, availability || 'Available', description || null, cleanedPhone, cleanedWhatsapp, imagePath || null]
       );
     }
@@ -616,6 +635,146 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
     res.status(201).json({ message: 'Operator profile saved successfully' });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+const memoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 } // 15MB limit to allow high-res driving licenses from phone cameras
+});
+
+const verifyUploadFields = memoryUpload.fields([
+  { name: 'selfie', maxCount: 1 },
+  { name: 'licenseFront', maxCount: 1 },
+  { name: 'licenseBack', maxCount: 1 }
+]);
+
+app.post('/api/operators/verify-id', authenticateToken, (req, res, next) => {
+  verifyUploadFields(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'File too large. Maximum file size allowed is 15MB.' });
+      }
+      return res.status(400).json({ error: err.message || 'Error uploading files' });
+    }
+    next();
+  });
+}, async (req, res) => {
+  const { consent } = req.body;
+  if (!consent || consent === 'false') {
+    return res.status(400).json({ error: 'You must provide explicit consent for ID verification.' });
+  }
+
+  if (!req.files || !req.files['selfie'] || !req.files['licenseFront'] || !req.files['licenseBack']) {
+    return res.status(400).json({ error: 'Please upload all three required images: selfie, license front, and license back.' });
+  }
+
+  const selfie = req.files['selfie'][0];
+  const licenseFront = req.files['licenseFront'][0];
+  const licenseBack = req.files['licenseBack'][0];
+
+  const crypto = require('crypto');
+  const getHash = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
+
+  try {
+    const selfieHash = getHash(selfie.buffer);
+    const licenseFrontHash = getHash(licenseFront.buffer);
+    const licenseBackHash = getHash(licenseBack.buffer);
+
+    const [existing] = await db.query('SELECT id FROM operators WHERE user_id = ?', [req.user.id]);
+    let operatorId;
+    if (existing.length > 0) {
+      operatorId = existing[0].id;
+    } else {
+      operatorId = crypto.randomUUID();
+      // Insert a skeleton operator row first
+      await db.query(
+        "INSERT INTO operators (id, user_id, name, experience, location, state, machine_expertise, availability, verification_status) VALUES (?, ?, ?, 0, 'Not Specified', 'Maharashtra', '[]', 'Available', 'Pending')",
+        [operatorId, req.user.id, req.user.name || 'Operator Profile']
+      );
+    }
+
+    const uuid = crypto.randomUUID();
+    const selfiePath = `verifications/${req.user.id}/selfie-${uuid}.png`;
+    const licenseFrontPath = `verifications/${req.user.id}/licenseFront-${uuid}.png`;
+    const licenseBackPath = `verifications/${req.user.id}/licenseBack-${uuid}.png`;
+
+    // Upload to Supabase Private Storage with MIME type fallback retry mechanism
+    const uploadToSupabase = async (file, path) => {
+      let result = await supabase.storage
+        .from(supabaseBucket)
+        .upload(path, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true
+        });
+
+      let error = result.error;
+      let data = result.data;
+
+      // If unsupported MIME type error (e.g. image/png is blocked by bucket restrictions), retry with image/jpeg
+      if (error && (error.status === 400 || error.statusCode === '415' || String(error.message).toLowerCase().includes('mime type') || String(error.message).toLowerCase().includes('not supported'))) {
+        console.warn(`MIME type ${file.mimetype} rejected by Supabase bucket. Retrying with image/jpeg...`);
+        const retryResult = await supabase.storage
+          .from(supabaseBucket)
+          .upload(path, file.buffer, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+        error = retryResult.error;
+        data = retryResult.data;
+      }
+
+      // If still rejected, retry with application/octet-stream (general binary format, widely accepted)
+      if (error && (error.status === 400 || error.statusCode === '415' || String(error.message).toLowerCase().includes('mime type') || String(error.message).toLowerCase().includes('not supported'))) {
+        console.warn(`MIME type retry failed. Retrying with application/octet-stream...`);
+        const octetResult = await supabase.storage
+          .from(supabaseBucket)
+          .upload(path, file.buffer, {
+            contentType: 'application/octet-stream',
+            upsert: true
+          });
+        error = octetResult.error;
+        data = octetResult.data;
+      }
+
+      if (error) {
+        console.error('Supabase upload final error:', error);
+        throw error;
+      }
+      return path;
+    };
+
+    await uploadToSupabase(selfie, selfiePath);
+    await uploadToSupabase(licenseFront, licenseFrontPath);
+    await uploadToSupabase(licenseBack, licenseBackPath);
+
+    // Cryptographic signature
+    const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const signature = crypto.createHmac('sha256', JWT_SECRET)
+      .update(`${req.user.id}:${timestamp}:${selfieHash}:${licenseFrontHash}:${licenseBackHash}`)
+      .digest('hex');
+
+    // Insert into operator_consent_logs
+    const auditId = crypto.randomUUID();
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const consentText = "I hereby explicitly consent to Tractor Seva collecting and processing my live selfie and driving license images solely for the purpose of verifying my profile. I understand this data will be stored securely and reviewed manually by the system administrator.";
+
+    await db.query(
+      'INSERT INTO operator_consent_logs (id, user_id, operator_id, consent_text, selfie_hash, license_front_hash, license_back_hash, ip_address, user_agent, timestamp, signature) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [auditId, req.user.id, operatorId, consentText, selfieHash, licenseFrontHash, licenseBackHash, ipAddress, userAgent, timestamp, signature]
+    );
+
+    // Update operators table
+    await db.query(
+      "UPDATE operators SET selfie_image_path = ?, license_front_path = ?, license_back_path = ?, consent_signature = ?, consent_timestamp = ?, verification_status = 'Pending', verification_feedback = NULL WHERE user_id = ?",
+      [selfiePath, licenseFrontPath, licenseBackPath, signature, timestamp, req.user.id]
+    );
+
+    res.json({ message: 'Identity verification files uploaded and consent audit logged successfully.' });
+  } catch (error) {
+    console.error('Error in operator verify-id:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -940,6 +1099,7 @@ app.delete('/api/harvesters/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized to delete this machine listing' });
     }
 
+    await db.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id = ?", [req.params.id]);
     await db.query('DELETE FROM harvesters WHERE id = ?', [req.params.id]);
     res.json({ message: 'Harvester listing deleted successfully' });
   } catch (error) {
@@ -1442,7 +1602,7 @@ const csvUpload = multer({
 app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
   try {
     const [users] = await db.query('SELECT COUNT(*) as count FROM users WHERE role != ?', ['admin']);
-    const [operators] = await db.query("SELECT COUNT(*) as count FROM operators WHERE verification_status = 'Approved'");
+    const [operators] = await db.query("SELECT COUNT(*) as count FROM operators WHERE verification_status = 'Approved' AND is_profile_completed = 1");
     const [harvesters] = await db.query("SELECT COUNT(*) as count FROM harvesters WHERE verification_status = 'Approved'");
     const [requests] = await db.query('SELECT COUNT(*) as count FROM requests');
     const [blocked] = await db.query('SELECT COUNT(*) as count FROM users WHERE is_blocked = 1');
@@ -1488,7 +1648,7 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
                SELECT AVG(rating) 
                FROM ratings 
                WHERE (target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved'))
-                  OR (target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = u.id AND verification_status = 'Approved'))
+                  OR (target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = u.id AND verification_status = 'Approved' AND is_profile_completed = 1))
              ), 0) as avgRating
       FROM users u
       WHERE u.role != 'admin'
@@ -1525,7 +1685,7 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
       SELECT u.id, u.name, u.email, u.role, u.state, u.phone, u.is_blocked, u.created_at,
              (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as harvesterCount,
              (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as requestCount,
-             (SELECT COUNT(*) FROM operators WHERE user_id = u.id AND verification_status = 'Approved') as isOperator
+             (SELECT COUNT(*) FROM operators WHERE user_id = u.id AND verification_status = 'Approved' AND is_profile_completed = 1) as isOperator
       FROM users u
       WHERE u.role != 'admin'
       ORDER BY u.created_at DESC
@@ -1554,9 +1714,27 @@ app.put('/api/admin/users/:id/block', authenticateToken, isAdmin, async (req, re
 app.delete('/api/admin/users/:id/data', authenticateToken, isAdmin, async (req, res) => {
   const userId = req.params.id;
   try {
+    // Delete ratings given by user
+    await db.query('DELETE FROM ratings WHERE rater_id = ?', [userId]);
+    
+    // Delete ratings targetting user's harvesters
+    await db.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = ?)", [userId]);
+    
+    // Delete ratings targetting user's operators
+    await db.query("DELETE FROM ratings WHERE target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = ?)", [userId]);
+    
+    // Delete operator consent logs
+    await db.query('DELETE FROM operator_consent_logs WHERE user_id = ?', [userId]);
+    
+    // Delete user messages
+    await db.query('DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?', [userId, userId]);
+
+    // Delete base listings
     await db.query('DELETE FROM harvesters WHERE user_id = ?', [userId]);
     await db.query('DELETE FROM requests WHERE user_id = ?', [userId]);
     await db.query('DELETE FROM operators WHERE user_id = ?', [userId]);
+    
+    // Auto-ban user
     await db.query('UPDATE users SET is_blocked = 1 WHERE id = ?', [userId]);
     res.json({ message: 'User listings and operator profiles cleared, and account blocked.' });
   } catch (error) {
@@ -1568,6 +1746,7 @@ app.delete('/api/admin/users/:id/data', authenticateToken, isAdmin, async (req, 
 // 5. Admin Delete Specific Harvester
 app.delete('/api/admin/harvesters/:id', authenticateToken, isAdmin, async (req, res) => {
   try {
+    await db.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id = ?", [req.params.id]);
     await db.query('DELETE FROM harvesters WHERE id = ?', [req.params.id]);
     res.json({ message: 'Harvester listing deleted by administrator.' });
   } catch (error) {
@@ -1598,6 +1777,73 @@ app.put('/api/admin/requests/:id/status', authenticateToken, isAdmin, async (req
     res.json({ message: `Request status updated to ${status} successfully.` });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/admin/operators/:id/verification-details', authenticateToken, isAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query('SELECT * FROM operators WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Operator profile not found.' });
+    }
+    const operator = rows[0];
+
+    // Fetch consent audit log details
+    const [logs] = await db.query('SELECT * FROM operator_consent_logs WHERE operator_id = ? ORDER BY timestamp DESC LIMIT 1', [id]);
+    const auditLog = logs.length > 0 ? logs[0] : null;
+
+    // Generate signed URLs from Supabase
+    let selfieUrl = null;
+    let licenseFrontUrl = null;
+    let licenseBackUrl = null;
+
+    if (operator.selfie_image_path) {
+      const { data, error } = await supabase.storage
+        .from(supabaseBucket)
+        .createSignedUrl(operator.selfie_image_path, 900); // 15 mins expiry
+      if (!error && data) selfieUrl = data.signedUrl;
+    }
+
+    if (operator.license_front_path) {
+      const { data, error } = await supabase.storage
+        .from(supabaseBucket)
+        .createSignedUrl(operator.license_front_path, 900);
+      if (!error && data) licenseFrontUrl = data.signedUrl;
+    }
+
+    if (operator.license_back_path) {
+      const { data, error } = await supabase.storage
+        .from(supabaseBucket)
+        .createSignedUrl(operator.license_back_path, 900);
+      if (!error && data) licenseBackUrl = data.signedUrl;
+    }
+
+    res.json({
+      operator: {
+        id: operator.id,
+        name: operator.name,
+        email: operator.email,
+        experience: operator.experience,
+        location: operator.location,
+        state: operator.state,
+        machine_expertise: operator.machine_expertise,
+        description: operator.description,
+        verification_status: operator.verification_status,
+        verification_feedback: operator.verification_feedback,
+        consent_timestamp: operator.consent_timestamp,
+        consent_signature: operator.consent_signature
+      },
+      verificationFiles: {
+        selfieUrl,
+        licenseFrontUrl,
+        licenseBackUrl
+      },
+      auditLog
+    });
+  } catch (error) {
+    console.error('Error fetching operator verification details:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -1734,7 +1980,7 @@ app.get('/api/admin/users/query', authenticateToken, isAdmin, async (req, res) =
       SELECT u.id, u.name, u.email, u.role, u.state, u.phone, u.is_blocked, u.created_at,
              (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as harvesterCount,
              (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as requestCount,
-             (SELECT COUNT(*) FROM operators WHERE user_id = u.id AND verification_status = 'Approved') as isOperator
+             (SELECT COUNT(*) FROM operators WHERE user_id = u.id AND verification_status = 'Approved' AND is_profile_completed = 1) as isOperator
       FROM users u
       WHERE u.role != 'admin'
     `;
@@ -1746,12 +1992,12 @@ app.get('/api/admin/users/query', authenticateToken, isAdmin, async (req, res) =
     }
 
     if (detectedState) {
-      queryStr += ' AND (u.state = ? OR u.id IN (SELECT user_id FROM operators WHERE state = ?))';
+      queryStr += ' AND (u.state = ? OR u.id IN (SELECT user_id FROM operators WHERE state = ? AND is_profile_completed = 1))';
       queryParams.push(detectedState, detectedState);
     }
 
     if (detectedDistrict) {
-      queryStr += ' AND (u.id IN (SELECT user_id FROM operators WHERE location = ?))';
+      queryStr += ' AND (u.id IN (SELECT user_id FROM operators WHERE location = ? AND is_profile_completed = 1))';
       queryParams.push(detectedDistrict);
     }
 
@@ -2062,6 +2308,16 @@ app.delete('/api/settings/account', authenticateToken, async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
     const valid = await bcrypt.compare(password, rows[0].password);
     if (!valid) return res.status(401).json({ error: 'Incorrect password' });
+    await db.query('DELETE FROM ratings WHERE rater_id = ?', [req.user.id]);
+    await db.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = ?)", [req.user.id]);
+    await db.query("DELETE FROM ratings WHERE target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = ?)", [req.user.id]);
+    await db.query('DELETE FROM operator_consent_logs WHERE user_id = ?', [req.user.id]);
+    await db.query('DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?', [req.user.id, req.user.id]);
+
+    await db.query('DELETE FROM harvesters WHERE user_id = ?', [req.user.id]);
+    await db.query('DELETE FROM requests WHERE user_id = ?', [req.user.id]);
+    await db.query('DELETE FROM operators WHERE user_id = ?', [req.user.id]);
+
     await db.query('DELETE FROM users WHERE id = ?', [req.user.id]);
     res.json({ message: 'Account permanently deleted' });
   } catch (err) {
@@ -2556,6 +2812,12 @@ app.delete('/api/admin/operators/:id', authenticateToken, isAdmin, async (req, r
     if (existing.length === 0) {
       return res.status(404).json({ error: 'Operator listing not found' });
     }
+
+    // Delete operator ratings
+    await db.query("DELETE FROM ratings WHERE target_type = 'operator' AND target_id = ?", [operatorId]);
+    
+    // Delete operator consent logs
+    await db.query('DELETE FROM operator_consent_logs WHERE operator_id = ?', [operatorId]);
 
     await db.query('DELETE FROM operators WHERE id = ?', [operatorId]);
     res.json({ success: true, message: 'Operator profile deleted successfully by administrator.' });

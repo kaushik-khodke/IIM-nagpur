@@ -197,7 +197,7 @@ export function Dashboard() {
             });
             if (myOpsRes.ok) {
               const allOps = await myOpsRes.json();
-              setMyOperatorsCount(allOps.length);
+              setMyOperatorsCount(allOps.filter((o: any) => o.is_profile_completed === 1).length);
               if (allOps.length > 0) {
                 setMyOperatorProfile(allOps[0]);
               }

@@ -17,6 +17,7 @@ import {
   MessageCircle,
   Info,
   CheckCircle2,
+  Clock,
   XCircle,
   AlertTriangle,
   ChevronDown,
@@ -174,6 +175,7 @@ export function Settings() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation("pages");
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [operatorProfile, setOperatorProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -223,6 +225,15 @@ export function Settings() {
           const data: UserSettings = await res.json();
           setSettings(data);
           setAccountForm({ name: data.name || "", phone: data.phone || "", whatsappNumber: data.whatsappNumber || "", state: data.state || "", bio: data.bio || "" });
+
+          // Fetch operator profile if it exists
+          const opRes = await fetch(`/api/operators?userId=${data.id}`, { headers: { Authorization: `Bearer ${token}` } });
+          if (opRes.ok) {
+            const opData = await opRes.json();
+            if (opData.length > 0) {
+              setOperatorProfile(opData[0]);
+            }
+          }
         }
       } catch {
         toast.error(t("settings.toasts.networkError", { defaultValue: "Network error" }));
@@ -418,37 +429,138 @@ export function Settings() {
 
 
 
-  const renderVerification = () => (
-    <div className="space-y-6">
-      <SectionCard title={t("settings.verification.statusTitle", { defaultValue: "Verification Status" })}>
-        <div className="space-y-4">
-          {[
-            { label: t("settings.verification.emailLabel", { defaultValue: "Email Address" }), value: settings?.email, verified: true, hint: t("settings.verification.emailHint", { defaultValue: "Your email is verified on registration" }) },
-            { label: t("settings.verification.phoneLabel", { defaultValue: "Phone Number" }), value: settings?.phone ? `+91-${settings.phone}` : t("settings.verification.phoneFallback", { defaultValue: "Not provided" }), verified: false, hint: t("settings.verification.phoneHint", { defaultValue: "Phone verification coming soon" }) },
-            { label: t("settings.verification.identityLabel", { defaultValue: "Identity Verification" }), value: t("settings.verification.identityValue", { defaultValue: "Government ID" }), verified: false, hint: t("settings.verification.identityHint", { defaultValue: "Upload Aadhaar or PAN to get verified" }) },
-          ].map(item => (
-            <div key={item.label} className={`flex items-center justify-between p-4 rounded-xl border ${item.verified ? "border-green-200 bg-green-50" : "border-[#E2E8F0] bg-[#F8FAFC]"}`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.verified ? "bg-green-100 text-green-600" : "bg-zinc-100 text-zinc-400"}`}>
-                  {item.verified ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+  const renderVerification = () => {
+    let identityValue = t("settings.verification.identityValue", { defaultValue: "Government ID" });
+    let identityVerified = false;
+    let identityHint = t("settings.verification.identityHint", { defaultValue: "Upload Aadhaar or PAN to get verified" });
+    let identityStatusText = t("settings.verification.notVerified", { defaultValue: "Not Verified" });
+
+    if (operatorProfile) {
+      if (operatorProfile.verification_status === "Approved") {
+        identityValue = "Verified Operator (Driving License)";
+        identityVerified = true;
+        identityStatusText = "Verified ✓";
+        identityHint = `Identity verified successfully ${
+          operatorProfile.consent_timestamp
+            ? "on " + new Date(operatorProfile.consent_timestamp).toLocaleDateString()
+            : ""
+        }`;
+      } else if (operatorProfile.verification_status === "Pending") {
+        identityValue = "Pending Review (Driving License)";
+        identityVerified = false;
+        identityStatusText = "Pending Approval";
+        identityHint = `Documents submitted ${
+          operatorProfile.consent_timestamp
+            ? "on " + new Date(operatorProfile.consent_timestamp).toLocaleDateString()
+            : ""
+        } are pending administrator review.`;
+      } else if (operatorProfile.verification_status === "Rejected") {
+        identityValue = "Rejected (Driving License)";
+        identityVerified = false;
+        identityStatusText = "Rejected ✗";
+        identityHint = `Rejection Feedback: ${
+          operatorProfile.verification_feedback || "Documents rejected by admin."
+        }. Please re-submit under Register Operator.`;
+      } else {
+        identityValue = "Government ID";
+        identityVerified = false;
+        identityStatusText = "Not Verified";
+        identityHint = "Please start verification by registering as an operator.";
+      }
+    } else {
+      identityValue = "Government ID";
+      identityVerified = false;
+      identityStatusText = "Not Verified";
+      identityHint = "Verification is required for operator profiles. Register as an operator to start verification.";
+    }
+
+    return (
+      <div className="space-y-6">
+        <SectionCard title={t("settings.verification.statusTitle", { defaultValue: "Verification Status" })}>
+          <div className="space-y-4">
+            {[
+              {
+                label: t("settings.verification.emailLabel", { defaultValue: "Email Address" }),
+                value: settings?.email,
+                verified: true,
+                statusText: t("settings.verification.verified", { defaultValue: "Verified ✓" }),
+                hint: t("settings.verification.emailHint", { defaultValue: "Your email is verified on registration" }),
+              },
+              {
+                label: t("settings.verification.phoneLabel", { defaultValue: "Phone Number" }),
+                value: settings?.phone ? `+91-${settings.phone}` : t("settings.verification.phoneFallback", { defaultValue: "Not provided" }),
+                verified: false,
+                statusText: t("settings.verification.notVerified", { defaultValue: "Not Verified" }),
+                hint: t("settings.verification.phoneHint", { defaultValue: "Phone verification coming soon" }),
+              },
+              {
+                label: t("settings.verification.identityLabel", { defaultValue: "Identity Verification" }),
+                value: identityValue,
+                verified: identityVerified,
+                statusText: identityStatusText,
+                hint: identityHint,
+              },
+            ].map(item => (
+              <div
+                key={item.label}
+                className={`flex items-center justify-between p-4 rounded-xl border ${
+                  item.verified
+                    ? "border-green-200 bg-green-50"
+                    : item.statusText === "Pending Approval"
+                    ? "border-amber-200 bg-amber-50"
+                    : item.statusText.startsWith("Rejected")
+                    ? "border-rose-200 bg-rose-50"
+                    : "border-[#E2E8F0] bg-[#F8FAFC]"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      item.verified
+                        ? "bg-green-100 text-green-600"
+                        : item.statusText === "Pending Approval"
+                        ? "bg-amber-100 text-amber-600"
+                        : item.statusText.startsWith("Rejected")
+                        ? "bg-rose-100 text-rose-600"
+                        : "bg-zinc-100 text-zinc-400"
+                    }`}
+                  >
+                    {item.verified ? (
+                      <CheckCircle2 size={16} />
+                    ) : item.statusText === "Pending Approval" ? (
+                      <Clock size={16} className="animate-pulse" />
+                    ) : (
+                      <XCircle size={16} />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#1A1A1A]">{item.label}</p>
+                    <p className="text-xs text-zinc-500">{item.value}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#1A1A1A]">{item.label}</p>
-                  <p className="text-xs text-zinc-500">{item.value}</p>
+                <div className="text-right">
+                  <span
+                    className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                      item.verified
+                        ? "bg-green-100 text-green-700"
+                        : item.statusText === "Pending Approval"
+                        ? "bg-amber-100 text-amber-700"
+                        : item.statusText.startsWith("Rejected")
+                        ? "bg-rose-100 text-rose-700"
+                        : "bg-zinc-100 text-zinc-500"
+                    }`}
+                  >
+                    {item.statusText}
+                  </span>
+                  <p className="text-[10px] text-zinc-400 mt-1">{item.hint}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${item.verified ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500"}`}>
-                  {item.verified ? t("settings.verification.verified", { defaultValue: "Verified ✓" }) : t("settings.verification.notVerified", { defaultValue: "Not Verified" })}
-                </span>
-                {!item.verified && <p className="text-[10px] text-zinc-400 mt-1">{item.hint}</p>}
-              </div>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-    </div>
-  );
+            ))}
+          </div>
+        </SectionCard>
+      </div>
+    );
+  };
 
   const renderSupport = () => (
     <div className="space-y-6">

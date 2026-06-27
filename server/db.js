@@ -299,6 +299,48 @@ async function initializeDatabase() {
     try {
       await activePool.query("ALTER TABLE operators ADD COLUMN verification_feedback TEXT DEFAULT NULL AFTER verification_status");
     } catch (err) {}
+    try {
+      await activePool.query("ALTER TABLE operators ADD COLUMN selfie_image_path VARCHAR(255) DEFAULT NULL");
+    } catch (err) {}
+    try {
+      await activePool.query("ALTER TABLE operators ADD COLUMN license_front_path VARCHAR(255) DEFAULT NULL");
+    } catch (err) {}
+    try {
+      await activePool.query("ALTER TABLE operators ADD COLUMN license_back_path VARCHAR(255) DEFAULT NULL");
+    } catch (err) {}
+    try {
+      await activePool.query("ALTER TABLE operators ADD COLUMN consent_signature VARCHAR(255) DEFAULT NULL");
+    } catch (err) {}
+    try {
+      await activePool.query("ALTER TABLE operators ADD COLUMN consent_timestamp TIMESTAMP NULL DEFAULT NULL");
+    } catch (err) {}
+    try {
+      await activePool.query("ALTER TABLE operators ADD COLUMN is_profile_completed TINYINT DEFAULT 0");
+    } catch (err) {}
+    try {
+      await activePool.query("UPDATE operators SET is_profile_completed = 1 WHERE experience > 0 OR name != 'Operator Profile'");
+    } catch (err) {}
+
+    // Create operator_consent_logs table
+    try {
+      await activePool.query(`
+        CREATE TABLE IF NOT EXISTS operator_consent_logs (
+          id VARCHAR(50) PRIMARY KEY,
+          user_id VARCHAR(50) NOT NULL,
+          operator_id VARCHAR(50) NOT NULL,
+          consent_text TEXT NOT NULL,
+          selfie_hash VARCHAR(64) NOT NULL,
+          license_front_hash VARCHAR(64) NOT NULL,
+          license_back_hash VARCHAR(64) NOT NULL,
+          ip_address VARCHAR(45) NOT NULL,
+          user_agent TEXT NOT NULL,
+          timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          signature VARCHAR(64) NOT NULL
+        )
+      `);
+    } catch (err) {
+      console.error("Error creating operator_consent_logs table:", err);
+    }
 
 
     // Seed hardcoded administrator account if not exists
