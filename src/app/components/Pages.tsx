@@ -421,6 +421,7 @@ export function HarvesterDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const navigate = useNavigate();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const isPreview = !localStorage.getItem("tractorsewa_token") && localStorage.getItem("tractorsewa_preview_mode") === "true";
 
   const [ratingsData, setRatingsData] = useState<{ averageRating: string | null, count: number, reviews: any[] }>({
     averageRating: null,
@@ -653,9 +654,17 @@ export function HarvesterDetail() {
                 </div>
                 <div>
                   <p className="text-[#1A1A1A] text-lg" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{harvester.ownerName}</p>
-                  <p className="text-sm text-[#57585A] flex items-center gap-1.5 mt-1"><Phone size={13} /> +91-{harvester.phone || 'XXXXXXXXXX'}</p>
-                  {harvester.whatsapp && (
-                    <p className="text-sm text-[#57585A] flex items-center gap-1.5 mt-1"><MessageCircle size={13} className="text-green-600" /> +91-{harvester.whatsapp}</p>
+                  {isPreview ? (
+                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-1 font-semibold flex items-center gap-1 w-fit">
+                      🔒 Login to view contact
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-[#57585A] flex items-center gap-1.5 mt-1"><Phone size={13} /> +91-{harvester.phone || 'XXXXXXXXXX'}</p>
+                      {harvester.whatsapp && (
+                        <p className="text-sm text-[#57585A] flex items-center gap-1.5 mt-1"><MessageCircle size={13} className="text-green-600" /> +91-{harvester.whatsapp}</p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -675,6 +684,39 @@ export function HarvesterDetail() {
                         className="w-full py-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2 font-medium"
                       >
                         <Trash2 size={18} /> {t("harvesterDetail.deleteListing", { defaultValue: "Delete Listing" })}
+                      </button>
+                    </>
+                  ) : isPreview ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent("trigger-auth-required", {
+                            detail: { redirectPath: `/harvesters/${id}` }
+                          }));
+                        }}
+                        className="w-full py-3 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-200 hover:text-slate-600"
+                      >
+                        <MessageSquare size={18} /> {t("harvesterDetail.whatsAppOwner", { defaultValue: "WhatsApp Owner" })}
+                      </button>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent("trigger-auth-required", {
+                            detail: { redirectPath: `/harvesters/${id}` }
+                          }));
+                        }}
+                        className="w-full py-3 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-200 hover:text-slate-600"
+                      >
+                        {t("harvesterDetail.messageOwner", { defaultValue: "Message Owner" })}
+                      </button>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent("trigger-auth-required", {
+                            detail: { redirectPath: `/harvesters/${id}` }
+                          }));
+                        }}
+                        className="w-full py-3 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-200 hover:text-slate-600"
+                      >
+                        <Star size={18} fill="currentColor" /> {t("harvesterDetail.rateMachine", { defaultValue: "Rate Machine" })}
                       </button>
                     </>
                   ) : (
@@ -765,10 +807,10 @@ export function HarvesterDetail() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[
                   { label: t("harvesterDetail.specModel", { defaultValue: "Model" }), value: harvester.model, required: true },
-                  { label: t("harvesterDetail.specSerialNo", { defaultValue: "Serial Number" }), value: harvester.serialNo, required: true },
-                  { label: t("harvesterDetail.specChassisNo", { defaultValue: "Chassis Number" }), value: harvester.chassisNo, required: true },
+                  { label: t("harvesterDetail.specSerialNo", { defaultValue: "Serial Number" }), value: isPreview ? "•••••••• (Login to view)" : harvester.serialNo, required: true },
+                  { label: t("harvesterDetail.specChassisNo", { defaultValue: "Chassis Number" }), value: isPreview ? "•••••••• (Login to view)" : harvester.chassisNo, required: true },
                   { label: t("harvesterDetail.specMfgMonthYear", { defaultValue: "Month / Year of MFG" }), value: harvester.mfgMonthYear, required: true },
-                  { label: t("harvesterDetail.specEngineNo", { defaultValue: "Engine Number" }), value: harvester.engineNo, required: true },
+                  { label: t("harvesterDetail.specEngineNo", { defaultValue: "Engine Number" }), value: isPreview ? "•••••••• (Login to view)" : harvester.engineNo, required: true },
                   { label: t("harvesterDetail.specEnginePower", { defaultValue: "Engine Power" }), value: harvester.enginePower, required: false },
                   { label: t("harvesterDetail.specEngineMake", { defaultValue: "Engine Make" }), value: harvester.engineMake, required: false },
                   { label: t("harvesterDetail.specEngineModel", { defaultValue: "Engine Model" }), value: harvester.engineModel, required: false },
@@ -1161,6 +1203,7 @@ export function OperatorProfile() {
   const [operator, setOperator] = useState<any>(null);
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const isPreview = !localStorage.getItem("tractorsewa_token") && localStorage.getItem("tractorsewa_preview_mode") === "true";
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [ratingsData, setRatingsData] = useState<{ averageRating: string | null, count: number, reviews: any[] }>({
@@ -1512,47 +1555,92 @@ export function OperatorProfile() {
             <div>
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)]">
                 <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("operatorProfile.contactOperator", { defaultValue: "Contact Operator" })}</h3>
-                <p className="text-sm text-[#57585A] mb-2 flex items-center gap-2">
-                  <Phone size={14} /> +91-{operator.phone || 'XXXXXXXXXX'}
-                </p>
-                {operator.whatsapp && (
-                  <p className="text-sm text-[#57585A] mb-4 flex items-center gap-2">
-                    <MessageCircle size={14} className="text-green-600" /> +91-{operator.whatsapp}
+                {isPreview ? (
+                  <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-4 font-semibold flex items-center gap-1">
+                    🔒 Login to view contact info
                   </p>
+                ) : (
+                  <>
+                    <p className="text-sm text-[#57585A] mb-2 flex items-center gap-2">
+                      <Phone size={14} /> +91-{operator.phone || 'XXXXXXXXXX'}
+                    </p>
+                    {operator.whatsapp && (
+                      <p className="text-sm text-[#57585A] mb-4 flex items-center gap-2">
+                        <MessageCircle size={14} className="text-green-600" /> +91-{operator.whatsapp}
+                      </p>
+                    )}
+                  </>
                 )}
                 <div className="space-y-2">
-                  <a
-                    href={`https://wa.me/91${operator.whatsapp || operator.phone}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
-                  >
-                    <MessageSquare size={16} /> {t("operatorProfile.whatsapp", { defaultValue: "WhatsApp" })}
-                  </a>
-                  {(!currentUser || operator.user_id !== currentUser.id) && (
-                    <button
-                      onClick={() => {
-                        if (!currentUser) {
-                          toast.error(t("operatorProfile.toastLoginToMessage", { defaultValue: "Please log in to send a message" }));
-                          navigate("/login");
-                        } else {
-                          navigate(`/messages?userId=${operator.user_id}`);
-                        }
-                      }}
-                      className="w-full py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors"
-                    >
-                      {t("operatorProfile.sendMessage", { defaultValue: "Send Message" })}
-                    </button>
-                  )}
-                  {currentUser && (operator.user_id !== currentUser.id) && (
-                    <button
-                      onClick={() => {
-                        document.getElementById("ratings-section")?.scrollIntoView({ behavior: "smooth" });
-                      }}
-                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-semibold cursor-pointer"
-                    >
-                      <Star size={16} fill="currentColor" /> {t("operatorProfile.rateOperator", { defaultValue: "Rate Operator" })}
-                    </button>
+                  {isPreview ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent("trigger-auth-required", {
+                            detail: { redirectPath: `/operators/${id}` }
+                          }));
+                        }}
+                        className="w-full py-2.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-200 hover:text-slate-600"
+                      >
+                        <MessageSquare size={16} /> {t("operatorProfile.whatsapp", { defaultValue: "WhatsApp" })}
+                      </button>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent("trigger-auth-required", {
+                            detail: { redirectPath: `/operators/${id}` }
+                          }));
+                        }}
+                        className="w-full py-2.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-200 hover:text-slate-600"
+                      >
+                        {t("operatorProfile.sendMessage", { defaultValue: "Send Message" })}
+                      </button>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent("trigger-auth-required", {
+                            detail: { redirectPath: `/operators/${id}` }
+                          }));
+                        }}
+                        className="w-full py-2.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-200 hover:text-slate-600"
+                      >
+                        <Star size={16} fill="currentColor" /> {t("operatorProfile.rateOperator", { defaultValue: "Rate Operator" })}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <a
+                        href={`https://wa.me/91${operator.whatsapp || operator.phone}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                      >
+                        <MessageSquare size={16} /> {t("operatorProfile.whatsapp", { defaultValue: "WhatsApp" })}
+                      </a>
+                      {(!currentUser || operator.user_id !== currentUser.id) && (
+                        <button
+                          onClick={() => {
+                            if (!currentUser) {
+                              toast.error(t("operatorProfile.toastLoginToMessage", { defaultValue: "Please log in to send a message" }));
+                              navigate("/login");
+                            } else {
+                              navigate(`/messages?userId=${operator.user_id}`);
+                            }
+                          }}
+                          className="w-full py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors"
+                        >
+                          {t("operatorProfile.sendMessage", { defaultValue: "Send Message" })}
+                        </button>
+                      )}
+                      {currentUser && (operator.user_id !== currentUser.id) && (
+                        <button
+                          onClick={() => {
+                            document.getElementById("ratings-section")?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                          className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-semibold cursor-pointer"
+                        >
+                          <Star size={16} fill="currentColor" /> {t("operatorProfile.rateOperator", { defaultValue: "Rate Operator" })}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1563,13 +1651,27 @@ export function OperatorProfile() {
 
       {/* Sticky mobile contact bar */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#E2E8F0] sm:hidden z-40">
-        <a
-          href={`tel:+91${operator.phone}`}
-          className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center font-semibold"
-          style={{ fontFamily: "'Sora', sans-serif" }}
-        >
-          {t("operatorProfile.callOperator", { defaultValue: "Call Operator" })}
-        </a>
+        {isPreview ? (
+          <button
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("trigger-auth-required", {
+                detail: { redirectPath: `/operators/${id}` }
+              }));
+            }}
+            className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center font-semibold"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+          >
+            {t("operatorProfile.callOperator", { defaultValue: "Call Operator" })}
+          </button>
+        ) : (
+          <a
+            href={`tel:+91${operator.phone}`}
+            className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center font-semibold"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+          >
+            {t("operatorProfile.callOperator", { defaultValue: "Call Operator" })}
+          </a>
+        )}
       </div>
     </div>
   );
