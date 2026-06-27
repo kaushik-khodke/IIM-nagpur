@@ -682,6 +682,7 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const [userName, setUserName] = useState("User");
   const [userRole, setUserRole] = useState(() => localStorage.getItem("tractorsewa_user_role") || "user");
   const [userImage, setUserImage] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Dialog state
   const [chooserOpen, setChooserOpen] = useState(false);
@@ -738,11 +739,30 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
     }
   };
 
+  const fetchUnreadCount = () => {
+    if (isAuthenticated && token) {
+      fetch("/api/messages/unread", {
+        headers: { "Authorization": `Bearer ${token}` }
+      })
+        .then(res => res.ok ? res.json() : [])
+        .then(data => {
+          setUnreadCount(Array.isArray(data) ? data.length : 0);
+        })
+        .catch(err => console.error("Failed to fetch unread messages count:", err));
+    }
+  };
+
   useEffect(() => {
     fetchUser();
     window.addEventListener("user-profile-updated", fetchUser);
     return () => window.removeEventListener("user-profile-updated", fetchUser);
   }, [isAuthenticated, token]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 10000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, token, location.pathname]);
 
   // Listen for the global trigger-auth-required event
   useEffect(() => {
@@ -892,13 +912,16 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold hover:opacity-90 transition-opacity overflow-hidden border border-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#172263] focus:ring-offset-2">
+                  <button className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold hover:opacity-90 transition-opacity overflow-hidden border border-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#172263] focus:ring-offset-2 relative">
                     <Avatar className="w-full h-full rounded-full">
                       {userImage ? <AvatarImage src={userImage} alt={userName} /> : null}
                       <AvatarFallback className="bg-gradient-to-br from-[#172263] to-[#D97706] text-white">
                         {userName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#D97706] border border-white rounded-full animate-pulse" />
+                    )}
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-white border border-[#E2E8F0] rounded-xl">
@@ -939,7 +962,9 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                         <Link to="/messages" className="flex items-center gap-2 cursor-pointer">
                           <div className="relative">
                             <Bell size={15} />
-                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#172263] rounded-full" />
+                            {unreadCount > 0 && (
+                              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#D97706] rounded-full" />
+                            )}
                           </div>
                           {t("sidebar.messages", { ns: "dashboard", defaultValue: "Messages" })}
                         </Link>
@@ -1034,9 +1059,14 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                       }
                       setMobileOpen(false);
                     }}
-                    className="block py-2 text-[#57585A] hover:text-[#172263] transition-colors"
+                    className="flex justify-between items-center py-2 text-[#57585A] hover:text-[#172263] transition-colors"
                   >
-                    {item.label}
+                    <span>{item.label}</span>
+                    {item.to === "/messages" && unreadCount > 0 && (
+                      <span className="bg-[#D97706] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
