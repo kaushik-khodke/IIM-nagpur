@@ -438,7 +438,21 @@ app.get('/api/users/:id', authenticateToken, async (req, res) => {
 
 // 4. Operator Routes
 app.get('/api/operators', async (req, res) => {
-  const { search, location, state, availability, limit, userId } = req.query;
+  const { search, location, state, availability, limit, userId, status } = req.query;
+  const caller = getOptionalUser(req);
+
+  let userRole = null;
+  if (caller) {
+    try {
+      const [users] = await db.query('SELECT role FROM users WHERE id = ?', [caller.id]);
+      if (users.length > 0) {
+        userRole = users[0].role;
+      }
+    } catch (err) {
+      console.error('Error fetching caller role:', err);
+    }
+  }
+
   let queryStr = `
     SELECT o.*,
            COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'operator' AND target_id = o.id), 0) as avgRating,
@@ -447,6 +461,34 @@ app.get('/api/operators', async (req, res) => {
     WHERE 1=1
   `;
   const queryParams = [];
+
+  // Enforce manual verification filtering
+  if (userRole === 'admin') {
+    // Admin sees all by default, or filtered by requested status
+    if (status) {
+      queryStr += ' AND o.verification_status = ?';
+      queryParams.push(status);
+    }
+  } else {
+    // Normal user or anonymous
+    if (userId) {
+      // If requested userId matches caller (owner), they can see all status.
+      // Otherwise, they can only see Approved.
+      if (caller && caller.id === userId) {
+        // Owner requesting own profile -> see all statuses
+      } else {
+        // Others requesting -> see only approved
+        queryStr += ' AND o.verification_status = \'Approved\'';
+      }
+    } else {
+      // General browsing -> ONLY see Approved AND filter OUT current user's own listings if logged in!
+      queryStr += ' AND o.verification_status = \'Approved\'';
+      if (caller) {
+        queryStr += ' AND o.user_id != ?';
+        queryParams.push(caller.id);
+      }
+    }
+  }
 
   if (userId) {
     queryStr += ' AND o.user_id = ?';
@@ -484,7 +526,11 @@ app.get('/api/operators', async (req, res) => {
       ...r,
       avgRating: parseFloat(r.avgRating || 0).toFixed(1),
       ratingCount: parseInt(r.ratingCount || 0),
-      machineExpertise: JSON.parse(r.machine_expertise || '[]')
+      machineExpertise: JSON.parse(r.machine_expertise || '[]'),
+      verificationStatus: r.verification_status,
+      verificationFeedback: r.verification_feedback,
+      verification_status: r.verification_status,
+      verification_feedback: r.verification_feedback
     }));
     res.json(parsedRows);
   } catch (error) {
@@ -503,11 +549,28 @@ app.get('/api/operators/:id', async (req, res) => {
       return res.status(404).json({ error: 'Operator not found' });
     }
     const op = rows[0];
+    const caller = getOptionalUser(req);
+    const isOwner = caller && caller.id === op.user_id;
+    let userRole = null;
+    if (caller) {
+      const [users] = await db.query('SELECT role FROM users WHERE id = ?', [caller.id]);
+      if (users.length > 0) {
+        userRole = users[0].role;
+      }
+    }
+    const isAdmin = userRole === 'admin';
+    if (op.verification_status !== 'Approved' && !isOwner && !isAdmin) {
+      return res.status(404).json({ error: 'Operator not found' });
+    }
     res.json({
       ...op,
       ownerName: op.ownerName,
       ownerProfilePic: op.ownerProfilePic,
-      machineExpertise: JSON.parse(op.machine_expertise || '[]')
+      machineExpertise: JSON.parse(op.machine_expertise || '[]'),
+      verificationStatus: op.verification_status,
+      verificationFeedback: op.verification_feedback,
+      verification_status: op.verification_status,
+      verification_feedback: op.verification_feedback
     });
   } catch (error) {
     console.error(error);
@@ -540,7 +603,7 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
 
     if (existing.length > 0) {
       result = await db.query(
-        'UPDATE operators SET name = ?, experience = ?, location = ?, state = ?, machine_expertise = ?, availability = ?, description = ?, phone = ?, whatsapp = ?, image_path = ? WHERE user_id = ?',
+        'UPDATE operators SET name = ?, experience = ?, location = ?, state = ?, machine_expertise = ?, availability = ?, description = ?, phone = ?, whatsapp = ?, image_path = ?, verification_status = \'Pending\', verification_feedback = NULL WHERE user_id = ?',
         [name, experience, location, state, expertiseStr, availability || 'Available', description || null, cleanedPhone, cleanedWhatsapp, imagePath || null, req.user.id]
       );
     } else {
@@ -559,7 +622,21 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
 
 // 5. Harvester Routes
 app.get('/api/harvesters', async (req, res) => {
-  const { search, location, state, company, limit, operatorId } = req.query;
+  const { search, location, state, company, limit, operatorId, status, userId } = req.query;
+  const caller = getOptionalUser(req);
+
+  let userRole = null;
+  if (caller) {
+    try {
+      const [users] = await db.query('SELECT role FROM users WHERE id = ?', [caller.id]);
+      if (users.length > 0) {
+        userRole = users[0].role;
+      }
+    } catch (err) {
+      console.error('Error fetching caller role:', err);
+    }
+  }
+
   let queryStr = `
     SELECT h.*, u.name as ownerName, u.image_path as ownerProfilePic,
            COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'machine' AND target_id = h.id), 0) as avgRating,
@@ -569,6 +646,34 @@ app.get('/api/harvesters', async (req, res) => {
     WHERE 1=1
   `;
   const queryParams = [];
+
+  // Enforce manual verification filtering
+  if (userRole === 'admin') {
+    // Admin sees all by default, or filtered by requested status
+    if (status) {
+      queryStr += ' AND h.verification_status = ?';
+      queryParams.push(status);
+    }
+  } else {
+    // Normal user or anonymous
+    if (userId) {
+      // If requested userId matches caller (owner), they can see all status.
+      // Otherwise, they can only see Approved.
+      if (caller && caller.id === userId) {
+        // Owner requesting own listings -> see all statuses
+      } else {
+        // Others requesting -> see only approved
+        queryStr += ' AND h.verification_status = \'Approved\'';
+      }
+    } else {
+      // General browsing -> ONLY see Approved AND filter OUT current user's own listings if logged in!
+      queryStr += ' AND h.verification_status = \'Approved\'';
+      if (caller) {
+        queryStr += ' AND h.user_id != ?';
+        queryParams.push(caller.id);
+      }
+    }
+  }
 
   if (search) {
     queryStr += ' AND (h.machine_name LIKE ? OR u.name LIKE ?)';
@@ -590,6 +695,10 @@ app.get('/api/harvesters', async (req, res) => {
     // Match owner's harvesters (simulating operator/owner relation)
     queryStr += ' AND h.user_id = (SELECT user_id FROM operators WHERE id = ?)';
     queryParams.push(operatorId);
+  }
+  if (userId) {
+    queryStr += ' AND h.user_id = ?';
+    queryParams.push(userId);
   }
 
   queryStr += ' ORDER BY h.id DESC';
@@ -618,7 +727,19 @@ app.get('/api/harvesters', async (req, res) => {
       ownerName: r.ownerName,
       ownerProfilePic: r.ownerProfilePic,
       avgRating: parseFloat(r.avgRating || 0).toFixed(1),
-      ratingCount: parseInt(r.ratingCount || 0)
+      ratingCount: parseInt(r.ratingCount || 0),
+      verificationStatus: r.verification_status,
+      verificationFeedback: r.verification_feedback,
+      verification_status: r.verification_status,
+      verification_feedback: r.verification_feedback,
+      serialNo: r.serial_no,
+      chassisNo: r.chassis_no,
+      mfgMonthYear: r.mfg_month_year,
+      engineNo: r.engine_no,
+      enginePower: r.engine_power,
+      engineMake: r.engine_make,
+      engineModel: r.engine_model,
+      serviceHotlineNo: r.service_hotline_no
     }));
     res.json(formattedRows);
   } catch (error) {
@@ -637,6 +758,19 @@ app.get('/api/harvesters/:id', async (req, res) => {
       return res.status(404).json({ error: 'Harvester not found' });
     }
     const r = rows[0];
+    const caller = getOptionalUser(req);
+    const isOwner = caller && caller.id === r.user_id;
+    let userRole = null;
+    if (caller) {
+      const [users] = await db.query('SELECT role FROM users WHERE id = ?', [caller.id]);
+      if (users.length > 0) {
+        userRole = users[0].role;
+      }
+    }
+    const isAdmin = userRole === 'admin';
+    if (r.verification_status !== 'Approved' && !isOwner && !isAdmin) {
+      return res.status(404).json({ error: 'Harvester not found' });
+    }
     res.json({
       id: r.id,
       userId: r.user_id,
@@ -659,7 +793,11 @@ app.get('/api/harvesters/:id', async (req, res) => {
       enginePower: r.engine_power,
       engineMake: r.engine_make,
       engineModel: r.engine_model,
-      serviceHotlineNo: r.service_hotline_no
+      serviceHotlineNo: r.service_hotline_no,
+      verificationStatus: r.verification_status,
+      verificationFeedback: r.verification_feedback,
+      verification_status: r.verification_status,
+      verification_feedback: r.verification_feedback
     });
   } catch (error) {
     console.error(error);
@@ -760,7 +898,7 @@ app.put('/api/harvesters/:id', authenticateToken, async (req, res) => {
     }
 
     await db.query(
-      'UPDATE harvesters SET machine_name = ?, company = ?, model = ?, year = ?, location = ?, state = ?, phone = ?, whatsapp = ?, description = ?, image_path = ?, serial_no = ?, chassis_no = ?, mfg_month_year = ?, engine_no = ?, engine_power = ?, engine_make = ?, engine_model = ?, service_hotline_no = ? WHERE id = ?',
+      'UPDATE harvesters SET machine_name = ?, company = ?, model = ?, year = ?, location = ?, state = ?, phone = ?, whatsapp = ?, description = ?, image_path = ?, serial_no = ?, chassis_no = ?, mfg_month_year = ?, engine_no = ?, engine_power = ?, engine_make = ?, engine_model = ?, service_hotline_no = ?, verification_status = \'Pending\', verification_feedback = NULL WHERE id = ?',
       [
         machineName,
         company,
@@ -995,6 +1133,8 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
       const [messages] = await db.query(`
         SELECT m.*, 
                s.name as senderName, 
+               s.role as senderRole,
+               s.image_path as senderImagePath,
                r.name as receiverName
         FROM messages m
         JOIN users s ON m.sender_id = s.id
@@ -1302,8 +1442,8 @@ const csvUpload = multer({
 app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
   try {
     const [users] = await db.query('SELECT COUNT(*) as count FROM users WHERE role != ?', ['admin']);
-    const [operators] = await db.query('SELECT COUNT(*) as count FROM operators');
-    const [harvesters] = await db.query('SELECT COUNT(*) as count FROM harvesters');
+    const [operators] = await db.query("SELECT COUNT(*) as count FROM operators WHERE verification_status = 'Approved'");
+    const [harvesters] = await db.query("SELECT COUNT(*) as count FROM harvesters WHERE verification_status = 'Approved'");
     const [requests] = await db.query('SELECT COUNT(*) as count FROM requests');
     const [blocked] = await db.query('SELECT COUNT(*) as count FROM users WHERE is_blocked = 1');
 
@@ -1342,13 +1482,13 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     // Query performers (user metrics)
     const [performers] = await db.query(`
       SELECT u.id, u.name, u.email, u.image_path as imagePath, u.created_at as createdAt,
-             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id) as harvesterCount,
+             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as harvesterCount,
              (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as requestCount,
              COALESCE((
                SELECT AVG(rating) 
                FROM ratings 
-               WHERE (target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = u.id))
-                  OR (target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = u.id))
+               WHERE (target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved'))
+                  OR (target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = u.id AND verification_status = 'Approved'))
              ), 0) as avgRating
       FROM users u
       WHERE u.role != 'admin'
@@ -1383,9 +1523,9 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
   try {
     const [users] = await db.query(`
       SELECT u.id, u.name, u.email, u.role, u.state, u.phone, u.is_blocked, u.created_at,
-             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id) as harvesterCount,
+             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as harvesterCount,
              (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as requestCount,
-             (SELECT COUNT(*) FROM operators WHERE user_id = u.id) as isOperator
+             (SELECT COUNT(*) FROM operators WHERE user_id = u.id AND verification_status = 'Approved') as isOperator
       FROM users u
       WHERE u.role != 'admin'
       ORDER BY u.created_at DESC
@@ -1456,6 +1596,60 @@ app.put('/api/admin/requests/:id/status', authenticateToken, isAdmin, async (req
   try {
     await db.query('UPDATE requests SET status = ? WHERE id = ?', [status, req.params.id]);
     res.json({ message: `Request status updated to ${status} successfully.` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Admin Verify Listing (Approve/Reject Harvester or Operator)
+app.put('/api/admin/listings/:type/:id/verify', authenticateToken, isAdmin, async (req, res) => {
+  const { type, id } = req.params;
+  const { status, feedback } = req.body;
+
+  if (type !== 'harvester' && type !== 'operator') {
+    return res.status(400).json({ error: 'Invalid listing type. Must be harvester or operator.' });
+  }
+
+  if (status !== 'Approved' && status !== 'Rejected' && status !== 'Pending') {
+    return res.status(400).json({ error: 'Invalid verification status. Must be Approved, Rejected, or Pending.' });
+  }
+
+  const tableName = type === 'harvester' ? 'harvesters' : 'operators';
+  const nameCol = type === 'harvester' ? 'machine_name' : 'name';
+
+  try {
+    const [rows] = await db.query(`SELECT id, user_id, ${nameCol} AS name FROM ${tableName} WHERE id = ?`, [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: `${type === 'harvester' ? 'Harvester' : 'Operator'} listing not found.` });
+    }
+
+    const listing = rows[0];
+
+    await db.query(
+      `UPDATE ${tableName} SET verification_status = ?, verification_feedback = ? WHERE id = ?`,
+      [status, feedback || null, id]
+    );
+
+    // Send automated message notification to user
+    const adminId = req.user.id;
+    const ownerId = listing.user_id;
+    const postName = listing.name;
+    const statusText = status === 'Approved' ? 'Accepted' : 'Rejected';
+
+    let content = `Listing: ${postName}\nStatus: ${statusText}`;
+    if (feedback && feedback.trim()) {
+      content += `\nReason: ${feedback.trim()}`;
+    }
+
+    // Insert message into the database
+    const messageId = require('crypto').randomUUID();
+    await db.query(
+      'INSERT INTO messages (id, sender_id, receiver_id, content) VALUES (?, ?, ?, ?)',
+      [messageId, adminId, ownerId, content]
+    );
+
+    res.json({ message: `${type === 'harvester' ? 'Harvester' : 'Operator'} verification status updated to ${status} successfully.` });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1538,9 +1732,9 @@ app.get('/api/admin/users/query', authenticateToken, isAdmin, async (req, res) =
 
     let queryStr = `
       SELECT u.id, u.name, u.email, u.role, u.state, u.phone, u.is_blocked, u.created_at,
-             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id) as harvesterCount,
+             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as harvesterCount,
              (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as requestCount,
-             (SELECT COUNT(*) FROM operators WHERE user_id = u.id) as isOperator
+             (SELECT COUNT(*) FROM operators WHERE user_id = u.id AND verification_status = 'Approved') as isOperator
       FROM users u
       WHERE u.role != 'admin'
     `;

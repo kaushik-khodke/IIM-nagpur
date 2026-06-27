@@ -67,6 +67,9 @@ export function Dashboard() {
   const [userScore, setUserScore] = useState<string | null>(null);
   const [scoreCount, setScoreCount] = useState<number>(0);
   const [myHarvestersCount, setMyHarvestersCount] = useState<number>(0);
+  const [myHarvsApproved, setMyHarvsApproved] = useState<number>(0);
+  const [myHarvsPending, setMyHarvsPending] = useState<number>(0);
+  const [myHarvsRejected, setMyHarvsRejected] = useState<number>(0);
   const [myOperatorsCount, setMyOperatorsCount] = useState<number>(0);
   const [myOperatorProfile, setMyOperatorProfile] = useState<any>(null);
   const [conversations, setConversations] = useState<any[]>([]);
@@ -178,13 +181,15 @@ export function Dashboard() {
           }
 
           if (userProfile) {
-            const myHarvsRes = await fetch('/api/harvesters', {
+            const myHarvsRes = await fetch(`/api/harvesters?userId=${userProfile.id}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             if (myHarvsRes.ok) {
               const allHarvs = await myHarvsRes.json();
-              const count = allHarvs.filter((h: any) => h.userId === userProfile.id).length;
-              setMyHarvestersCount(count);
+              setMyHarvestersCount(allHarvs.length);
+              setMyHarvsApproved(allHarvs.filter((h: any) => h.verification_status === "Approved").length);
+              setMyHarvsPending(allHarvs.filter((h: any) => !h.verification_status || h.verification_status === "Pending").length);
+              setMyHarvsRejected(allHarvs.filter((h: any) => h.verification_status === "Rejected").length);
             }
 
             const myOpsRes = await fetch(`/api/operators?userId=${userProfile.id}`, {
@@ -500,17 +505,30 @@ export function Dashboard() {
                 <div className="grid grid-cols-2 gap-2 mt-1 border-t border-[#F1F5F9] pt-2">
                   <div>
                     <span className="text-[8px] uppercase tracking-wider font-bold text-gray-400 block">Harvesters</span>
-                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora">{myHarvestersCount} active</span>
+                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora block">{myHarvestersCount} Total</span>
+                    <span className="text-[8px] text-zinc-500 block font-bold leading-normal">
+                      ({myHarvsApproved} App, {myHarvsPending} Pen, {myHarvsRejected} Rej)
+                    </span>
                   </div>
                   <div>
                     <span className="text-[8px] uppercase tracking-wider font-bold text-gray-400 block">Operator Profile</span>
-                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora">{myOperatorsCount > 0 ? "Published" : "Not Created"}</span>
+                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora block">{myOperatorsCount > 0 ? "Created" : "Not Created"}</span>
+                    {myOperatorsCount > 0 && myOperatorProfile && (
+                      <span className={`text-[8px] font-bold block leading-normal ${
+                        myOperatorProfile.verification_status === "Approved" ? "text-emerald-600" :
+                        myOperatorProfile.verification_status === "Rejected" ? "text-rose-600" : "text-amber-600"
+                      }`}>
+                        ({myOperatorProfile.verification_status || "Pending"})
+                      </span>
+                    )}
                   </div>
                 </div>
                 
                 <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
-                  <span>Status: Active</span>
-                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/operators')}>Manage</span>
+                  <span>
+                    Operator Status: {myOperatorProfile ? (myOperatorProfile.verification_status || "Pending") : "N/A"}
+                  </span>
+                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/profile')}>Manage</span>
                 </div>
               </div>
 

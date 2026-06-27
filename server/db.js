@@ -99,6 +99,8 @@ async function initializeDatabase() {
         whatsapp VARCHAR(20) DEFAULT NULL,
         description TEXT DEFAULT NULL,
         image_path VARCHAR(255) DEFAULT NULL,
+        verification_status VARCHAR(50) DEFAULT 'Pending',
+        verification_feedback TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
@@ -126,6 +128,8 @@ async function initializeDatabase() {
         whatsapp VARCHAR(20) DEFAULT NULL,
         description TEXT DEFAULT NULL,
         image_path TEXT DEFAULT NULL,
+        verification_status VARCHAR(50) DEFAULT 'Pending',
+        verification_feedback TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
@@ -278,6 +282,22 @@ async function initializeDatabase() {
     } catch (err) {}
     try {
       await activePool.query('ALTER TABLE harvesters MODIFY COLUMN image_path TEXT DEFAULT NULL');
+    } catch (err) {}
+
+    // Harvesters Table Migrations for verification status
+    try {
+      await activePool.query("ALTER TABLE harvesters ADD COLUMN verification_status VARCHAR(50) DEFAULT 'Pending' AFTER created_at");
+    } catch (err) {}
+    try {
+      await activePool.query("ALTER TABLE harvesters ADD COLUMN verification_feedback TEXT DEFAULT NULL AFTER verification_status");
+    } catch (err) {}
+
+    // Operators Table Migrations for verification status
+    try {
+      await activePool.query("ALTER TABLE operators ADD COLUMN verification_status VARCHAR(50) DEFAULT 'Pending' AFTER created_at");
+    } catch (err) {}
+    try {
+      await activePool.query("ALTER TABLE operators ADD COLUMN verification_feedback TEXT DEFAULT NULL AFTER verification_status");
     } catch (err) {}
 
 
