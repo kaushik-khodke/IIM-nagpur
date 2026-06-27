@@ -438,7 +438,7 @@ app.get('/api/users/:id', authenticateToken, async (req, res) => {
 
 // 4. Operator Routes
 app.get('/api/operators', async (req, res) => {
-  const { search, location, state, availability, limit, userId } = req.query;
+  const { search, location, state, availability, limit, userId, sortBy } = req.query;
   let queryStr = `
     SELECT o.*,
            COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'operator' AND target_id = o.id), 0) as avgRating,
@@ -470,7 +470,11 @@ app.get('/api/operators', async (req, res) => {
     queryParams.push(availability);
   }
 
-  queryStr += ' ORDER BY o.id DESC';
+  if (sortBy === 'ratingHighest') {
+    queryStr += ' ORDER BY avgRating DESC, ratingCount DESC, o.id DESC';
+  } else {
+    queryStr += ' ORDER BY o.id DESC';
+  }
 
   if (limit) {
     queryStr += ' LIMIT ?';
@@ -559,7 +563,7 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
 
 // 5. Harvester Routes
 app.get('/api/harvesters', async (req, res) => {
-  const { search, location, state, company, limit, operatorId } = req.query;
+  const { search, location, state, company, limit, operatorId, sortBy } = req.query;
   let queryStr = `
     SELECT h.*, u.name as ownerName, u.image_path as ownerProfilePic,
            COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'machine' AND target_id = h.id), 0) as avgRating,
@@ -592,7 +596,11 @@ app.get('/api/harvesters', async (req, res) => {
     queryParams.push(operatorId);
   }
 
-  queryStr += ' ORDER BY h.id DESC';
+  if (sortBy === 'ratingHighest') {
+    queryStr += ' ORDER BY avgRating DESC, ratingCount DESC, h.id DESC';
+  } else {
+    queryStr += ' ORDER BY h.id DESC';
+  }
 
 
   if (limit) {

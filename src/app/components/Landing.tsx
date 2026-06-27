@@ -79,67 +79,216 @@ const INDIAN_STATES = districtsData.states.map((s: any) => s.state);
 
 
 function DirectorySkeletonCard() {
-
   return (
-
-    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 flex flex-col md:flex-row gap-6 animate-pulse">
-
-      <div className="w-full md:w-[40%] shrink-0">
-
-        <div className="w-full aspect-[4/3] md:aspect-auto md:h-full min-h-[220px] bg-slate-100 rounded-2xl" />
-
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-3 flex flex-col gap-1.5 animate-pulse">
+      <div className="w-full h-26 bg-slate-100 rounded-xl" />
+      <div className="flex-1 flex flex-col gap-1.5">
+        <div className="space-y-1">
+          <div className="h-4 bg-slate-100 rounded w-3/4" />
+          <div className="h-3 bg-slate-100 rounded w-1/2" />
+        </div>
+        <div className="h-10 bg-slate-50 border border-slate-100 rounded-xl p-2 flex gap-3 my-1">
+          <div className="h-full bg-slate-200/60 rounded w-1/2" />
+          <div className="h-full bg-slate-200/60 rounded w-1/2" />
+        </div>
+        <div className="flex justify-between items-center pt-0.5 mt-auto">
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded-full bg-slate-100" />
+            <div className="h-3 bg-slate-100 rounded w-16" />
+          </div>
+          <div className="h-3 bg-slate-100 rounded w-12" />
+        </div>
       </div>
+      <div className="h-7 bg-slate-100 rounded-lg w-full mt-1" />
+    </div>
+  );
+}
 
-      <div className="w-full md:w-[60%] flex flex-col justify-between space-y-4">
+function ProfileCard({ item, currentUserId, t }: { item: any; currentUserId: string | null; t: any }) {
+  return (
+    <div 
+      className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_3px_15px_rgba(0,0,0,0.02)] hover:shadow-[0_10px_30px_rgba(23,34,99,0.07)] transition-all duration-300 flex flex-col overflow-hidden group hover:-translate-y-1"
+    >
+      <div className="p-3 flex flex-col gap-2 flex-1">
+        <div className="relative w-full h-26 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
+          {item.image ? (
+            <img 
+              src={item.image} 
+              alt={item.name} 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                e.currentTarget.src = "";
+                e.currentTarget.className = "hidden";
+              }}
+            />
+          ) : null}
+          {!item.image && (
+            <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
+              {item.type === "harvester" ? (
+                <Tractor className="w-8 h-8 text-[#172263]/20" />
+              ) : (
+                <Users className="w-8 h-8 text-[#15803D]/20" />
+              )}
+            </div>
+          )}
+          
+          <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm tracking-wide ${
+            item.type === "harvester" 
+              ? "bg-blue-100/95 text-blue-800 border border-blue-200/50" 
+              : "bg-green-100/95 text-green-800 border border-green-200/50"
+          }`}>
+            {item.type === "harvester" ? t("landing.directory.harvester", { ns: "pages" }) : t("landing.directory.operator", { ns: "pages" })}
+          </span>
+        </div>
 
-        <div className="space-y-4 flex-1">
-
-          <div className="flex justify-between items-start">
-
-            <div className="space-y-2 flex-1">
-
-              <div className="h-5 bg-slate-100 rounded-lg w-3/4" />
-
-              <div className="h-3 bg-slate-100 rounded-lg w-1/3" />
-
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <h4 
+                  className="text-lg text-slate-800 font-bold font-sora line-clamp-1 group-hover:text-[#172263] transition-colors"
+                  style={{ fontFamily: "'Sora', sans-serif" }}
+                >
+                  {item.name}
+                </h4>
+                <p className="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
+                  <MapPin size={13} className="text-amber-500 shrink-0" />
+                  <span className="line-clamp-1">{item.location}, {item.state}</span>
+                </p>
+              </div>
             </div>
 
-            <div className="h-5 bg-slate-100 rounded-full w-20" />
-
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 py-1 border-y border-slate-100/80 my-1">
+              {item.type === "harvester" ? (
+                <>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {t("landing.directory.company", { ns: "pages" })}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">{item.company}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {t("landing.directory.model", { ns: "pages" })}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">{item.model}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {t("landing.directory.year", { ns: "pages" })}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-700">{item.year || "N/A"}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {t("landing.directory.experience", { ns: "pages" })}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-700">
+                      {t("exploreOperators.experienceYears", { ns: "pages", count: parseInt(item.experience) || item.experience })}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {t("landing.directory.availability", { ns: "pages" })}
+                    </span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold mt-0.5 ${
+                      item.availability === "Available"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}>
+                      {item.availability || "Available"}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
+                      {t("landing.directory.expertise", { ns: "pages" })}
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {Array.isArray(item.machineExpertise) && item.machineExpertise.length > 0 ? (
+                        item.machineExpertise.slice(0, 2).map((exp: string, idx: number) => (
+                          <span key={idx} className="bg-slate-50 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-medium border border-slate-200/60 line-clamp-1">
+                            {exp}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[10px] text-slate-500">General Operator</span>
+                      )}
+                      {Array.isArray(item.machineExpertise) && item.machineExpertise.length > 2 && (
+                        <span className="text-[10px] text-slate-400 font-medium self-center">
+                          +{item.machineExpertise.length - 2}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="h-12 bg-slate-50 border border-slate-100 rounded-2xl p-4 flex gap-4 my-3">
+          <div className="flex items-center justify-between gap-3 pt-0 mt-auto">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 overflow-hidden shrink-0 border border-slate-200">
+                {item.ownerImage ? (
+                  <img src={item.ownerImage} alt={item.subtitle} className="w-full h-full object-cover" />
+                ) : (
+                  item.subtitle?.charAt(0)
+                )}
+              </span>
+              <div className="min-w-0">
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block leading-none">
+                  {item.type === "harvester" ? t("landing.directory.owner", { ns: "pages" }) : t("landing.directory.operator", { ns: "pages" })}
+                </span>
+                <span className="text-xs font-semibold text-slate-700 line-clamp-1 mt-0.5">{item.subtitle}</span>
+              </div>
+            </div>
 
-            <div className="h-full bg-slate-200 rounded w-1/3" />
-
-            <div className="h-full bg-slate-200 rounded w-1/3" />
-
-            <div className="h-full bg-slate-200 rounded w-1/3" />
-
+            <div className="flex flex-col items-end shrink-0">
+              <div className="flex items-center gap-0.5 text-amber-500">
+                <Star size={13} fill="currentColor" className="stroke-amber-500" />
+                <span className="text-xs font-bold text-slate-800">{item.avgRating || "0.0"}</span>
+                <span className="text-[10px] text-slate-400">({item.ratingCount || 0})</span>
+              </div>
+              <div className="flex gap-0.5 mt-0.5">
+                {Array(5).fill(0).map((_, i) => (
+                  <Star
+                    key={i}
+                    size={9}
+                    fill={i < Math.round(parseFloat(item.avgRating || "0")) ? "currentColor" : "none"}
+                    className="stroke-amber-500"
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-
         </div>
-
-        <div className="flex justify-between items-center pt-2">
-
-          <div className="flex items-center gap-2">
-
-            <div className="w-6 h-6 rounded-full bg-slate-100" />
-
-            <div className="h-3 bg-slate-100 rounded w-16" />
-
-          </div>
-
-          <div className="h-4 bg-slate-100 rounded w-12" />
-
-        </div>
-
       </div>
 
+      {currentUserId && item.ownerId === currentUserId ? (
+        <Link
+          to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
+          className="w-full py-2 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 bg-slate-100 hover:bg-slate-200 text-[#172263]"
+        >
+          <Search size={16} />
+          {t("landing.directory.viewDetails", { ns: "pages", defaultValue: "View Details" })}
+        </Link>
+      ) : (
+        <Link 
+          to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
+          className={`w-full py-2 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 ${
+            item.type === "harvester"
+              ? "bg-[#172263] hover:bg-[#11194A] text-white"
+              : "bg-amber-500 hover:bg-amber-600 text-white"
+          }`}
+        >
+          <MessageSquare size={16} />
+          {item.type === "harvester" ? t("landing.directory.bookNow", { ns: "pages" }) : t("landing.directory.hireNow", { ns: "pages" })}
+        </Link>
+      )}
     </div>
-
   );
-
 }
 
 
@@ -487,24 +636,9 @@ export function Landing() {
 
 
   // Directory state
-
-  const [dirSearch, setDirSearch] = useState("");
-
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const [dirCategory, setDirCategory] = useState<"all" | "harvester" | "operator">("all");
-
-  const [dirState, setDirState] = useState("");
-
-  const [dirDistrict, setDirDistrict] = useState("");
-
-  const [dirSortBy, setDirSortBy] = useState<"nameAsc" | "nameDesc" | "dateNewest" | "ratingHighest">("dateNewest");
-
-  const [directoryItems, setDirectoryItems] = useState<any[]>([]);
-
+  const [topHarvesters, setTopHarvesters] = useState<any[]>([]);
+  const [topOperators, setTopOperators] = useState<any[]>([]);
   const [dirLoading, setDirLoading] = useState(true);
-
-  const [dirLimit, setDirLimit] = useState(8);
 
 
 
@@ -529,226 +663,73 @@ export function Landing() {
     }
 
   }, []);
-
-
-
-  // Sync debounced search term
-
+  // Fetch top rated harvesters and operators (max 4 of each, sorted by highest rating)
   useEffect(() => {
-
-    const handler = setTimeout(() => {
-
-      setDirSearch(searchTerm);
-
-      setDirLimit(8);
-
-    }, 400);
-
-    return () => clearTimeout(handler);
-
-  }, [searchTerm]);
-
-
-
-  // Sync searchTerm when dirSearch changes externally
-
-  useEffect(() => {
-
-    if (dirSearch !== searchTerm) {
-
-      setSearchTerm(dirSearch);
-
-    }
-
-  }, [dirSearch]);
-
-
-
-
-
-
-
-  useEffect(() => {
-
-    const fetchDirectory = async () => {
-
+    const fetchTopRated = async () => {
       setDirLoading(true);
-
       try {
-
-        let fetchedHarvesters: any[] = [];
-
-        let fetchedOperators: any[] = [];
-
-
-
-        // Build query params
-
-        const params = new URLSearchParams();
-
-        if (dirSearch) params.append("search", dirSearch);
-
-        if (dirState) params.append("state", dirState);
-
-        if (dirDistrict) params.append("location", dirDistrict);
-
-        params.append("limit", String(dirLimit));
-
-
-
         const token = localStorage.getItem("tractorsewa_token");
-
         const headers: HeadersInit = {};
-
         if (token) {
-
           headers["Authorization"] = `Bearer ${token}`;
-
         }
 
-
-
-        const promises: Promise<any>[] = [];
-
-
-
-        if (dirCategory === "all" || dirCategory === "harvester") {
-
-          promises.push(
-
-            fetch(`/api/harvesters?${params.toString()}`, { headers })
-
-              .then((res) => (res.ok ? res.json() : []))
-
-              .then((data) => {
-
-                fetchedHarvesters = data.map((item: any) => ({
-
-                  ...item,
-
-                  id: item.id,
-
-                  name: item.machineName,
-
-                  subtitle: item.ownerName,
-
-                  image: getFirstImage(item.imagePath),
-
-                  ownerImage: item.ownerProfilePic,
-
-                  type: "harvester",
-
-                  ownerId: item.userId,
-
-                }));
-
-              })
-
-              .catch(() => {})
-
-          );
-
+        // Fetch 4 harvesters sorted by ratingHighest
+        const harvRes = await fetch(`/api/harvesters?limit=4&sortBy=ratingHighest`, { headers });
+        let fetchedHarvesters: any[] = [];
+        if (harvRes.ok) {
+          const data = await harvRes.json();
+          fetchedHarvesters = data.map((item: any) => ({
+            ...item,
+            id: item.id,
+            name: item.machineName,
+            subtitle: item.ownerName,
+            image: getFirstImage(item.imagePath),
+            ownerImage: item.ownerProfilePic,
+            type: "harvester",
+            ownerId: item.userId,
+          }));
         }
 
-
-
-        if (dirCategory === "all" || dirCategory === "operator") {
-
-          promises.push(
-
-            fetch(`/api/operators?${params.toString()}`, { headers })
-
-              .then((res) => (res.ok ? res.json() : []))
-
-              .then((data) => {
-
-                fetchedOperators = data.map((item: any) => ({
-
-                  ...item,
-
-                  id: item.id,
-
-                  name: item.name,
-
-                  subtitle: item.name,
-
-                  image: item.image_path,
-
-                  ownerImage: item.image_path,
-
-                  type: "operator",
-
-                  ownerId: item.user_id,
-
-                }));
-
-              })
-
-              .catch(() => {})
-
-          );
-
+        // Fetch 4 operators sorted by ratingHighest
+        const opRes = await fetch(`/api/operators?limit=4&sortBy=ratingHighest`, { headers });
+        let fetchedOperators: any[] = [];
+        if (opRes.ok) {
+          const data = await opRes.json();
+          fetchedOperators = data.map((item: any) => ({
+            ...item,
+            id: item.id,
+            name: item.name,
+            subtitle: item.name,
+            image: item.image_path,
+            ownerImage: item.image_path,
+            type: "operator",
+            ownerId: item.user_id,
+          }));
         }
 
+        // Consistent client sorting fallback (avgRating DESC -> ratingCount DESC -> id DESC)
+        const clientSort = (list: any[]) => {
+          return [...list].sort((a, b) => {
+            const ratingDiff = parseFloat(b.avgRating || "0") - parseFloat(a.avgRating || "0");
+            if (ratingDiff !== 0) return ratingDiff;
+            const countDiff = parseInt(b.ratingCount || "0") - parseInt(a.ratingCount || "0");
+            if (countDiff !== 0) return countDiff;
+            return String(b.id).localeCompare(String(a.id));
+          });
+        };
 
-
-        await Promise.all(promises);
-
-
-
-        // Merge items
-
-        let merged = [...fetchedHarvesters, ...fetchedOperators];
-
-
-
-        // Apply sorting
-
-        merged.sort((a, b) => {
-
-          if (dirSortBy === "nameAsc") {
-
-            return a.name.localeCompare(b.name);
-
-          } else if (dirSortBy === "nameDesc") {
-
-            return b.name.localeCompare(a.name);
-
-          } else if (dirSortBy === "ratingHighest") {
-
-            return parseFloat(b.avgRating || 0) - parseFloat(a.avgRating || 0);
-
-          } else {
-
-            // dateNewest (sort by id DESC)
-
-            return b.id - a.id;
-
-          }
-
-        });
-
-
-
-        setDirectoryItems(merged);
-
+        setTopHarvesters(clientSort(fetchedHarvesters).slice(0, 4));
+        setTopOperators(clientSort(fetchedOperators).slice(0, 4));
       } catch (err) {
-
-        console.error("Error loading directory items:", err);
-
+        console.error("Error loading top rated profiles:", err);
       } finally {
-
         setDirLoading(false);
-
       }
-
     };
 
-
-
-    fetchDirectory();
-
-  }, [dirSearch, dirCategory, dirState, dirDistrict, dirSortBy, dirLimit]);
+    fetchTopRated();
+  }, []);
 
 
 
@@ -1450,779 +1431,101 @@ export function Landing() {
 
 
 
-        {/* ---- BROWSE DIRECTORY SECTION ---- */}
-
-        <section id="directory" className="py-20 bg-gradient-to-b from-slate-50 to-white border-t border-b border-slate-100">
-
-          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
-
+        <section id="directory" className="pt-16 pb-10 bg-gradient-to-b from-slate-50 to-white border-t border-b border-slate-100">
+          <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6">
             
-
             {/* Section Header */}
-
-            <div className="text-center mb-12">
-
+            <div className="text-center mb-8">
               <h2
-
                 className="text-4xl text-[#1A1A1A] mb-4"
-
                 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-
               >
-
                 {t("landing.directory.title", { ns: "pages" })}
-
               </h2>
-
               <p className="text-[#57585A] max-w-xl mx-auto text-base">
-
                 {t("landing.directory.subtitle", { ns: "pages" })}
-
               </p>
-
             </div>
 
-
-
-            {/* Filters Controls Panel */}
-
-            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mb-10">
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-
-                
-
-                {/* Search input */}
-
-                <div className="relative">
-
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-
-                  <input
-
-                    type="text"
-
-                    value={searchTerm}
-
-                    onChange={(e) => setSearchTerm(e.target.value)}
-
-                    placeholder={t("landing.directory.searchPlaceholder", { ns: "pages" })}
-
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200/80 rounded-2xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-800 placeholder-slate-400"
-
-                  />
-
+            <div className="space-y-10">
+              {/* Harvesters Sub-section */}
+              <div>
+                <div className="flex items-center justify-between mb-5 border-b border-slate-100 pb-2.5">
+                  <h3 className="text-xl md:text-2xl font-bold text-slate-800 font-sora flex items-center gap-2.5" style={{ fontFamily: "'Sora', sans-serif" }}>
+                    <span className="text-[#172263]"><Tractor size={22} className="inline-block" /></span> {t("landing.directory.topHarvesters", { ns: "pages", defaultValue: "Top Rated Harvesters" })}
+                  </h3>
                 </div>
 
-
-
-                {/* Category Type filter */}
-
-                <select
-
-                  value={dirCategory}
-
-                  onChange={(e: any) => {
-
-                    setDirCategory(e.target.value);
-
-                    setDirLimit(8);
-
-                  }}
-
-                  className="px-4 py-3 bg-slate-50/50 border border-slate-200/80 rounded-2xl text-sm text-slate-700 focus:outline-none focus:border-[#172263] focus:bg-white transition-all cursor-pointer"
-
-                >
-
-                  <option value="all">{t("landing.directory.typeAll", { ns: "pages" })}</option>
-
-                  <option value="harvester">{t("landing.directory.typeHarvester", { ns: "pages" })}</option>
-
-                  <option value="operator">{t("landing.directory.typeOperator", { ns: "pages" })}</option>
-
-                </select>
-
-
-
-                {/* State selector */}
-
-                <select
-
-                  value={dirState}
-
-                  onChange={(e) => {
-
-                    setDirState(e.target.value);
-
-                    setDirDistrict("");
-
-                    setDirLimit(8);
-
-                  }}
-
-                  className="px-4 py-3 bg-slate-50/50 border border-slate-200/80 rounded-2xl text-sm text-slate-700 focus:outline-none focus:border-[#172263] focus:bg-white transition-all cursor-pointer"
-
-                >
-
-                  <option value="">{t("landing.directory.filterState", { ns: "pages" })}</option>
-
-                  {INDIAN_STATES.map((state) => (
-
-                    <option key={state} value={state}>
-
-                      {t("states." + state, { ns: "static", defaultValue: state })}
-
-                    </option>
-
-                  ))}
-
-                </select>
-
-
-
-                {/* District selector */}
-
-                <select
-
-                  value={dirDistrict}
-
-                  onChange={(e) => {
-
-                    setDirDistrict(e.target.value);
-
-                    setDirLimit(8);
-
-                  }}
-
-                  disabled={!dirState}
-
-                  className="px-4 py-3 bg-slate-50/50 border border-slate-200/80 rounded-2xl text-sm text-slate-700 focus:outline-none focus:border-[#172263] focus:bg-white transition-all cursor-pointer disabled:opacity-50"
-
-                >
-
-                  <option value="">{t("landing.directory.filterDistrict", { ns: "pages" })}</option>
-
-                  {dirState &&
-
-                    districtsData.states
-
-                      .find((s) => s.state === dirState)
-
-                      ?.districts.map((d) => (
-
-                        <option key={d} value={d}>
-
-                          {t("districts." + d, { ns: "static", defaultValue: d })}
-
-                        </option>
-
+                {dirLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 w-full">
+                    {Array(4).fill(0).map((_, i) => (
+                      <DirectorySkeletonCard key={i} />
+                    ))}
+                  </div>
+                ) : topHarvesters.length === 0 ? (
+                  <div className="text-center py-10 bg-slate-50/50 rounded-2xl border border-slate-100 max-w-md mx-auto px-6">
+                    <p className="text-slate-500 text-sm font-medium">No harvesters found.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 w-full">
+                      {topHarvesters.map((item) => (
+                        <ProfileCard key={item.id} item={item} currentUserId={currentUserId} t={t} />
                       ))}
-
-                </select>
-
-
-
-                {/* Sort dropdown */}
-
-                <select
-
-                  value={dirSortBy}
-
-                  onChange={(e: any) => {
-
-                    setDirSortBy(e.target.value);
-
-                    setDirLimit(8);
-
-                  }}
-
-                  className="px-4 py-3 bg-slate-50/50 border border-slate-200/80 rounded-2xl text-sm text-slate-700 focus:outline-none focus:border-[#172263] focus:bg-white transition-all cursor-pointer"
-
-                >
-
-                  <option value="dateNewest">{t("landing.directory.sortDateNewest", { ns: "pages" })}</option>
-
-                  <option value="ratingHighest">{t("landing.directory.sortRatingHighest", { ns: "pages" })}</option>
-
-                  <option value="nameAsc">{t("landing.directory.sortNameAsc", { ns: "pages" })}</option>
-
-                  <option value="nameDesc">{t("landing.directory.sortNameDesc", { ns: "pages" })}</option>
-
-                </select>
-
-
-
+                    </div>
+                    
+                    <div className="text-center mt-6">
+                      <Link
+                        to="/harvesters"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-white border-2 border-slate-200 text-slate-700 hover:border-[#172263] hover:text-[#172263] rounded-xl text-sm font-bold transition-all shadow-xs hover:shadow-sm"
+                      >
+                        {t("landing.directory.viewAllHarvesters", { ns: "pages", defaultValue: "View All Harvesters" })} <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                  </>
+                )}
               </div>
 
-              
-
-              {/* Active Filter Badges & Clear button */}
-
-              {(dirSearch || dirCategory !== "all" || dirState || dirDistrict) && (
-
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 items-center">
-
-                  <span className="text-xs text-slate-400 font-medium mr-1">Active filters:</span>
-
-                  {dirSearch && (
-
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium">
-
-                      "{dirSearch}"
-
-                      <button onClick={() => setDirSearch("")} className="hover:text-red-500 font-bold ml-0.5">×</button>
-
-                    </span>
-
-                  )}
-
-                  {dirCategory !== "all" && (
-
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium">
-
-                      {dirCategory === "harvester" ? t("landing.directory.typeHarvester", { ns: "pages" }) : t("landing.directory.typeOperator", { ns: "pages" })}
-
-                      <button onClick={() => setDirCategory("all")} className="hover:text-red-500 font-bold ml-0.5">×</button>
-
-                    </span>
-
-                  )}
-
-                  {dirState && (
-
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium">
-
-                      {t("states." + dirState, { ns: "static", defaultValue: dirState })}
-
-                      <button onClick={() => { setDirState(""); setDirDistrict(""); }} className="hover:text-red-500 font-bold ml-0.5">×</button>
-
-                    </span>
-
-                  )}
-
-                  {dirDistrict && (
-
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium">
-
-                      {t("districts." + dirDistrict, { ns: "static", defaultValue: dirDistrict })}
-
-                      <button onClick={() => setDirDistrict("")} className="hover:text-red-500 font-bold ml-0.5">×</button>
-
-                    </span>
-
-                  )}
-
-                  <button
-
-                    onClick={() => {
-
-                      setDirSearch("");
-
-                      setDirCategory("all");
-
-                      setDirState("");
-
-                      setDirDistrict("");
-
-                    }}
-
-                    className="text-xs text-red-600 hover:text-red-700 font-semibold ml-auto hover:underline"
-
-                  >
-
-                    Clear All
-
-                  </button>
-
+              {/* Operators Sub-section */}
+              <div>
+                <div className="flex items-center justify-between mb-5 border-b border-slate-100 pb-2.5">
+                  <h3 className="text-xl md:text-2xl font-bold text-[#1A1A1A] font-sora flex items-center gap-2.5" style={{ fontFamily: "'Sora', sans-serif" }}>
+                    <span className="text-[#15803D]"><Users size={22} className="inline-block" /></span> {t("landing.directory.topOperators", { ns: "pages", defaultValue: "Top Rated Operators" })}
+                  </h3>
                 </div>
 
-              )}
-
-            </div>
-
-
-
-            {/* Results Grid */}
-
-            {dirLoading ? (
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-
-                {Array(6).fill(0).map((_, i) => (
-
-                  <DirectorySkeletonCard key={i} />
-
-                ))}
-
-              </div>
-
-            ) : directoryItems.length === 0 ? (
-
-              <div className="text-center py-16 bg-slate-50/50 rounded-3xl border border-slate-100 max-w-2xl mx-auto px-6">
-
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-
-                  <Search size={24} />
-
-                </div>
-
-                <h3 className="text-slate-800 text-lg font-bold font-sora mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>
-
-                  {t("landing.directory.noResults", { ns: "pages" })}
-
-                </h3>
-
-              </div>
-
-            ) : (
-
-              <>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-
-                  {directoryItems.slice(0, dirLimit).map((item) => (
-
-                    <div 
-
-                      key={`${item.type}-${item.id}`} 
-
-                      className="bg-white rounded-3xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_12px_40px_rgba(23,34,99,0.08)] transition-all duration-300 flex flex-col overflow-hidden group hover:-translate-y-1"
-
-                    >
-
-                      {/* Card Body */}
-
-                      <div className="p-6 flex flex-col md:flex-row gap-6 flex-1">
-
-                        
-
-                        {/* Left Column: Image */}
-
-                        <div className="w-full md:w-[40%] flex flex-col">
-
-                          <div className="relative w-full aspect-[4/3] md:aspect-auto md:h-full min-h-[220px] rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
-
-                            {item.image ? (
-
-                              <img 
-
-                                src={item.image} 
-
-                                alt={item.name} 
-
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-
-                                onError={(e) => {
-
-                                  e.currentTarget.src = "";
-
-                                  e.currentTarget.className = "hidden";
-
-                                }}
-
-                              />
-
-                            ) : null}
-
-                            {!item.image && (
-
-                              <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
-
-                                {item.type === "harvester" ? (
-
-                                  <Tractor className="w-12 h-12 text-[#172263]/20" />
-
-                                ) : (
-
-                                  <Users className="w-12 h-12 text-[#15803D]/20" />
-
-                                )}
-
-                              </div>
-
-                            )}
-
-                            
-
-                            {/* Type Badge */}
-
-                            <span className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-bold shadow-sm tracking-wide ${
-
-                              item.type === "harvester" 
-
-                                ? "bg-blue-100/95 text-blue-800 border border-blue-200/50" 
-
-                                : "bg-green-100/95 text-green-800 border border-green-200/50"
-
-                            }`}>
-
-                              {item.type === "harvester" ? t("landing.directory.harvester", { ns: "pages" }) : t("landing.directory.operator", { ns: "pages" })}
-
-                            </span>
-
-                          </div>
-
-                        </div>
-
-
-
-                        {/* Right Column: Details */}
-
-                        <div className="w-full md:w-[60%] flex flex-col justify-between pl-0 md:pl-2">
-
-                          <div>
-
-                            {/* Title & Badge */}
-
-                            <div className="flex items-start justify-between gap-2">
-
-                              <div className="flex-1 min-w-0">
-
-                                <h3 
-
-                                  className="text-lg text-slate-800 font-bold font-sora line-clamp-1 group-hover:text-[#172263] transition-colors"
-
-                                  style={{ fontFamily: "'Sora', sans-serif" }}
-
-                                >
-
-                                  {item.name}
-
-                                </h3>
-
-                                <p className="text-slate-500 text-xs flex items-center gap-1 mt-1">
-
-                                  <MapPin size={13} className="text-amber-500 shrink-0" />
-
-                                  <span className="line-clamp-1">{item.location}, {item.state}</span>
-
-                                </p>
-
-                              </div>
-
-                            </div>
-
-
-
-                            {/* Description */}
-
-                            {item.description && (
-
-                              <p className="text-slate-500 text-xs line-clamp-2 mt-2 leading-relaxed">
-
-                                {item.description}
-
-                              </p>
-
-                            )}
-
-
-
-                            {/* Technical Details Grid */}
-
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 py-3.5 border-y border-slate-100/80 my-3">
-
-                              {item.type === "harvester" ? (
-
-                                <>
-
-                                  <div>
-
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-
-                                      {t("landing.directory.company", { ns: "pages" })}
-
-                                    </span>
-
-                                    <span className="text-xs font-semibold text-slate-700">{item.company}</span>
-
-                                  </div>
-
-                                  <div>
-
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-
-                                      {t("landing.directory.model", { ns: "pages" })}
-
-                                    </span>
-
-                                    <span className="text-xs font-semibold text-slate-700">{item.model}</span>
-
-                                  </div>
-
-                                  <div>
-
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-
-                                      {t("landing.directory.year", { ns: "pages" })}
-
-                                    </span>
-
-                                    <span className="text-xs font-semibold text-slate-700">{item.year || "N/A"}</span>
-
-                                  </div>
-
-                                </>
-
-                              ) : (
-
-                                <>
-
-                                  <div>
-
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-
-                                      {t("landing.directory.experience", { ns: "pages" })}
-
-                                    </span>
-
-                                    <span className="text-xs font-semibold text-slate-700">
-
-                                      {t("exploreOperators.experienceYears", { ns: "pages", count: parseInt(item.experience) || item.experience })}
-
-                                    </span>
-
-                                  </div>
-
-                                  <div>
-
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-
-                                      {t("landing.directory.availability", { ns: "pages" })}
-
-                                    </span>
-
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold mt-0.5 ${
-
-                                      item.availability === "Available"
-
-                                        ? "bg-green-100 text-green-800"
-
-                                        : "bg-amber-100 text-amber-800"
-
-                                    }`}>
-
-                                      {item.availability || "Available"}
-
-                                    </span>
-
-                                  </div>
-
-                                  <div className="col-span-2">
-
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
-
-                                      {t("landing.directory.expertise", { ns: "pages" })}
-
-                                    </span>
-
-                                    <div className="flex flex-wrap gap-1">
-
-                                      {Array.isArray(item.machineExpertise) && item.machineExpertise.length > 0 ? (
-
-                                        item.machineExpertise.map((exp: string, idx: number) => (
-
-                                          <span key={idx} className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded text-[10px] font-medium border border-slate-200/60">
-
-                                            {exp}
-
-                                          </span>
-
-                                        ))
-
-                                      ) : (
-
-                                        <span className="text-xs text-slate-500">General Operator</span>
-
-                                      )}
-
-                                    </div>
-
-                                  </div>
-
-                                </>
-
-                              )}
-
-                            </div>
-
-
-
-                          </div>
-
-
-
-                          {/* Bottom info: Owner & rating */}
-
-                          <div className="flex items-center justify-between gap-4 pt-1 mt-auto">
-
-                            {/* Owner info */}
-
-                            <div className="flex items-center gap-2">
-
-                              <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 overflow-hidden shrink-0 border border-slate-200">
-
-                                {item.ownerImage ? (
-
-                                  <img src={item.ownerImage} alt={item.subtitle} className="w-full h-full object-cover" />
-
-                                ) : (
-
-                                  item.subtitle?.charAt(0)
-
-                                )}
-
-                              </span>
-
-                              <div>
-
-                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block leading-none">
-
-                                  {item.type === "harvester" ? t("landing.directory.owner", { ns: "pages" }) : t("landing.directory.operator", { ns: "pages" })}
-
-                                </span>
-
-                                <span className="text-xs font-semibold text-slate-700 line-clamp-1 mt-0.5">{item.subtitle}</span>
-
-                              </div>
-
-                            </div>
-
-
-
-                            {/* Rating info */}
-
-                            <div className="flex flex-col items-end shrink-0">
-
-                              <div className="flex items-center gap-1 text-amber-500">
-
-                                <Star size={13} fill="currentColor" className="stroke-amber-500" />
-
-                                <span className="text-xs font-bold text-slate-800">{item.avgRating || "0.0"}</span>
-
-                                <span className="text-[10px] text-slate-400">({item.ratingCount || 0})</span>
-
-                              </div>
-
-                              <div className="flex gap-0.5 mt-0.5">
-
-                                {Array(5).fill(0).map((_, i) => (
-
-                                  <Star
-
-                                    key={i}
-
-                                    size={9}
-
-                                    fill={i < Math.round(parseFloat(item.avgRating || "0")) ? "currentColor" : "none"}
-
-                                    className="stroke-amber-500"
-
-                                  />
-
-                                ))}
-
-                              </div>
-
-                            </div>
-
-                          </div>
-
-
-
-                        </div>
-
-
-
-                      </div>
-
-
-
-                      {/* Footer Button */}
-
-                      {currentUserId && item.ownerId === currentUserId ? (
-
-                        <Link
-
-                          to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
-
-                          className="w-full py-3.5 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 bg-slate-100 hover:bg-slate-200 text-[#172263]"
-
-                        >
-
-                          <Search size={16} />
-
-                          {t("landing.directory.viewDetails", { ns: "pages", defaultValue: "View Details" })}
-
-                        </Link>
-
-                      ) : (
-
-                        <Link 
-
-                          to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
-
-                          className={`w-full py-3.5 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 ${
-
-                            item.type === "harvester"
-
-                              ? "bg-[#172263] hover:bg-[#11194A] text-white"
-
-                              : "bg-amber-500 hover:bg-amber-600 text-white"
-
-                          }`}
-
-                        >
-
-                          <MessageSquare size={16} />
-
-                          {item.type === "harvester" ? t("landing.directory.bookNow", { ns: "pages" }) : t("landing.directory.hireNow", { ns: "pages" })}
-
-                        </Link>
-
-                      )}
-
+                {dirLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 w-full">
+                    {Array(4).fill(0).map((_, i) => (
+                      <DirectorySkeletonCard key={i} />
+                    ))}
+                  </div>
+                ) : topOperators.length === 0 ? (
+                  <div className="text-center py-10 bg-slate-50/50 rounded-2xl border border-slate-100 max-w-md mx-auto px-6">
+                    <p className="text-slate-500 text-sm font-medium">No operators found.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 w-full">
+                      {topOperators.map((item) => (
+                        <ProfileCard key={item.id} item={item} currentUserId={currentUserId} t={t} />
+                      ))}
                     </div>
 
-                  ))}
-
-                </div>
-
-
-
-                {/* Explore More Button */}
-
-                {directoryItems.length >= dirLimit && (
-
-                  <div className="text-center mt-12">
-
-                    <button
-
-                      onClick={() => setDirLimit((prev) => prev + 8)}
-
-                      className="px-8 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl text-sm font-bold hover:border-[#172263] hover:text-[#172263] transition-all shadow-sm hover:shadow cursor-pointer animate-fade-in"
-
-                    >
-
-                      {t("landing.directory.exploreMore", { ns: "pages" })}
-
-                    </button>
-
-                  </div>
-
+                    <div className="text-center mt-6">
+                      <Link
+                        to="/operators"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-white border-2 border-slate-200 text-slate-700 hover:border-[#172263] hover:text-[#172263] rounded-xl text-sm font-bold transition-all shadow-xs hover:shadow-sm"
+                      >
+                        {t("landing.directory.viewAllOperators", { ns: "pages", defaultValue: "View All Operators" })} <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                  </>
                 )}
-
-              </>
-
-            )}
-
-
-
+              </div>
+            </div>
           </div>
-
         </section>
-
-
 
         {/* ---- FEATURES ---- */}
 

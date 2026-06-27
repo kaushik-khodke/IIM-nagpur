@@ -54,12 +54,11 @@ export function CinematicFooter() {
               <div className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white shrink-0 shadow-sm">
                 <Phone className="w-3.5 h-3.5 text-white" />
               </div>
-              <a 
-                href="tel:+919209392096" 
-                className="text-lg md:text-xl font-bold text-white hover:text-[#E8720C] transition-colors duration-300"
+              <span 
+                className="text-lg md:text-xl font-bold text-white"
               >
                 +91 92093 92096
-              </a>
+              </span>
             </div>
           </div>
 
@@ -270,9 +269,9 @@ export function CinematicFooter() {
                 <div className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white shrink-0">
                   <Phone className="w-4 h-4 text-white" />
                 </div>
-                <a href="tel:+919209392096" className="text-xs md:text-sm text-white/80 hover:text-[#E8720C] transition-colors">
+                <span className="text-xs md:text-sm text-white/80">
                   +91 92093 92096
-                </a>
+                </span>
               </div>
 
             </div>
