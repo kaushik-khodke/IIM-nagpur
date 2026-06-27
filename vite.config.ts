@@ -25,7 +25,11 @@ function downloadBackgroundVideos() {
     { name: 'direct_messaging.mp4', url: 'https://assets.mixkit.co/videos/25137/25137-720.mp4' },
     { name: 'availability_tracking.mp4', url: 'https://assets.mixkit.co/videos/7727/7727-720.mp4' },
     { name: 'requirements_board.mp4', url: 'https://assets.mixkit.co/videos/25075/25075-720.mp4' },
-    { name: 'location_filters.mp4', url: 'https://assets.mixkit.co/videos/25062/25062-720.mp4' }
+    { name: 'location_filters.mp4', url: 'https://assets.mixkit.co/videos/25062/25062-720.mp4' },
+    { name: 'farmer_registration.mp4', url: 'https://assets.mixkit.co/videos/28454/28454-720.mp4' },
+    { name: 'post_requirement.mp4', url: 'https://assets.mixkit.co/videos/42655/42655-720.mp4' },
+    { name: 'browse_matches.mp4', url: 'https://assets.mixkit.co/videos/16033/16033-720.mp4' },
+    { name: 'connect_harvested.mp4', url: 'https://assets.mixkit.co/videos/21533/21533-720.mp4' }
   ]
 
   videos.forEach((video) => {
@@ -56,7 +60,7 @@ function downloadBackgroundVideos() {
 }
 
 // Trigger loop video downloads
-// downloadBackgroundVideos();
+downloadBackgroundVideos();
 
 function uploadAssetServer() {
   return {

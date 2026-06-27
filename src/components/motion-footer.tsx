@@ -31,32 +31,32 @@ export function CinematicFooter() {
   };
 
   return (
-    <footer className="w-full bg-[#002855] text-white py-16 px-6 md:px-12 relative overflow-hidden font-sans border-t border-[#001D3D] z-10">
+    <footer className="w-full bg-[#002855] text-white py-10 px-6 md:px-12 relative overflow-hidden font-sans border-t border-[#001D3D] z-10">
       {/* Subtle Aurora Glow background overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(232,114,12,0.05),transparent_40%)] pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(23,34,99,0.2),transparent_50%)] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto relative z-10 space-y-12">
+      <div className="max-w-7xl mx-auto relative z-10 space-y-8">
         {/* 1. Top Section: Have a Question & Franchise Inquiry */}
-        <div className="flex flex-col md:flex-row items-stretch justify-between gap-8 pb-12 border-b border-white/10">
+        <div className="flex flex-col md:flex-row items-stretch justify-between gap-6 pb-6 border-b border-white/10">
           
           {/* Left Block: Have a Question */}
           <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-between">
             <div>
-              <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white mb-1">
+              <h3 className="text-xl md:text-2xl font-extrabold tracking-tight text-white mb-0.5">
                 {t("footer.haveQuestion", { defaultValue: "Have a Question?" })}
               </h3>
-              <p className="text-xl md:text-2xl font-bold text-white/80 mb-6">
+              <p className="text-lg md:text-xl font-bold text-white/80 mb-4">
                 {t("footer.feelFreeToAsk", { defaultValue: "Feel free to ask" })}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white shrink-0 shadow-sm">
-                <Phone className="w-4 h-4 text-white" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white shrink-0 shadow-sm">
+                <Phone className="w-3.5 h-3.5 text-white" />
               </div>
               <a 
                 href="tel:+919209392096" 
-                className="text-xl md:text-2xl font-bold text-white hover:text-[#E8720C] transition-colors duration-300"
+                className="text-lg md:text-xl font-bold text-white hover:text-[#E8720C] transition-colors duration-300"
               >
                 +91 92093 92096
               </a>
@@ -64,21 +64,21 @@ export function CinematicFooter() {
           </div>
 
           {/* Vertical Separator Line (Desktop only) */}
-          <div className="hidden md:block w-px bg-white/10 self-stretch my-2" />
+          <div className="hidden md:block w-px bg-white/10 self-stretch my-1" />
 
           {/* Right Block: Franchise Inquiry */}
           <div className="flex-1 flex flex-col md:flex-row items-center justify-between gap-6 md:pl-8">
             <div className="text-center md:text-left">
-              <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white mb-1">
+              <h3 className="text-xl md:text-2xl font-extrabold tracking-tight text-white mb-0.5">
                 {t("footer.sendInquiry", { defaultValue: "Send Inquiry" })}
               </h3>
-              <p className="text-xl md:text-2xl font-bold text-white/80">
+              <p className="text-lg md:text-xl font-bold text-white/80">
                 {t("footer.forFranchise", { defaultValue: "For Franchise" })}
               </p>
             </div>
             <Link
               to="/enquiry"
-              className="px-8 py-3 bg-white text-[#002855] font-extrabold rounded-lg hover:bg-[#E8720C] hover:text-white transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 text-center min-w-[140px]"
+              className="px-6 py-2.5 bg-white text-[#002855] font-extrabold rounded-lg hover:bg-[#E8720C] hover:text-white transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 text-center min-w-[130px] text-sm"
             >
               {t("shared.inquiry", { defaultValue: "Inquiry" })}
             </Link>
@@ -87,7 +87,7 @@ export function CinematicFooter() {
         </div>
 
         {/* 2. Middle Section: Five Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 xl:gap-12 pt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 xl:gap-8 pt-2">
           
           {/* Column 1: Logo & Social Media */}
           <div className="flex flex-col items-center md:items-start space-y-6">
@@ -146,11 +146,11 @@ export function CinematicFooter() {
           </div>
 
           {/* Column 2: Important Links */}
-          <div className="text-center md:text-left space-y-4">
+          <div className="text-center md:text-left space-y-3">
             <h4 className="text-base font-bold text-white tracking-wider">
               {t("footer.importantLinksHeader", { defaultValue: "Important Links" })}
             </h4>
-            <ul className="space-y-2.5 text-sm text-white/70">
+            <ul className="space-y-1.5 text-sm text-white/70">
               <li>
                 <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
                   {t("footer.termsAndCondition", { defaultValue: "Terms and Condition" })}
@@ -175,11 +175,11 @@ export function CinematicFooter() {
           </div>
 
           {/* Column 3: Quick Links */}
-          <div className="text-center md:text-left space-y-4">
+          <div className="text-center md:text-left space-y-3">
             <h4 className="text-base font-bold text-white tracking-wider">
               {t("footer.quickLinksHeader", { defaultValue: "Quick Links" })}
             </h4>
-            <ul className="space-y-2.5 text-sm text-white/70">
+            <ul className="space-y-1.5 text-sm text-white/70">
               <li>
                 <a href="#top" onClick={(e) => handleAnchorClick(e, "top")} className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
                   {t("nav.home", { ns: "common", defaultValue: "Home" })}
@@ -209,11 +209,11 @@ export function CinematicFooter() {
           </div>
 
           {/* Column 4: Our Offerings */}
-          <div className="text-center md:text-left space-y-4">
+          <div className="text-center md:text-left space-y-3">
             <h4 className="text-base font-bold text-white tracking-wider">
               {t("footer.ourOfferingsHeader", { defaultValue: "Our Offerings" })}
             </h4>
-            <ul className="space-y-2.5 text-sm text-white/70">
+            <ul className="space-y-1.5 text-sm text-white/70">
               <li>
                 <Link to="/harvesters" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
                   {t("footer.bookService", { defaultValue: "Book Service" })}
@@ -238,11 +238,11 @@ export function CinematicFooter() {
           </div>
 
           {/* Column 5: Contact Us Details */}
-          <div className="text-center md:text-left space-y-5 lg:col-span-1 md:col-span-2">
+          <div className="text-center md:text-left space-y-3 lg:col-span-1 md:col-span-2">
             <h4 className="text-base font-bold text-white tracking-wider">
               {t("footer.contactUsHeader", { defaultValue: "Contact Us" })}
             </h4>
-            <div className="space-y-4 text-sm text-white/70">
+            <div className="space-y-2.5 text-sm text-white/70">
               
               {/* Address */}
               <div className="flex flex-col md:flex-row items-center md:items-start gap-3">
@@ -281,7 +281,7 @@ export function CinematicFooter() {
         </div>
 
         {/* 3. Bottom Bar: Copyright & Payment Logos */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-white/10">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">
           
           {/* Copyright Text */}
           <div className="text-xs text-white/60 font-semibold tracking-wide text-center md:text-left">
