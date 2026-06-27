@@ -317,9 +317,7 @@ async function initializeDatabase() {
     try {
       await activePool.query("ALTER TABLE operators ADD COLUMN is_profile_completed TINYINT DEFAULT 0");
     } catch (err) {}
-    try {
-      await activePool.query("UPDATE operators SET is_profile_completed = 1 WHERE experience > 0 OR name != 'Operator Profile'");
-    } catch (err) {}
+      await activePool.query("UPDATE operators SET is_profile_completed = 1 WHERE experience > 0 AND location != 'Not Specified' AND name != 'Operator Profile'");
 
     // Create operator_consent_logs table
     try {
@@ -341,6 +339,13 @@ async function initializeDatabase() {
     } catch (err) {
       console.error("Error creating operator_consent_logs table:", err);
     }
+
+    try {
+      await activePool.query("CREATE INDEX idx_consent_user_id ON operator_consent_logs (user_id)");
+    } catch (err) {}
+    try {
+      await activePool.query("CREATE INDEX idx_consent_op_timestamp ON operator_consent_logs (operator_id, timestamp DESC)");
+    } catch (err) {}
 
 
     // Seed hardcoded administrator account if not exists

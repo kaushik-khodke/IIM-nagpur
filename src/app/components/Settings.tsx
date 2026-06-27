@@ -226,7 +226,7 @@ export function Settings() {
           setSettings(data);
           setAccountForm({ name: data.name || "", phone: data.phone || "", whatsappNumber: data.whatsappNumber || "", state: data.state || "", bio: data.bio || "" });
 
-          // Fetch operator profile if it exists
+          setOperatorProfile(null);
           const opRes = await fetch(`/api/operators?userId=${data.id}`, { headers: { Authorization: `Bearer ${token}` } });
           if (opRes.ok) {
             const opData = await opRes.json();

@@ -526,7 +526,7 @@ export function Dashboard() {
                 
                 <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
                   <span>
-                    Operator Status: {myOperatorProfile ? (myOperatorProfile.verification_status || "Pending") : "N/A"}
+                    Operator Status: {myOperatorsCount > 0 && myOperatorProfile ? (myOperatorProfile.verification_status || "Pending") : "N/A"}
                   </span>
                   <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/profile')}>Manage</span>
                 </div>

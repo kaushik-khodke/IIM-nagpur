@@ -677,22 +677,33 @@ app.post('/api/operators/verify-id', authenticateToken, (req, res, next) => {
   const licenseFront = req.files['licenseFront'][0];
   const licenseBack = req.files['licenseBack'][0];
 
+  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+  if (!allowedMimes.includes(selfie.mimetype) || !allowedMimes.includes(licenseFront.mimetype) || !allowedMimes.includes(licenseBack.mimetype)) {
+    return res.status(400).json({ error: 'Invalid file type. Only JPEG, PNG, WEBP, and GIF images are allowed.' });
+  }
+
   const crypto = require('crypto');
   const getHash = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
 
+  const uploadedPaths = [];
+  const activePool = await db.getPool();
+  const conn = await activePool.getConnection();
+
   try {
+    await conn.beginTransaction();
+
     const selfieHash = getHash(selfie.buffer);
     const licenseFrontHash = getHash(licenseFront.buffer);
     const licenseBackHash = getHash(licenseBack.buffer);
 
-    const [existing] = await db.query('SELECT id FROM operators WHERE user_id = ?', [req.user.id]);
+    const [existing] = await conn.query('SELECT id FROM operators WHERE user_id = ?', [req.user.id]);
     let operatorId;
     if (existing.length > 0) {
       operatorId = existing[0].id;
     } else {
       operatorId = crypto.randomUUID();
       // Insert a skeleton operator row first
-      await db.query(
+      await conn.query(
         "INSERT INTO operators (id, user_id, name, experience, location, state, machine_expertise, availability, verification_status) VALUES (?, ?, ?, 0, 'Not Specified', 'Maharashtra', '[]', 'Available', 'Pending')",
         [operatorId, req.user.id, req.user.name || 'Operator Profile']
       );
@@ -745,6 +756,7 @@ app.post('/api/operators/verify-id', authenticateToken, (req, res, next) => {
         console.error('Supabase upload final error:', error);
         throw error;
       }
+      uploadedPaths.push(path);
       return path;
     };
 
@@ -764,21 +776,33 @@ app.post('/api/operators/verify-id', authenticateToken, (req, res, next) => {
     const userAgent = req.headers['user-agent'] || 'unknown';
     const consentText = "I hereby explicitly consent to Tractor Seva collecting and processing my live selfie and driving license images solely for the purpose of verifying my profile. I understand this data will be stored securely and reviewed manually by the system administrator.";
 
-    await db.query(
+    await conn.query(
       'INSERT INTO operator_consent_logs (id, user_id, operator_id, consent_text, selfie_hash, license_front_hash, license_back_hash, ip_address, user_agent, timestamp, signature) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [auditId, req.user.id, operatorId, consentText, selfieHash, licenseFrontHash, licenseBackHash, ipAddress, userAgent, timestamp, signature]
     );
 
     // Update operators table
-    await db.query(
+    await conn.query(
       "UPDATE operators SET selfie_image_path = ?, license_front_path = ?, license_back_path = ?, consent_signature = ?, consent_timestamp = ?, verification_status = 'Pending', verification_feedback = NULL WHERE user_id = ?",
       [selfiePath, licenseFrontPath, licenseBackPath, signature, timestamp, req.user.id]
     );
 
+    await conn.commit();
     res.json({ message: 'Identity verification files uploaded and consent audit logged successfully.' });
   } catch (error) {
+    await conn.rollback();
     console.error('Error in operator verify-id:', error);
+    if (uploadedPaths.length > 0) {
+      try {
+        await supabase.storage.from(supabaseBucket).remove(uploadedPaths);
+        console.log('Successfully rolled back uploaded files from Supabase:', uploadedPaths);
+      } catch (cleanupErr) {
+        console.error('Failed to cleanup uploaded files during rollback:', cleanupErr);
+      }
+    }
     res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    conn.release();
   }
 });
 
@@ -1719,33 +1743,42 @@ app.put('/api/admin/users/:id/block', authenticateToken, isAdmin, async (req, re
 // 4. Admin Delete Entire User Data & Auto-Ban
 app.delete('/api/admin/users/:id/data', authenticateToken, isAdmin, async (req, res) => {
   const userId = req.params.id;
+  const activePool = await db.getPool();
+  const conn = await activePool.getConnection();
   try {
+    await conn.beginTransaction();
+
     // Delete ratings given by user
-    await db.query('DELETE FROM ratings WHERE rater_id = ?', [userId]);
+    await conn.query('DELETE FROM ratings WHERE rater_id = ?', [userId]);
     
     // Delete ratings targetting user's harvesters
-    await db.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = ?)", [userId]);
+    await conn.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = ?)", [userId]);
     
     // Delete ratings targetting user's operators
-    await db.query("DELETE FROM ratings WHERE target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = ?)", [userId]);
+    await conn.query("DELETE FROM ratings WHERE target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = ?)", [userId]);
     
     // Delete operator consent logs
-    await db.query('DELETE FROM operator_consent_logs WHERE user_id = ?', [userId]);
+    await conn.query('DELETE FROM operator_consent_logs WHERE user_id = ?', [userId]);
     
     // Delete user messages
-    await db.query('DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?', [userId, userId]);
+    await conn.query('DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?', [userId, userId]);
 
     // Delete base listings
-    await db.query('DELETE FROM harvesters WHERE user_id = ?', [userId]);
-    await db.query('DELETE FROM requests WHERE user_id = ?', [userId]);
-    await db.query('DELETE FROM operators WHERE user_id = ?', [userId]);
+    await conn.query('DELETE FROM harvesters WHERE user_id = ?', [userId]);
+    await conn.query('DELETE FROM requests WHERE user_id = ?', [userId]);
+    await conn.query('DELETE FROM operators WHERE user_id = ?', [userId]);
     
     // Auto-ban user
-    await db.query('UPDATE users SET is_blocked = 1 WHERE id = ?', [userId]);
+    await conn.query('UPDATE users SET is_blocked = 1 WHERE id = ?', [userId]);
+
+    await conn.commit();
     res.json({ message: 'User listings and operator profiles cleared, and account blocked.' });
   } catch (error) {
+    await conn.rollback();
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    conn.release();
   }
 });
 
@@ -1790,7 +1823,7 @@ app.put('/api/admin/requests/:id/status', authenticateToken, isAdmin, async (req
 app.get('/api/admin/operators/:id/verification-details', authenticateToken, isAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const [rows] = await db.query('SELECT * FROM operators WHERE id = ?', [id]);
+    const [rows] = await db.query('SELECT o.*, u.email FROM operators o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?', [id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Operator profile not found.' });
     }
@@ -1887,7 +1920,7 @@ app.put('/api/admin/listings/:type/:id/verify', authenticateToken, isAdmin, asyn
     const adminId = req.user.id;
     const ownerId = listing.user_id;
     const postName = listing.name;
-    const statusText = status === 'Approved' ? 'Accepted' : 'Rejected';
+    const statusText = status === 'Approved' ? 'Accepted' : (status === 'Pending' ? 'Pending Review' : 'Rejected');
 
     let content = `Listing: ${postName}\nStatus: ${statusText}`;
     if (feedback && feedback.trim()) {
@@ -2314,18 +2347,30 @@ app.delete('/api/settings/account', authenticateToken, async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
     const valid = await bcrypt.compare(password, rows[0].password);
     if (!valid) return res.status(401).json({ error: 'Incorrect password' });
-    await db.query('DELETE FROM ratings WHERE rater_id = ?', [req.user.id]);
-    await db.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = ?)", [req.user.id]);
-    await db.query("DELETE FROM ratings WHERE target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = ?)", [req.user.id]);
-    await db.query('DELETE FROM operator_consent_logs WHERE user_id = ?', [req.user.id]);
-    await db.query('DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?', [req.user.id, req.user.id]);
+    const activePool = await db.getPool();
+    const conn = await activePool.getConnection();
+    try {
+      await conn.beginTransaction();
 
-    await db.query('DELETE FROM harvesters WHERE user_id = ?', [req.user.id]);
-    await db.query('DELETE FROM requests WHERE user_id = ?', [req.user.id]);
-    await db.query('DELETE FROM operators WHERE user_id = ?', [req.user.id]);
+      await conn.query('DELETE FROM ratings WHERE rater_id = ?', [req.user.id]);
+      await conn.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = ?)", [req.user.id]);
+      await conn.query("DELETE FROM ratings WHERE target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = ?)", [req.user.id]);
+      await conn.query('DELETE FROM operator_consent_logs WHERE user_id = ?', [req.user.id]);
+      await conn.query('DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?', [req.user.id, req.user.id]);
 
-    await db.query('DELETE FROM users WHERE id = ?', [req.user.id]);
-    res.json({ message: 'Account permanently deleted' });
+      await conn.query('DELETE FROM harvesters WHERE user_id = ?', [req.user.id]);
+      await conn.query('DELETE FROM requests WHERE user_id = ?', [req.user.id]);
+      await conn.query('DELETE FROM operators WHERE user_id = ?', [req.user.id]);
+
+      await conn.query('DELETE FROM users WHERE id = ?', [req.user.id]);
+      await conn.commit();
+      res.json({ message: 'Account permanently deleted' });
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete account' });
