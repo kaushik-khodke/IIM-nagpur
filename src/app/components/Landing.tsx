@@ -1121,272 +1121,156 @@ export function Landing() {
 
               >
 
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-sm mb-6">
-
-                  {t("landing.agriNetworkBadge", { ns: "pages", defaultValue: "India's Leading Agri-Harvesting Network" })}
-
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-100/40 text-[#172263] border border-blue-200/40 rounded-full text-xs font-semibold tracking-wide mb-6">
+                  {t("landing.agriNetworkBadge", { ns: "pages", defaultValue: "India's Multi-Brand Harvesting Hub for Farm Machinery" })}
                 </span>
 
                 <h1
-
-                  className="text-5xl md:text-6xl leading-[1.1] mb-6"
-
-                  style={{ fontFamily: "'Sora', sans-serif", fontWeight: 800 }}
-
+                  className="text-5xl md:text-[56px] leading-[1.1] text-slate-900 font-extrabold tracking-tight mb-4"
+                  style={{ fontFamily: "'Sora', sans-serif" }}
                 >
-
                   {t("landing.title", { ns: "pages" })}
-
                 </h1>
 
-                <p className="text-[#57585A] text-lg max-w-xl leading-relaxed mb-8">
-
+                <p className="text-[#57585A] text-lg font-normal mb-8 max-w-xl">
                   {t("landing.subtitle", { ns: "pages" })}
-
                 </p>
 
-                <div className="flex flex-wrap gap-4 mb-8">
+                {/* Reorganized Buttons Container */}
+                <div className="flex flex-col gap-4 mb-8">
+                  {/* Row 1 */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    {localStorage.getItem("tractorsewa_token") ? (
+                      <>
+                        <Link
+                          to="/dashboard"
+                          className="flex items-center gap-2 px-6 py-3.5 bg-[#172263] text-white rounded-2xl hover:bg-[#11194A] hover:shadow-lg transition-all duration-200 cursor-pointer text-sm font-semibold"
+                        >
+                          {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={16} />
+                        </Link>
+                        <Link
+                          to="/harvesters"
+                          className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
+                        >
+                          <Tractor size={16} className="text-[#172263]" /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
+                        </Link>
+                        <Link
+                          to="/operators"
+                          className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
+                        >
+                          <User size={16} className="text-[#172263]" /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          to="/dashboard"
+                          className="flex items-center gap-2 px-6 py-3.5 bg-[#172263] text-white rounded-2xl hover:bg-[#11194A] hover:shadow-lg transition-all duration-200 cursor-pointer text-sm font-semibold"
+                        >
+                          {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={16} />
+                        </Link>
+                        <Link
+                          to="/harvesters"
+                          onClick={() => {
+                            localStorage.setItem("tractorsewa_preview_mode", "true");
+                          }}
+                          className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
+                        >
+                          <Tractor size={16} className="text-[#172263]" /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
+                        </Link>
+                        <Link
+                          to="/operators"
+                          onClick={() => {
+                            localStorage.setItem("tractorsewa_preview_mode", "true");
+                          }}
+                          className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
+                        >
+                          <User size={16} className="text-[#172263]" /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
+                        </Link>
+                      </>
+                    )}
+                  </div>
 
-                  {localStorage.getItem("tractorsewa_token") ? (
-
-                    <>
-
-                      <Link
-
-                        to="/dashboard"
-
-                        className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
-
-                      >
-
-                        {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={18} />
-
-                      </Link>
-
-                      <Link
-
-                        to="/harvesters"
-
-                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
-
-                      >
-
-                        <Tractor size={18} /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
-
-                      </Link>
-
-                      <Link
-
-                        to="/operators"
-
-                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
-
-                      >
-
-                        <User size={18} /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
-
-                      </Link>
-
-                    </>
-
-                  ) : (
-
-                    <>
-
-                      <Link
-
-                        to="/dashboard"
-
-                        className="flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
-
-                      >
-
-                        {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={18} />
-
-                      </Link>
-
-                      <Link
-
-                        to="/harvesters"
-
-                        onClick={() => {
-
-                          localStorage.setItem("tractorsewa_preview_mode", "true");
-
-                        }}
-
-                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
-
-                      >
-
-                        <Tractor size={18} /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
-
-                      </Link>
-
-                      <Link
-
-                        to="/operators"
-
-                        onClick={() => {
-
-                          localStorage.setItem("tractorsewa_preview_mode", "true");
-
-                        }}
-
-                        className="flex items-center gap-2 px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors"
-
-                      >
-
-                        <User size={18} /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
-
-                      </Link>
-
-                    </>
-
-                  )}
-
+                  {/* Row 2 */}
+                  <div className="flex">
+                    <Link
+                      to="/enquiry"
+                      className="flex items-center gap-2 px-6 py-3.5 bg-[#172263] text-white rounded-2xl hover:bg-[#11194A] hover:shadow-lg transition-all duration-200 cursor-pointer text-sm font-semibold"
+                    >
+                      {t("landing.submitEnquiry", { ns: "pages", defaultValue: "Submit Enquiry" })} <ArrowRight size={16} />
+                    </Link>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-5 text-sm text-[#57585A]">
-
+                {/* Row 3 - Checkmarks list below enquiry button */}
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-[#57585A]">
                   {[
-
                     t("landing.freeToJoin", { ns: "pages", defaultValue: "Free to Join" }),
-
                     t("landing.verifiedProfiles", { ns: "pages", defaultValue: "Verified Profiles" }),
-
                     t("landing.cities", { ns: "pages", defaultValue: "50+ Cities" })
-
                   ].map((badge) => (
-
-                    <span key={badge} className="flex items-center gap-1.5">
-
-                      <CheckCircle size={14} className="text-green-600" /> {badge}
-
+                    <span key={badge} className="flex items-center gap-2">
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full border border-green-200 bg-green-50 text-green-600">
+                        <svg className="w-3 h-3 stroke-[3.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </span>
+                      <span className="font-medium text-[#57585A]">{badge}</span>
                     </span>
-
                   ))}
-
-                </div>
-
-                <div className="mt-8">
-
-                  <Link
-
-                    to="/enquiry"
-
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all duration-200 shadow-[0_4px_14px_rgba(232,114,12,0.3)] cursor-pointer"
-
-                  >
-
-                    {t("landing.submitEnquiry", { ns: "pages", defaultValue: "Submit Enquiry" })} <ArrowRight size={18} />
-
-                  </Link>
-
                 </div>
 
               </motion.div>
 
-
-
               {/* Right Floating Stats (Over the 3D Tractor) */}
-
               <div className="md:col-span-2 relative h-[400px] w-full pointer-events-none hidden md:block">
-
                 {/* Top Right Badge */}
-
                 <motion.div
-
                   initial={{ opacity: 0, y: 20 }}
-
                   animate={{ opacity: 1, y: 0 }}
-
                   transition={{ delay: 0.5, duration: 0.8 }}
-
-                  className="absolute top-10 right-0 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl px-5 py-3 border border-white/40 flex items-center gap-3"
-
+                  className="absolute top-10 right-0 bg-white/90 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-2xl px-5 py-3 border border-slate-100/80 flex items-center gap-3"
                 >
-
-                  <div className="bg-green-100 p-2 rounded-full">
-
+                  <div className="bg-green-50 p-2.5 rounded-full flex items-center justify-center">
                     <CheckCircle size={18} className="text-green-600" />
-
                   </div>
-
                   <div>
-
                     <p className="text-[#1A1A1A] font-bold text-sm">{t("landing.activeOperators", { ns: "pages", defaultValue: "500+ Operators" })}</p>
-
                     <p className="text-[#57585A] text-xs">{t("landing.onlineNow", { ns: "pages", defaultValue: "Online Now" })}</p>
-
                   </div>
-
                 </motion.div>
-
-
 
                 {/* Bottom Left Badge */}
-
                 <motion.div
-
                   initial={{ opacity: 0, x: -20 }}
-
                   animate={{ opacity: 1, x: 0 }}
-
                   transition={{ delay: 0.7, duration: 0.8 }}
-
-                  className="absolute bottom-20 -left-32 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl px-5 py-3 border border-white/40 flex items-center gap-3"
-
+                  className="absolute bottom-20 -left-32 bg-white/90 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-2xl px-5 py-3 border border-slate-100/80 flex items-center gap-3"
                 >
-
-                  <div className="bg-blue-100 p-2 rounded-full">
-
-                    <Star size={18} className="text-blue-600" />
-
+                  <div className="bg-blue-50 p-2.5 rounded-full flex items-center justify-center">
+                    <Star size={18} className="text-blue-500 fill-blue-500/10" />
                   </div>
-
                   <div>
-
                     <p className="text-[#1A1A1A] font-bold text-sm">{t("landing.topRated", { ns: "pages", defaultValue: "Top Rated" })}</p>
-
                     <p className="text-[#57585A] text-xs">{t("landing.verifiedProfiles", { ns: "pages", defaultValue: "Verified Profiles" })}</p>
-
                   </div>
-
                 </motion.div>
-
-
 
                 {/* Bottom Right Badge */}
-
                 <motion.div
-
                   initial={{ opacity: 0, y: -20 }}
-
                   animate={{ opacity: 1, y: 0 }}
-
                   transition={{ delay: 0.9, duration: 0.8 }}
-
-                  className="absolute bottom-5 right-10 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl px-5 py-3 border border-white/40 flex items-center gap-3"
-
+                  className="absolute bottom-5 right-10 bg-white/90 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-2xl px-5 py-3 border border-slate-100/80 flex items-center gap-3"
                 >
-
-                  <div className="bg-orange-100 p-2 rounded-full">
-
+                  <div className="bg-orange-50 p-2.5 rounded-full flex items-center justify-center">
                     <Wheat size={18} className="text-orange-600" />
-
                   </div>
-
                   <div>
-
                     <p className="text-[#1A1A1A] font-bold text-sm">{t("landing.multipleCrops", { ns: "pages", defaultValue: "Multiple Crops" })}</p>
-
                     <p className="text-[#57585A] text-xs">{t("landing.wheatRice", { ns: "pages", defaultValue: "Wheat, Rice & more" })}</p>
-
                   </div>
-
                 </motion.div>
-
               </div>
 
             </div>
