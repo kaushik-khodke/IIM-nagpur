@@ -40,6 +40,207 @@ import districtsData from "./districts.json";
 
 const INDIAN_STATES = districtsData.states.map((s: any) => s.state);
 
+function DashboardSkeletonCard() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_3px_15px_rgba(0,0,0,0.02)] p-4 flex flex-col gap-3 w-[260px] shrink-0 animate-pulse text-left">
+      <div className="w-full h-26 rounded-xl bg-slate-100 shrink-0" />
+      <div className="space-y-2 flex-1">
+        <div className="h-4 bg-slate-100 rounded w-3/4" />
+        <div className="h-3 bg-slate-100 rounded w-1/2" />
+        <div className="h-8 bg-slate-100 rounded w-full my-2" />
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-slate-100" />
+            <div className="h-3 bg-slate-100 rounded w-16" />
+          </div>
+          <div className="h-3 bg-slate-100 rounded w-10" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardListingCard({ item }: { item: any }) {
+  const navigate = useNavigate();
+  const token = localStorage.getItem("tractorsewa_token");
+  const currentUser = JSON.parse(localStorage.getItem("tractorsewa_user") || "{}");
+
+  const formatLocation = (location: string, state: string) => {
+    if (!location) return state || "Maharashtra";
+    if (!state) return location;
+    return `${location}, ${state}`;
+  };
+
+  const cleanExpertise = (exp: any) => {
+    if (Array.isArray(exp)) return exp;
+    if (typeof exp === 'string') {
+      try {
+        return JSON.parse(exp);
+      } catch (e) {
+        return [exp];
+      }
+    }
+    return [];
+  };
+
+  const expertiseList = cleanExpertise(item.machine_expertise || item.machineExpertise);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_3px_15px_rgba(0,0,0,0.02)] hover:shadow-[0_10px_30px_rgba(23,34,99,0.07)] transition-all duration-300 flex flex-col overflow-hidden group hover:-translate-y-1 w-[260px] shrink-0 text-left">
+      <div className="p-3 flex flex-col gap-2 flex-1">
+        <div className="relative w-full h-26 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
+          {item.image ? (
+            <img
+              src={item.image}
+              alt={item.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                e.currentTarget.src = "";
+                e.currentTarget.className = "hidden";
+              }}
+            />
+          ) : null}
+          {!item.image && (
+            <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
+              {item.type === "harvester" ? (
+                <Tractor className="w-8 h-8 text-[#172263]/20" />
+              ) : (
+                <Users className="w-8 h-8 text-[#15803D]/20" />
+              )}
+            </div>
+          )}
+
+          <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wide shadow-xs ${
+            item.type === "harvester"
+              ? "bg-blue-50 text-blue-700 border-blue-100"
+              : "bg-emerald-50 text-emerald-700 border-emerald-100"
+          }`}>
+            {item.type === "harvester" ? "Harvester" : "Operator"}
+          </span>
+        </div>
+
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <h4
+                  className="text-sm text-slate-800 font-bold font-sora line-clamp-1 group-hover:text-[#172263] transition-colors"
+                  style={{ fontFamily: "'Sora', sans-serif" }}
+                >
+                  {item.name}
+                </h4>
+                <p className="text-slate-500 text-[10px] flex items-center gap-1 mt-0.5 font-semibold">
+                  <MapPin size={11} className="text-amber-500 shrink-0" />
+                  <span className="line-clamp-1">{formatLocation(item.location, item.state)}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 py-2 border-y border-slate-100/80 my-2">
+              {item.type === "harvester" ? (
+                <>
+                  <div>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Company</span>
+                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">{item.company}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Model</span>
+                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">{item.model}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Year</span>
+                    <span className="text-xs font-semibold text-slate-700">{item.year || "N/A"}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Experience</span>
+                    <span className="text-xs font-semibold text-slate-700">{item.experience} Yrs</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Availability</span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black ${
+                      item.availability === "Available"
+                        ? "bg-green-50 text-green-700 border border-green-100"
+                        : "bg-amber-50 text-amber-700 border border-amber-100"
+                    }`}>
+                      {item.availability || "Available"}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Expertise</span>
+                    <div className="flex flex-wrap gap-1 max-h-[36px] overflow-hidden">
+                      {expertiseList.length > 0 ? (
+                        expertiseList.map((exp: string, idx: number) => (
+                          <span key={idx} className="bg-slate-50 text-slate-600 px-1 py-0.5 rounded text-[8px] font-bold border border-slate-100 truncate max-w-[70px]">
+                            {exp}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[9px] text-slate-400 font-semibold">General Operator</span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-1 mt-auto">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-[#172263] overflow-hidden shrink-0 border border-slate-200">
+                {item.ownerImage ? (
+                  <img src={item.ownerImage} alt={item.subtitle} className="w-full h-full object-cover" />
+                ) : (
+                  item.subtitle?.charAt(0)
+                )}
+              </span>
+              <div className="min-w-0 leading-none">
+                <span className="text-[7px] text-slate-400 font-black uppercase tracking-wider block">
+                  {item.type === "harvester" ? "Owner" : "Operator"}
+                </span>
+                <span className="text-[10px] font-bold text-slate-700 line-clamp-1 mt-0.5">{item.subtitle}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end shrink-0">
+              <div className="flex items-center gap-0.5 text-amber-500 font-black text-[10px] leading-none">
+                <Star size={10} fill="currentColor" className="stroke-amber-500" />
+                <span>{parseFloat(item.avgRating || "0.0").toFixed(1)}</span>
+                <span className="text-[8px] text-slate-400 font-bold">({item.ratingCount || 0})</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {token && currentUser && item.ownerId === currentUser.id ? (
+        <button
+          onClick={() => navigate(item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`)}
+          className="w-full py-2.5 text-[10px] font-black transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer border-t border-slate-100 bg-slate-50 hover:bg-slate-100 text-[#172263]"
+        >
+          <LayoutGrid size={12} />
+          View Details
+        </button>
+      ) : (
+        <button
+          onClick={() => navigate(item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`)}
+          className={`w-full py-2.5 text-[10px] font-black transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer border-t border-slate-100 ${
+            item.type === "harvester"
+              ? "bg-[#172263] hover:bg-[#11194A] text-white"
+              : "bg-amber-500 hover:bg-amber-600 text-white"
+          }`}
+        >
+          <MessageSquare size={12} />
+          {item.type === "harvester" ? "Book Now" : "Hire Now"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function Dashboard() {
   const { t } = useTranslation(["dashboard", "common", "pages", "static"]);
   const [operators, setOperators] = useState<any[]>([]);
@@ -453,6 +654,9 @@ export function Dashboard() {
 
   const totalLocalDemand = localRequests.length;
 
+  const harvestersList = directoryItems.filter((item: any) => item.type === "harvester");
+  const operatorsList = directoryItems.filter((item: any) => item.type === "operator");
+
   const handleBookingClick = (ownerId: number | string) => {
     if (!token) {
       setChooserOpen(true);
@@ -818,232 +1022,82 @@ export function Dashboard() {
             </div>
 
             {dirLoading ? (
-              <div className={`grid grid-cols-1 md:grid-cols-2 ${token ? '' : 'xl:grid-cols-3'} gap-6`}>
-                {Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)}
+              <div className="space-y-8">
+                {(dirCategory === "all" || dirCategory === "harvester") && (
+                  <div className="space-y-4 text-left">
+                    <div className="flex gap-5 overflow-x-auto pt-2 pb-4 px-1 scrollbar-thin">
+                      {Array(4).fill(0).map((_, i) => <DashboardSkeletonCard key={i} />)}
+                    </div>
+                  </div>
+                )}
+                {(dirCategory === "all" || dirCategory === "operator") && (
+                  <div className="space-y-4 text-left">
+                    <div className="flex gap-5 overflow-x-auto pt-2 pb-4 px-1 scrollbar-thin">
+                      {Array(4).fill(0).map((_, i) => <DashboardSkeletonCard key={i} />)}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : directoryItems.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border border-[#E2E8F0] text-sm text-[#57585A]">
                 No listings found matching your criteria. Be the first to add one!
               </div>
             ) : (
-              <>
-                <div className={`grid grid-cols-1 md:grid-cols-2 ${token ? '' : 'xl:grid-cols-3'} gap-6`}>
-                  {directoryItems.slice(0, dirLimit).map((item) => (
-                    <div 
-                      key={`${item.type}-${item.id}`} 
-                      className="bg-white rounded-3xl border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden group hover:-translate-y-0.5"
-                    >
-                      {/* Card Body */}
-                      <div className="p-5 flex flex-col sm:flex-row gap-5 flex-1">
-                        
-                        {/* Left Column: Image */}
-                        <div className="w-full sm:w-[40%] flex flex-col shrink-0">
-                          <div className="relative w-full aspect-[4/3] sm:aspect-auto sm:h-full min-h-[180px] rounded-2xl bg-[#F4F6FA] border border-[#E2E8F0]/30 overflow-hidden flex items-center justify-center">
-                            {item.image ? (
-                              <img 
-                                src={item.image} 
-                                alt={item.name} 
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                onError={(e) => {
-                                  e.currentTarget.src = "";
-                                  e.currentTarget.className = "hidden";
-                                }}
-                              />
-                            ) : null}
-                            {!item.image && (
-                              <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
-                                {item.type === "harvester" ? (
-                                  <Tractor className="w-10 h-10 text-[#172263]/20" />
-                                ) : (
-                                  <Users className="w-10 h-10 text-[#15803D]/20" />
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* Type Badge */}
-                            <span className={`absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wide ${
-                              item.type === "harvester" 
-                                ? "bg-blue-50 text-blue-700 border-blue-100" 
-                                : "bg-emerald-50 text-emerald-700 border-emerald-100"
-                            }`}>
-                              {item.type === "harvester" ? "Harvester" : "Operator"}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Right Column: Details */}
-                        <div className="w-full sm:w-[60%] flex flex-col justify-between pl-0">
-                          <div>
-                            {/* Title & Location */}
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <h3 
-                                  className="text-base font-black text-[#172263] font-sora line-clamp-1 group-hover:text-[#11194A] transition-colors"
-                                  style={{ fontFamily: "'Sora', sans-serif" }}
-                                >
-                                  {item.name}
-                                </h3>
-                                <p className="text-gray-500 text-[10px] flex items-center gap-1 mt-1 font-semibold">
-                                  <MapPin size={11} className="text-[#D97706] shrink-0" />
-                                  <span className="line-clamp-1">{formatLocation(item.location, item.state)}</span>
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Description */}
-                            {item.description && (
-                              <p className="text-gray-400 text-[10px] line-clamp-2 mt-2 leading-relaxed italic">
-                                {item.description}
-                              </p>
-                            )}
-
-                            {/* Technical Details Grid */}
-                            <div className="grid grid-cols-2 gap-x-3 gap-y-2 py-3 border-y border-[#E2E8F0]/80 my-3">
-                              {item.type === "harvester" ? (
-                                <>
-                                  <div>
-                                    <span className="text-[9px] text-gray-400 font-black uppercase tracking-wider block">
-                                      Company
-                                    </span>
-                                    <span className="text-xs font-black text-[#1A1A1A] block mt-0.5">{item.company}</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-[9px] text-gray-400 font-black uppercase tracking-wider block">
-                                      Model
-                                    </span>
-                                    <span className="text-xs font-black text-[#1A1A1A] block mt-0.5">{item.model}</span>
-                                  </div>
-                                  <div className="col-span-2">
-                                    <span className="text-[9px] text-gray-400 font-black uppercase tracking-wider block">
-                                      Year
-                                    </span>
-                                    <span className="text-xs font-black text-[#1A1A1A] block mt-0.5">{item.year || "N/A"}</span>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div>
-                                    <span className="text-[9px] text-gray-400 font-black uppercase tracking-wider block">
-                                      Experience
-                                    </span>
-                                    <span className="text-xs font-black text-[#1A1A1A] block mt-0.5">
-                                      {item.experience} Yrs
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="text-[9px] text-gray-400 font-black uppercase tracking-wider block">
-                                      Availability
-                                    </span>
-                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black mt-0.5 ${
-                                      item.availability === "Available"
-                                        ? "bg-green-50 text-green-700 border border-green-100"
-                                        : "bg-amber-50 text-amber-700 border border-amber-100"
-                                    }`}>
-                                      {item.availability || "Available"}
-                                    </span>
-                                  </div>
-                                  <div className="col-span-2">
-                                    <span className="text-[9px] text-gray-400 font-black uppercase tracking-wider block mb-1">
-                                      Expertise
-                                    </span>
-                                    <div className="flex flex-wrap gap-1 max-h-[36px] overflow-hidden">
-                                      {Array.isArray(item.machineExpertise) && item.machineExpertise.length > 0 ? (
-                                        item.machineExpertise.map((exp: string, idx: number) => (
-                                          <span key={idx} className="bg-[#F1F5F9] text-[#172263] px-1.5 py-0.5 rounded text-[9px] font-bold border border-[#172263]/10 truncate max-w-[80px]">
-                                            {exp}
-                                          </span>
-                                        ))
-                                      ) : (
-                                        <span className="text-[10px] text-gray-400 font-semibold">General Operator</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-
-                          </div>
-
-                          {/* Bottom info: Owner & rating */}
-                          <div className="flex items-center justify-between gap-4 pt-1 mt-auto">
-                            {/* Owner info */}
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-[#172263] overflow-hidden shrink-0 border border-gray-200">
-                                {item.ownerImage ? (
-                                  <img src={item.ownerImage} alt={item.subtitle} className="w-full h-full object-cover" />
-                                ) : (
-                                  item.subtitle?.charAt(0)
-                                )}
-                              </span>
-                              <div className="min-w-0 leading-none">
-                                <span className="text-[8px] text-gray-400 font-black uppercase tracking-wider block">
-                                  {item.type === "harvester" ? "Owner" : "Operator"}
-                                </span>
-                                <span className="text-xs font-black text-[#1A1A1A] line-clamp-1 mt-0.5">{item.subtitle}</span>
-                              </div>
-                            </div>
-
-                            {/* Rating info */}
-                            <div className="flex flex-col items-end shrink-0">
-                              <div className="flex items-center gap-1 text-[#D97706] font-black text-xs leading-none">
-                                <Star size={12} fill="currentColor" className="stroke-[#D97706]" />
-                                <span>{parseFloat(item.avgRating || "0.0").toFixed(1)}</span>
-                                <span className="text-[9px] text-gray-400 font-bold">({item.ratingCount || 0})</span>
-                              </div>
-                              <div className="flex gap-0.5 mt-1">
-                                {Array(5).fill(0).map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    size={9}
-                                    fill={i < Math.round(parseFloat(item.avgRating || "0")) ? "currentColor" : "none"}
-                                    className="stroke-[#D97706]"
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
-                        </div>
-
+              <div className="space-y-8 text-left">
+                {/* 1. Harvesters Subsection */}
+                {(dirCategory === "all" || dirCategory === "harvester") && (
+                  <div className="space-y-4">
+                    {harvestersList.length === 0 ? (
+                      <div className="bg-slate-50/50 rounded-2xl p-8 text-center border border-slate-100 text-xs text-[#57585A] font-medium">
+                        No harvesters found matching your filters.
                       </div>
-
-                      {/* Footer Button */}
-                      {token && currentUser && item.ownerId === currentUser.id ? (
-                        <Link
-                          to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
-                          className={`w-full py-3.5 text-xs font-black transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 bg-slate-100 hover:bg-slate-200 text-[#172263]`}
-                        >
-                          <LayoutGrid size={14} />
-                          View Details
-                        </Link>
-                      ) : (
-                        <Link 
-                          to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
-                          className={`w-full py-3.5 text-xs font-black transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 ${
-                            item.type === "harvester"
-                              ? "bg-[#172263] hover:bg-[#11194A] text-white"
-                              : "bg-amber-500 hover:bg-amber-600 text-white"
-                          }`}
-                        >
-                          <MessageSquare size={14} />
-                          {item.type === "harvester" ? "Book Now" : "Hire Now"}
-                        </Link>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {directoryItems.length >= dirLimit && (
-                  <div className="text-center mt-8">
-                    <button
-                      onClick={() => setDirLimit((prev) => prev + 8)}
-                      className="px-6 py-2.5 bg-white border-2 border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:border-[#172263] hover:text-[#172263] transition-all shadow-xs hover:shadow-md cursor-pointer"
-                    >
-                      Explore More
-                    </button>
+                    ) : (
+                      <>
+                        <div className="flex gap-5 overflow-x-auto pt-2 pb-4 px-1 scrollbar-thin">
+                          {harvestersList.slice(0, dirLimit).map((item) => (
+                            <DashboardListingCard key={`${item.type}-${item.id}`} item={item} />
+                          ))}
+                        </div>
+                        <div className="text-center mt-2">
+                          <button
+                            onClick={() => navigate('/harvesters')}
+                            className="inline-flex items-center gap-2 px-5 py-2 bg-white border border-slate-200 text-[#172263] hover:border-[#172263] hover:bg-slate-50 rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md cursor-pointer"
+                          >
+                            View More Harvesters <ArrowRight size={12} />
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
-              </>
+
+                {/* 2. Operators Subsection */}
+                {(dirCategory === "all" || dirCategory === "operator") && (
+                  <div className="space-y-4 pt-4">
+                    {operatorsList.length === 0 ? (
+                      <div className="bg-slate-50/50 rounded-2xl p-8 text-center border border-slate-100 text-xs text-[#57585A] font-medium">
+                        No operators found matching your filters.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex gap-5 overflow-x-auto pt-2 pb-4 px-1 scrollbar-thin">
+                          {operatorsList.slice(0, dirLimit).map((item) => (
+                            <DashboardListingCard key={`${item.type}-${item.id}`} item={item} />
+                          ))}
+                        </div>
+                        <div className="text-center mt-2">
+                          <button
+                            onClick={() => navigate('/operators')}
+                            className="inline-flex items-center gap-2 px-5 py-2 bg-white border border-slate-200 text-[#15803D] hover:border-[#15803D] hover:bg-slate-50 rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md cursor-pointer"
+                          >
+                            View More Operators <ArrowRight size={12} />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -1051,10 +1105,9 @@ export function Dashboard() {
             /* RIGHT COLUMN: Sidebar Widgets */
             <div className="lg:col-span-4 space-y-6">
               
-
               {/* Message Notifications Widget */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+                <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3 shrink-0">
                   <h2 className="text-lg font-extrabold text-[#1A1A1A] font-sora">Message Notifications</h2>
                   {unreadMessages.length > 0 && (
                     <span className="bg-[#D97706] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
@@ -1063,9 +1116,9 @@ export function Dashboard() {
                   )}
                 </div>
 
-                <div className="bg-white border border-[#E2E8F0] rounded-3xl p-5 shadow-xs flex flex-col min-h-[220px] justify-between">
+                <div className="bg-white border border-[#E2E8F0] rounded-3xl p-5 shadow-xs flex flex-col min-h-[440px] max-h-[520px] justify-between">
                   {unreadMessages.length > 0 ? (
-                    <div className="space-y-4 overflow-y-auto max-h-[160px] pr-1">
+                    <div className="space-y-4 overflow-y-auto max-h-[360px] pr-1">
                       {unreadMessages.map((msg, i) => (
                         <div 
                           key={i} 
@@ -1101,7 +1154,7 @@ export function Dashboard() {
                     </div>
                   )}
 
-                  <div className="mt-4 border-t border-[#E2E8F0]/60 pt-3">
+                  <div className="mt-4 border-t border-[#E2E8F0]/60 pt-3 shrink-0">
                     <Link to="/messages" className="w-full py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-xs font-bold text-[#172263] rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-xs">
                       Open Inbox <ArrowRight size={12} className="ml-1.5" />
                     </Link>
