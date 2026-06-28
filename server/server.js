@@ -1574,7 +1574,7 @@ app.post('/api/blogs/:id/comments', authenticateToken, async (req, res) => {
 // 9. Enquiry Routes
 app.post('/api/enquiries', async (req, res) => {
   const { name, phone, location, requirement, message, dateNeeded } = req.body;
-  if (!name || !phone || !location || !requirement || !message) {
+  if (!name || !phone || !location || !requirement) {
     return res.status(400).json({ error: 'Please provide all required fields' });
   }
 
@@ -1596,13 +1596,84 @@ app.post('/api/enquiries', async (req, res) => {
       }
     }
 
-    await db.query(
-      'INSERT INTO enquiries (id, name, phone, location, requirement, message, date_needed, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [enquiryId, name, cleanedPhone, location, requirement, message, formattedDate, 'Active']
-    );
+    // Dynamic column lookup to handle all versions of database schemas safely
+    const [columns] = await db.query('DESCRIBE enquiries');
+    const colNames = columns.map(c => c.Field);
+
+    const insertData = {
+      id: enquiryId,
+      name: name,
+      location: location,
+      status: 'Active'
+    };
+
+    if (colNames.includes('phone')) {
+      insertData.phone = cleanedPhone;
+    }
+    if (colNames.includes('number')) {
+      insertData.number = cleanedPhone;
+    }
+    if (colNames.includes('requirement')) {
+      insertData.requirement = requirement;
+    }
+    if (colNames.includes('requirement_type')) {
+      insertData.requirement_type = requirement;
+    }
+    if (colNames.includes('message') && message !== undefined) {
+      insertData.message = message || null;
+    }
+    if (colNames.includes('date_needed')) {
+      insertData.date_needed = formattedDate;
+    }
+    if (colNames.includes('dates_needed')) {
+      insertData.dates_needed = formattedDate;
+    }
+
+    const fields = Object.keys(insertData);
+    const placeholders = fields.map(() => '?').join(', ');
+    const values = Object.values(insertData);
+
+    const queryStr = `INSERT INTO enquiries (${fields.join(', ')}) VALUES (${placeholders})`;
+    await db.query(queryStr, values);
+
     res.status(201).json({ message: 'Enquiry submitted successfully' });
   } catch (error) {
-    console.error(error);
+    console.error('Error inserting enquiry:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+// 9.5 Settings Routes
+app.get('/api/settings', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT setting_key, setting_value FROM site_settings');
+    const settings = {};
+    rows.forEach(r => {
+      settings[r.setting_key] = r.setting_value;
+    });
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/admin/settings', authenticateToken, isAdmin, async (req, res) => {
+  const { enquiry_background } = req.body;
+  if (!enquiry_background) {
+    return res.status(400).json({ error: 'No settings provided' });
+  }
+
+  try {
+    await db.query(
+      'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
+      ['enquiry_background', enquiry_background, enquiry_background]
+    );
+    res.json({ message: 'Settings updated successfully' });
+  } catch (error) {
+    console.error('Error updating settings:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -1610,7 +1681,7 @@ app.post('/api/enquiries', async (req, res) => {
 
 // --- ADMIN PRIVILEGED MIDDLEWARE & ROUTES ---
 
-const isAdmin = async (req, res, next) => {
+async function isAdmin(req, res, next) {
   try {
     const [users] = await db.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
     if (users.length === 0 || users[0].role !== 'admin') {
@@ -1621,7 +1692,7 @@ const isAdmin = async (req, res, next) => {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-};
+}
 
 const csvUpload = multer({
   dest: uploadsDir,

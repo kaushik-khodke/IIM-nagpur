@@ -486,7 +486,7 @@ export function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
               
               {/* Card 1: My Listings & Profile */}
-              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
+              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-52 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
                   <div className="flex justify-between items-start">
                     <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-2">MY LISTINGS & PROFILE</span>
@@ -533,7 +533,7 @@ export function Dashboard() {
               </div>
 
               {/* Card 2: Local Machine Network */}
-              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
+              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-52 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
                   <div className="flex justify-between items-start">
                     <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">MY LOCATION NETWORK</span>
@@ -574,12 +574,12 @@ export function Dashboard() {
 
                 <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
                   <span>Network: Connected</span>
-                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/machines')}>Browse Directory</span>
+                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/harvesters')}>Browse Directory</span>
                 </div>
               </div>
 
               {/* Card 3: Reputation & Trust */}
-              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
+              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-52 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div className="flex justify-between items-start">
                   <div>
                     <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">MY RATING</span>
@@ -641,7 +641,7 @@ export function Dashboard() {
               </div>
 
               {/* Card 4: Latest Agri Insights */}
-              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-48 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
+              <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-52 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
                   <div className="flex justify-between items-start">
                     <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">LATEST AGRI INSIGHTS</span>

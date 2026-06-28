@@ -482,6 +482,20 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create Site Settings Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        setting_key VARCHAR(100) PRIMARY KEY,
+        setting_value TEXT NOT NULL
+      )
+    `);
+
+    // Seed default background image path
+    await activePool.query(`
+      INSERT IGNORE INTO site_settings (setting_key, setting_value)
+      VALUES ('enquiry_background', '/enquiry_background/background.png')
+    `);
+
     try {
       await activePool.query('ALTER TABLE blogs ADD COLUMN image_url VARCHAR(255) DEFAULT NULL AFTER date');
       console.log('Successfully added image_url column to blogs table.');

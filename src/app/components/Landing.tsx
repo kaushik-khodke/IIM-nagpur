@@ -106,15 +106,15 @@ function DirectorySkeletonCard() {
 
 function ProfileCard({ item, currentUserId, t }: { item: any; currentUserId: string | null; t: any }) {
   return (
-    <div 
+    <div
       className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_3px_15px_rgba(0,0,0,0.02)] hover:shadow-[0_10px_30px_rgba(23,34,99,0.07)] transition-all duration-300 flex flex-col overflow-hidden group hover:-translate-y-1"
     >
       <div className="p-3 flex flex-col gap-2 flex-1">
         <div className="relative w-full h-26 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
           {item.image ? (
-            <img 
-              src={item.image} 
-              alt={item.name} 
+            <img
+              src={item.image}
+              alt={item.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               onError={(e) => {
                 e.currentTarget.src = "";
@@ -131,12 +131,11 @@ function ProfileCard({ item, currentUserId, t }: { item: any; currentUserId: str
               )}
             </div>
           )}
-          
-          <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm tracking-wide ${
-            item.type === "harvester" 
-              ? "bg-blue-100/95 text-blue-800 border border-blue-200/50" 
+
+          <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm tracking-wide ${item.type === "harvester"
+              ? "bg-blue-100/95 text-blue-800 border border-blue-200/50"
               : "bg-green-100/95 text-green-800 border border-green-200/50"
-          }`}>
+            }`}>
             {item.type === "harvester" ? t("landing.directory.harvester", { ns: "pages" }) : t("landing.directory.operator", { ns: "pages" })}
           </span>
         </div>
@@ -145,7 +144,7 @@ function ProfileCard({ item, currentUserId, t }: { item: any; currentUserId: str
           <div>
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h4 
+                <h4
                   className="text-lg text-slate-800 font-bold font-sora line-clamp-1 group-hover:text-[#172263] transition-colors"
                   style={{ fontFamily: "'Sora', sans-serif" }}
                 >
@@ -194,11 +193,10 @@ function ProfileCard({ item, currentUserId, t }: { item: any; currentUserId: str
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
                       {t("landing.directory.availability", { ns: "pages" })}
                     </span>
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold mt-0.5 ${
-                      item.availability === "Available"
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold mt-0.5 ${item.availability === "Available"
                         ? "bg-green-100 text-green-800"
                         : "bg-amber-100 text-amber-800"
-                    }`}>
+                      }`}>
                       {item.availability || "Available"}
                     </span>
                   </div>
@@ -275,13 +273,12 @@ function ProfileCard({ item, currentUserId, t }: { item: any; currentUserId: str
           {t("landing.directory.viewDetails", { ns: "pages", defaultValue: "View Details" })}
         </Link>
       ) : (
-        <Link 
+        <Link
           to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
-          className={`w-full py-2 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 ${
-            item.type === "harvester"
+          className={`w-full py-2 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 ${item.type === "harvester"
               ? "bg-[#172263] hover:bg-[#11194A] text-white"
               : "bg-amber-500 hover:bg-amber-600 text-white"
-          }`}
+            }`}
         >
           <MessageSquare size={16} />
           {item.type === "harvester" ? t("landing.directory.bookNow", { ns: "pages" }) : t("landing.directory.hireNow", { ns: "pages" })}
@@ -516,6 +513,258 @@ function VideoBackground({ src, className, style }: { src: string; className?: s
 }
 
 
+function ServicingEnquirySection() {
+  const [bgImage, setBgImage] = useState('/enquiry_background/background.png');
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    state: '',
+    district: '',
+    message: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.enquiry_background) {
+          setBgImage(data.enquiry_background);
+        }
+      })
+      .catch(() => { });
+  }, []);
+
+  const selectedStateData = districtsData.states.find((s: any) => s.state === formData.state);
+  const districts = selectedStateData ? selectedStateData.districts : [];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    if (!formData.name || !formData.phone || !formData.state || !formData.district) {
+      setErrorMsg('Please fill in all required fields.');
+      return;
+    }
+
+    const cleanPhone = formData.phone.trim();
+    if (!/^\d{10}$/.test(cleanPhone)) {
+      setErrorMsg('Invalid phone number. Must be exactly 10 digits.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/enquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: cleanPhone,
+          location: `${formData.district}, ${formData.state}`,
+          requirement: 'Servicing',
+          message: formData.message
+        })
+      });
+
+      if (res.ok) {
+        setSuccess(true);
+        setFormData({ name: '', phone: '', state: '', district: '', message: '' });
+      } else {
+        const err = await res.json();
+        setErrorMsg(err.error || 'Failed to submit enquiry.');
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('Error connecting to the server.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section
+      className="relative py-20 px-4 sm:px-6 lg:px-8 bg-cover bg-center overflow-hidden flex items-center justify-center min-h-[600px] rounded-3xl my-10 max-w-[1440px] mx-auto text-left"
+      style={{ backgroundImage: `url(${bgImage})` }}
+    >
+      <div className="absolute inset-0 bg-slate-950/70 z-0" />
+
+      <div className="relative z-10 w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+
+        {/* Left Side Details */}
+        <div className="lg:col-span-6 text-white space-y-6 text-left">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
+            ⚙️ Maintenance & Repair
+          </span>
+
+          <h2 className="text-4xl md:text-5xl font-black leading-tight font-sora" style={{ fontFamily: "'Sora', sans-serif" }}>
+            Professional Harvester Servicing & Support
+          </h2>
+
+          <p className="text-slate-200 text-base leading-relaxed max-w-lg">
+            Ensure peak performance during the harvest season. Get in touch with our certified mechanics and specialists to schedule repairs, blade replacements, engine servicing, or hydraulic checks.
+          </p>
+
+          <div className="space-y-4 pt-4 border-t border-white/10 max-w-md">
+            <div className="flex gap-4">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm font-bold shrink-0">
+                1
+              </span>
+              <div>
+                <h4 className="font-bold text-white text-base">On-Field Assistance</h4>
+                <p className="text-sm text-slate-300">Mechanics available to travel directly to your farm.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm font-bold shrink-0">
+                2
+              </span>
+              <div>
+                <h4 className="font-bold text-white text-base">Genuine Spare Parts</h4>
+                <p className="text-sm text-slate-300">Access high-quality parts from certified brands.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm font-bold shrink-0">
+                3
+              </span>
+              <div>
+                <h4 className="font-bold text-white text-base">Experienced Engineers</h4>
+                <p className="text-sm text-slate-300">Specialists in John Deere, Claas, Mahindra, and other top machinery.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side Form Card */}
+        <div className="lg:col-span-6 flex justify-center">
+          <div className="bg-white rounded-[2rem] shadow-2xl p-8 max-w-lg w-full transition-all duration-300 text-left">
+            {success ? (
+              <div className="text-center py-12 space-y-4">
+                <div className="w-16 h-16 bg-green-50 border border-green-200 rounded-full flex items-center justify-center mx-auto text-green-600">
+                  <svg className="w-8 h-8 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 font-sora">Thank You!</h3>
+                <p className="text-slate-600 text-sm max-w-sm mx-auto">
+                  Your servicing request has been submitted successfully. Our technical support team will contact you within 2 hours.
+                </p>
+                <button
+                  onClick={() => setSuccess(false)}
+                  className="mt-6 text-sm font-bold text-[#172263] hover:underline"
+                >
+                  Submit another request
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 font-sora">Request Machine Service</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Fill out the details below. Our technical team will contact you within 2 hours.
+                  </p>
+                </div>
+
+                {errorMsg && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-600">
+                    {errorMsg}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Full Name *</label>
+                    <input
+                      type="text"
+                      placeholder="Your Name"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-800 animate-in fade-in"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Phone Number *</label>
+                    <input
+                      type="tel"
+                      placeholder="10-digit Mobile No."
+                      required
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">State *</label>
+                    <select
+                      required
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value, district: '' })}
+                      className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-700 font-sora"
+                    >
+                      <option value="">Select State</option>
+                      {districtsData.states.map((s: any) => (
+                        <option key={s.state} value={s.state}>{s.state}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">District *</label>
+                    <select
+                      required
+                      value={formData.district}
+                      disabled={!formData.state}
+                      onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                      className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-700 disabled:opacity-50 font-sora"
+                    >
+                      <option value="">Select District</option>
+                      {districts.map((d: string) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Issue Details & Specific Requests (Optional)</label>
+                  <textarea
+                    rows={4}
+                    placeholder="Please describe what servicing or repair is needed for your machine..."
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-800"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-3.5 bg-[#172263] hover:bg-[#11194A] disabled:opacity-75 transition-all text-white font-bold text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-blue-900/10 cursor-pointer"
+                >
+                  {submitting ? 'Submitting...' : 'Submit Servicing Request'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}
+
 
 export function Landing() {
 
@@ -658,7 +907,7 @@ export function Landing() {
 
         .then(data => { if (data) setCurrentUserId(data.id); })
 
-        .catch(() => {});
+        .catch(() => { });
 
     }
 
@@ -1075,17 +1324,17 @@ export function Landing() {
 
             {/* Background Image with elegant overlay */}
 
-            <div 
+            <div
 
-              className="absolute inset-0 z-0 bg-[url('/landing-bg.jpg')] bg-cover bg-center bg-no-repeat" 
+              className="absolute inset-0 z-0 bg-[url('/landing-bg.jpg')] bg-cover bg-center bg-no-repeat"
 
             />
 
             {/* Soft responsive gradient overlay to blend and keep text legible */}
 
-            <div 
+            <div
 
-              className="absolute inset-0 z-0 bg-gradient-to-b md:bg-gradient-to-r from-white/95 via-white/90 to-white/70 md:to-transparent" 
+              className="absolute inset-0 z-0 bg-gradient-to-b md:bg-gradient-to-r from-white/93 via-white/88 to-white/68 md:to-transparent"
 
             />
 
@@ -1333,7 +1582,7 @@ export function Landing() {
 
         <section id="directory" className="pt-16 pb-10 bg-gradient-to-b from-slate-50 to-white border-t border-b border-slate-100">
           <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6">
-            
+
             {/* Section Header */}
             <div className="text-center mb-8">
               <h2
@@ -1373,7 +1622,7 @@ export function Landing() {
                         <ProfileCard key={item.id} item={item} currentUserId={currentUserId} t={t} />
                       ))}
                     </div>
-                    
+
                     <div className="text-center mt-6">
                       <Link
                         to="/harvesters"
@@ -1426,6 +1675,9 @@ export function Landing() {
             </div>
           </div>
         </section>
+
+        {/* ---- SERVICING ENQUIRY SECTION ---- */}
+        <ServicingEnquirySection />
 
         {/* ---- FEATURES ---- */}
 
@@ -1581,9 +1833,9 @@ export function Landing() {
 
                   className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activePersona === key
 
-                      ? 'bg-[#172263] text-white shadow-md scale-[1.02]'
+                    ? 'bg-[#172263] text-white shadow-md scale-[1.02]'
 
-                      : 'text-[#57585A] hover:text-[#172263] hover:bg-white'
+                    : 'text-[#57585A] hover:text-[#172263] hover:bg-white'
 
                     }`}
 
@@ -1651,9 +1903,9 @@ export function Landing() {
 
                           : step.num === '04'
 
-                          ? 'scale-[2] origin-center object-center'
+                            ? 'scale-[2] origin-center object-center'
 
-                          : ''
+                            : ''
 
                       }
 
@@ -1663,17 +1915,17 @@ export function Landing() {
 
                           ? {
 
-                              width: '200%',
+                            width: '200%',
 
-                              height: '200%',
+                            height: '200%',
 
-                              left: '-50%',
+                            left: '-50%',
 
-                              top: '-50%',
+                            top: '-50%',
 
-                              transform: 'none'
+                            transform: 'none'
 
-                            }
+                          }
 
                           : undefined
 
@@ -1859,7 +2111,7 @@ export function Landing() {
 
             <div className="text-center mb-8">
 
-              <h2 
+              <h2
 
                 className="text-4xl text-[#1A1A1A] mb-3"
 
@@ -1879,7 +2131,7 @@ export function Landing() {
 
             </div>
 
-            
+
 
             <div className="space-y-3">
 
@@ -1889,7 +2141,7 @@ export function Landing() {
 
                 return (
 
-                  <div 
+                  <div
 
                     key={idx}
 
@@ -1897,15 +2149,13 @@ export function Landing() {
 
                     onMouseLeave={() => setActiveFaqIndex(null)}
 
-                    className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden transform ${
+                    className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden transform ${isOpen
 
-                      isOpen 
-
-                        ? 'border-[#172263]/30 shadow-[0_12px_32px_rgba(23,34,99,0.08)] -translate-y-0.5' 
+                        ? 'border-[#172263]/30 shadow-[0_12px_32px_rgba(23,34,99,0.08)] -translate-y-0.5'
 
                         : 'border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-[#172263]/20'
 
-                    }`}
+                      }`}
 
                   >
 
@@ -1913,11 +2163,9 @@ export function Landing() {
 
                       onClick={() => setActiveFaqIndex(isOpen ? null : idx)}
 
-                      className={`flex items-center justify-between w-full py-4 px-5 font-semibold text-left cursor-pointer transition-colors duration-300 ${
+                      className={`flex items-center justify-between w-full py-4 px-5 font-semibold text-left cursor-pointer transition-colors duration-300 ${isOpen ? 'text-[#172263]' : 'text-slate-800 hover:text-[#172263]'
 
-                        isOpen ? 'text-[#172263]' : 'text-slate-800 hover:text-[#172263]'
-
-                      }`}
+                        }`}
 
                       style={{ fontFamily: "'Sora', sans-serif" }}
 
@@ -1933,15 +2181,13 @@ export function Landing() {
 
                     </button>
 
-                    
 
-                    <div 
 
-                      className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    <div
 
-                        isOpen ? 'max-h-48 border-t border-slate-100 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
+                      className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-48 border-t border-slate-100 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
 
-                      }`}
+                        }`}
 
                     >
 

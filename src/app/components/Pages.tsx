@@ -46,6 +46,7 @@ import {
   Sparkles,
   HelpCircle,
   ShieldCheck,
+  Image,
 } from "lucide-react";
 import {
   Navbar,
@@ -7313,6 +7314,7 @@ export function AdminPortal() {
   const [blogImagePreview, setBlogImagePreview] = useState("");
   const [savingBlog, setSavingBlog] = useState(false);
   const [adminBlogsSearch, setAdminBlogsSearch] = useState("");
+  const [adminEnquiryBg, setAdminEnquiryBg] = useState('/enquiry_background/background.png');
   
   // AI blog generator states
   const [showAiBlogForm, setShowAiBlogForm] = useState(false);
@@ -7444,6 +7446,17 @@ export function AdminPortal() {
     }
   };
 
+  const fetchSettings = () => {
+    fetch('/api/settings')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.enquiry_background) {
+          setAdminEnquiryBg(data.enquiry_background);
+        }
+      })
+      .catch(() => {});
+  };
+
   const refreshAllData = () => {
     fetchCategories();
     fetchStats();
@@ -7454,6 +7467,7 @@ export function AdminPortal() {
     fetchAdminBlogs();
     fetchAdminOperators();
     fetchAdminFaqs();
+    fetchSettings();
   };
 
   const fetchStats = async () => {
@@ -8389,7 +8403,8 @@ export function AdminPortal() {
                 { id: "requests", label: t("admin.nav.requests", { defaultValue: "Requests" }), icon: <FileText size={18} /> },
                 { id: "enquiries", label: t("admin.nav.enquiries", { defaultValue: "Enquiries" }), icon: <MessageSquare size={18} /> },
                 { id: "blogs", label: t("admin.nav.blogs", { defaultValue: "Blogs Management" }), icon: <BookOpen size={18} /> },
-                { id: "faqs", label: "FAQ Management", icon: <HelpCircle size={18} /> }
+                { id: "faqs", label: "FAQ Management", icon: <HelpCircle size={18} /> },
+                { id: "backgrounds", label: "Background Settings", icon: <Image size={18} /> }
               ].map(item => (
                 <button
                   key={item.id}
@@ -10466,6 +10481,126 @@ export function AdminPortal() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ================================== */}
+          {/* TAB: BACKGROUNDS Settings          */}
+          {/* ================================== */}
+          {activeTab === "backgrounds" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0]">
+                <div>
+                  <h2 className="text-2xl font-bold text-[#1A1A1A] font-sora" style={{ fontFamily: "'Sora', sans-serif" }}>Background Settings</h2>
+                  <p className="text-xs text-[#57585A] mt-0.5">Manage the background images used on the public landing page</p>
+                </div>
+              </div>
+
+              <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.01)] max-w-2xl">
+                <h3 className="text-base font-bold text-[#1A1A1A] font-sora mb-4" style={{ fontFamily: "'Sora', sans-serif" }}>Servicing Enquiry Section Background</h3>
+                
+                <div className="space-y-6">
+                  {/* Current Preview */}
+                  <div>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Current Background Preview</span>
+                    <div className="relative h-48 w-full rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
+                      <img 
+                        src={adminEnquiryBg || '/enquiry_background/background.png'} 
+                        alt="Enquiry Background Preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Upload Form */}
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sora">Upload New Background</span>
+                      <p className="text-xs text-slate-500 mb-3">Recommended resolution: 1920x1080. Format: PNG, JPG, or WEBP.</p>
+                      
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 px-4 py-2 bg-[#172263] hover:bg-[#11194A] text-white rounded-xl text-xs font-bold cursor-pointer transition-all">
+                          <Upload size={14} /> Select Background Image
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              
+                              const formData = new FormData();
+                              formData.append('image', file);
+                              
+                              const uploadToast = toast.loading('Uploading background image...');
+                              try {
+                                const res = await fetch('/api/upload', {
+                                  method: 'POST',
+                                  body: formData
+                                });
+                                
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  setAdminEnquiryBg(data.url);
+                                  toast.success('Image uploaded successfully. Click Save Settings to apply.', { id: uploadToast });
+                                } else {
+                                  const err = await res.json();
+                                  toast.error(err.error || 'Failed to upload image.', { id: uploadToast });
+                                }
+                              } catch (err) {
+                                console.error(err);
+                                toast.error('Error uploading image.', { id: uploadToast });
+                              }
+                            }}
+                          />
+                        </label>
+                        {adminEnquiryBg && adminEnquiryBg !== '/enquiry_background/background.png' && (
+                          <button
+                            onClick={() => setAdminEnquiryBg('/enquiry_background/background.png')}
+                            className="text-xs font-bold text-red-600 hover:underline"
+                          >
+                            Reset to Default
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 flex justify-end">
+                      <button
+                        onClick={async () => {
+                          const saveToast = toast.loading('Saving settings...');
+                          try {
+                            const res = await fetch('/api/admin/settings', {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                              },
+                              body: JSON.stringify({
+                                enquiry_background: adminEnquiryBg
+                              })
+                            });
+                            
+                            if (res.ok) {
+                              toast.success('Background settings updated successfully!', { id: saveToast });
+                            } else {
+                              const err = await res.json();
+                              toast.error(err.error || 'Failed to update settings.', { id: saveToast });
+                            }
+                          } catch (err) {
+                            console.error(err);
+                            toast.error('Error saving settings.', { id: saveToast });
+                          }
+                        }}
+                        className="px-6 py-2 bg-[#172263] hover:bg-[#11194A] text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all"
+                      >
+                        Save Settings
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
             </div>
           )}
 
