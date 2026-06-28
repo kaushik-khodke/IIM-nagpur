@@ -591,8 +591,8 @@ function ServicingEnquirySection() {
       className="relative py-20 px-4 sm:px-6 lg:px-8 bg-cover bg-center overflow-hidden flex items-center justify-center min-h-[600px] rounded-3xl my-10 max-w-[1440px] mx-auto text-left"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
-      <div className="absolute inset-0 bg-slate-950/70 z-0" />
-
+      <div className="absolute inset-0 bg-slate-950/57 z-0" />
+ 
       <div className="relative z-10 w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
 
         {/* Left Side Details */}

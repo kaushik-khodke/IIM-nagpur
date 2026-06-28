@@ -8043,7 +8043,7 @@ export function AdminPortal() {
     }
   };
 
-  const openConfirmModal = (type: 'block' | 'unblock' | 'wipe' | 'deleteHarv' | 'deleteReq' | 'deleteBlog', id: string, name: string) => {
+  const openConfirmModal = (type: 'block' | 'unblock' | 'wipe' | 'deleteHarv' | 'deleteReq' | 'deleteBlog' | 'deleteOp', id: string, name: string) => {
     setConfirmType(type);
     setConfirmTargetId(id);
     setConfirmTargetName(name);
@@ -8341,7 +8341,7 @@ export function AdminPortal() {
   });
   
   const linePath = points.length > 0 
-    ? "M " + points.map(p => `${p.x} ${p.y}`).join(" L ")
+    ? "M " + points.map((p: { x: any; y: any; }) => `${p.x} ${p.y}`).join(" L ")
     : "";
     
   const areaPath = points.length > 0
