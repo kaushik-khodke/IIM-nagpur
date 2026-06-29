@@ -50,8 +50,23 @@ if (JWT_SECRET.length < 32) {
 
 // Middlewares
 
-// 2. Helmet Security Headers
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      connectSrc: ["'self'", "https:", "http:", "ws:", "wss:"],
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // 3. CORS Restrictions
 const ALLOWED_ORIGINS = [
@@ -173,8 +188,25 @@ const upload = multer({
 
 // Authentication Middleware
 const authenticateToken = (req, res, next) => {
+  let token = null;
+
+  // 1. Try to extract from Authorization Header
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  if (authHeader && authHeader.split(' ')[1]) {
+    token = authHeader.split(' ')[1];
+  }
+
+  // 2. Fallback: try to extract from cookies manually (without requiring cookie-parser)
+  if (!token && req.headers.cookie) {
+    const cookies = req.headers.cookie.split(';').reduce((acc, cookie) => {
+      const parts = cookie.split('=');
+      const key = parts[0]?.trim();
+      const value = parts.slice(1).join('=')?.trim();
+      if (key) acc[key] = value;
+      return acc;
+    }, {});
+    token = cookies['token'];
+  }
 
   if (!token) return res.status(401).json({ error: 'Access token missing' });
 
@@ -400,6 +432,12 @@ app.post('/api/auth/register', authLimiter, validateRegister, async (req, res) =
     } catch (err) {
       console.error('Failed to log signup activity:', err);
     }
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
     res.status(201).json({ token, user: { id: userId, name, email, role: 'user' } });
   } catch (error) {
     console.error(error);
@@ -438,6 +476,12 @@ app.post('/api/auth/login', authLimiter, validateLogin, async (req, res) => {
     } catch (err) {
       console.error('Failed to log login activity:', err);
     }
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (error) {
     console.error(error);
@@ -482,6 +526,15 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  res.json({ success: true, message: 'Logged out successfully' });
 });
 
 // 3. User Profile Update
@@ -3291,6 +3344,244 @@ app.delete('/api/admin/faqs/:id', authenticateToken, isAdmin, async (req, res) =
     });
   } catch (error) {
     console.error('Error deleting FAQ:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Dynamic Translation Overrides Endpoints
+app.get('/api/translation-overrides', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT lang, namespace, key_path, value FROM translation_overrides');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching translation overrides:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/admin/translation-overrides', authenticateToken, isAdmin, async (req, res) => {
+  const { lang, namespace, key_path, value } = req.body;
+
+  if (!lang || !namespace || !key_path || value === undefined || value === null) {
+    return res.status(400).json({ error: 'lang, namespace, key_path, and value are required.' });
+  }
+
+  try {
+    await db.query(
+      'INSERT INTO translation_overrides (lang, namespace, key_path, value) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?',
+      [lang, namespace, key_path, value, value]
+    );
+    res.json({ success: true, message: 'Translation override saved successfully.' });
+  } catch (error) {
+    console.error('Error saving translation override:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/admin/translation-overrides', authenticateToken, isAdmin, async (req, res) => {
+  const { lang, namespace, key_path } = req.query;
+
+  if (!lang || !namespace || !key_path) {
+    return res.status(400).json({ error: 'lang, namespace, and key_path are required query parameters.' });
+  }
+
+  try {
+    await db.query(
+      'DELETE FROM translation_overrides WHERE lang = ? AND namespace = ? AND key_path = ?',
+      [lang, namespace, key_path]
+    );
+    res.json({ success: true, message: 'Translation override reverted to default.' });
+  } catch (error) {
+    console.error('Error deleting translation override:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Dynamic Google Translate Helper
+async function translateTexts(texts, targetLang) {
+  const CHUNK_SIZE = 25; // 25 texts per chunk
+  const results = [];
+  
+  for (let i = 0; i < texts.length; i += CHUNK_SIZE) {
+    const chunk = texts.slice(i, i + CHUNK_SIZE);
+    const joinedText = chunk.join('\n');
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(joinedText)}`;
+    
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Translate API error: ${res.status} ${res.statusText}`);
+      const data = await res.json();
+      
+      if (data && data[0]) {
+        const translatedParts = data[0].map(x => x[0] || '').join('');
+        let chunkResults = translatedParts.split('\n').map(x => x.trim());
+        
+        // Remove trailing empty string if one was generated by trailing newlines
+        if (chunkResults.length === chunk.length + 1 && chunkResults[chunkResults.length - 1] === '') {
+          chunkResults.pop();
+        }
+        
+        if (chunkResults.length === chunk.length) {
+          results.push(...chunkResults);
+          continue;
+        } else {
+          console.warn(`Length mismatch in chunk starting at index ${i}. Expected ${chunk.length}, got ${chunkResults.length}. Falling back to individual translation.`);
+        }
+      }
+      
+      // Fallback: translate individually for this chunk
+      for (const text of chunk) {
+        if (!text || !text.trim()) {
+          results.push('');
+          continue;
+        }
+        const indUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+        const indRes = await fetch(indUrl);
+        if (indRes.ok) {
+          const indData = await indRes.json();
+          results.push(indData[0][0][0] || text);
+        } else {
+          results.push(text);
+        }
+        await new Promise(r => setTimeout(r, 150));
+      }
+    } catch (error) {
+      console.error(`Failed to translate chunk starting at index ${i}:`, error);
+      results.push(...chunk);
+    }
+  }
+  
+  return results;
+}
+
+// Active Languages list
+app.get('/api/languages', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT DISTINCT lang FROM translation_overrides');
+    const langCodes = rows.map(r => r.lang);
+    const langNames = {
+      en: "English",
+      hi: "हिंदी",
+      mr: "मराठी",
+      pa: "Punjabi",
+      ta: "Tamil",
+      te: "Telugu",
+      gu: "Gujarati",
+      kn: "Kannada",
+      bn: "Bengali",
+      ml: "Malayalam",
+      or: "Odia",
+      ur: "Urdu",
+      as: "Assamese"
+    };
+    const activeLanguages = langCodes.map(code => ({
+      code,
+      label: langNames[code] || code.toUpperCase()
+    }));
+    res.json(activeLanguages);
+  } catch (error) {
+    console.error('Error fetching active languages:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Available Languages to add
+app.get('/api/admin/languages/available', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const allIndianLangs = [
+      { code: "pa", label: "Punjabi (ਪੰਜਾਬੀ)" },
+      { code: "bn", label: "Bengali (বাংলা)" },
+      { code: "te", label: "Telugu (తెలుగు)" },
+      { code: "ta", label: "Tamil (தமிழ்)" },
+      { code: "gu", label: "Gujarati (ગુજરાતી)" },
+      { code: "kn", label: "Kannada (ಕನ್ನಡ)" },
+      { code: "ml", label: "Malayalam (മലയാളം)" },
+      { code: "or", label: "Odia (ଓଡ଼ିଆ)" },
+      { code: "ur", label: "Urdu (اردو)" },
+      { code: "as", label: "Assamese (অસમীয়া)" }
+    ];
+    res.json(allIndianLangs);
+  } catch (error) {
+    console.error('Error fetching available languages:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Add and translate a language
+app.post('/api/admin/languages/add', authenticateToken, isAdmin, async (req, res) => {
+  const { lang } = req.body;
+  if (!lang) return res.status(400).json({ error: 'Language code is required.' });
+  
+  try {
+    // Clear any existing entries for this language to allow clean overwrite/regeneration
+    await db.query('DELETE FROM translation_overrides WHERE lang = ?', [lang]);
+    
+    const [enRows] = await db.query("SELECT namespace, key_path, value FROM translation_overrides WHERE lang = 'en'");
+    if (enRows.length === 0) {
+      return res.status(500).json({ error: 'No English base translations found to translate from.' });
+    }
+    
+    const nsGroups = {};
+    enRows.forEach(row => {
+      if (!nsGroups[row.namespace]) nsGroups[row.namespace] = [];
+      nsGroups[row.namespace].push(row);
+    });
+    
+    for (const [ns, rows] of Object.entries(nsGroups)) {
+      const texts = rows.map(r => r.value);
+      const translatedTexts = await translateTexts(texts, lang);
+      
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const translatedValue = translatedTexts[i] || row.value;
+        await db.query(
+          'INSERT INTO translation_overrides (lang, namespace, key_path, value) VALUES (?, ?, ?, ?)',
+          [lang, ns, row.key_path, translatedValue]
+        );
+      }
+    }
+    
+    res.json({ success: true, message: `Language "${lang}" successfully translated and added.` });
+  } catch (error) {
+    console.error('Error adding new language:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Real-time Dynamic translation endpoint (caching enabled)
+app.post('/api/translate', async (req, res) => {
+  const { text, targetLang } = req.body;
+  if (!text || !targetLang) {
+    return res.status(400).json({ error: 'text and targetLang are required.' });
+  }
+
+  if (targetLang === 'en') {
+    return res.json({ translation: text });
+  }
+
+  try {
+    const sourceHash = crypto.createHash('sha256').update(text).digest('hex');
+
+    const [cached] = await db.query(
+      'SELECT translated_text FROM dynamic_translations WHERE source_hash = ? AND lang = ?',
+      [sourceHash, targetLang]
+    );
+
+    if (cached.length > 0) {
+      return res.json({ translation: cached[0].translated_text });
+    }
+
+    const translated = await translateTexts([text], targetLang);
+    const translatedText = translated[0] || text;
+
+    await db.query(
+      'INSERT IGNORE INTO dynamic_translations (source_hash, source_text, lang, translated_text) VALUES (?, ?, ?, ?)',
+      [sourceHash, text, targetLang, translatedText]
+    );
+
+    res.json({ translation: translatedText });
+  } catch (error) {
+    console.error('Error in dynamic translation endpoint:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

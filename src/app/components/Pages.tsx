@@ -47,7 +47,53 @@ import {
   HelpCircle,
   ShieldCheck,
   Image,
+  Globe,
 } from "lucide-react";
+
+import enPages from "@/i18n/locales/en/pages.json";
+import hiPages from "@/i18n/locales/hi/pages.json";
+import mrPages from "@/i18n/locales/mr/pages.json";
+import enStatic from "@/i18n/locales/en/static.json";
+import hiStatic from "@/i18n/locales/hi/static.json";
+import mrStatic from "@/i18n/locales/mr/static.json";
+import enCommon from "@/i18n/locales/en/common.json";
+import hiCommon from "@/i18n/locales/hi/common.json";
+import mrCommon from "@/i18n/locales/mr/common.json";
+
+const defaultTranslations: Record<string, Record<string, any>> = {
+  en: { pages: enPages, static: enStatic, common: enCommon },
+  hi: { pages: hiPages, static: hiStatic, common: hiCommon },
+  mr: { pages: mrPages, static: mrStatic, common: mrCommon },
+};
+
+function flattenObject(obj: any, prefix = ''): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const propName = prefix ? `${prefix}.${key}` : key;
+      if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+        Object.assign(result, flattenObject(obj[key], propName));
+      } else {
+        result[propName] = String(obj[key]);
+      }
+    }
+  }
+  return result;
+}
+
+function setNestedKey(obj: any, path: string, value: any) {
+  const parts = path.split('.');
+  let current = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    if (!(part in current)) {
+      current[part] = {};
+    }
+    current = current[part];
+  }
+  current[parts[parts.length - 1]] = value;
+}
+
 import {
   Navbar,
   OperatorCard,
@@ -61,6 +107,7 @@ import {
   TractorIllustration,
   WheatWatermark,
   AuthChooserDialog,
+  DynamicText,
 } from "./shared";
 import { toast } from "sonner";
 import districtsData from "./districts.json";
@@ -7244,6 +7291,25 @@ export function AdminPortal() {
   const [answeringFaqId, setAnsweringFaqId] = useState<string | null>(null);
   const [faqAnswerText, setFaqAnswerText] = useState("");
 
+  // Site Content Editor state
+  const [selectedContentLang, setSelectedContentLang] = useState("en");
+  const [selectedContentNs, setSelectedContentNs] = useState("pages");
+  const [contentSearchTerm, setContentSearchTerm] = useState("");
+  const [editingOverrides, setEditingOverrides] = useState<Record<string, string>>({});
+  const [loadingOverrides, setLoadingOverrides] = useState(false);
+  const [pendingEdits, setPendingEdits] = useState<Record<string, string>>({});
+  const [contentPage, setContentPage] = useState(1);
+
+  // Dynamic Languages lists
+  const [activeLanguages, setActiveLanguages] = useState<any[]>([
+    { code: "en", label: "English" },
+    { code: "hi", label: "हिंदी" },
+    { code: "mr", label: "मराठी" }
+  ]);
+  const [availableLanguages, setAvailableLanguages] = useState<any[]>([]);
+  const [selectedAddLang, setSelectedAddLang] = useState("");
+  const [addingLanguage, setAddingLanguage] = useState(false);
+
   // Detailed Listing Viewer States
   const [selectedListingDetail, setSelectedListingDetail] = useState<any | null>(null);
   const [selectedListingType, setSelectedListingType] = useState<'harvester' | 'operator' | null>(null);
@@ -7393,6 +7459,197 @@ export function AdminPortal() {
       console.error("Error fetching categories:", err);
     }
   };
+
+  const fetchAdminOverrides = async () => {
+    setLoadingOverrides(true);
+    try {
+      const res = await fetch("/api/translation-overrides", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const overridesMap: Record<string, string> = {};
+        data.forEach((item: any) => {
+          const uniqueKey = `${item.lang}.${item.namespace}.${item.key_path}`;
+          overridesMap[uniqueKey] = item.value;
+        });
+        setEditingOverrides(overridesMap);
+      }
+    } catch (err) {
+      console.error("Error fetching overrides:", err);
+      toast.error("Failed to load translation overrides.");
+    } finally {
+      setLoadingOverrides(false);
+    }
+  };
+
+  const handleSaveOverride = async (keyPath: string, value: string) => {
+    try {
+      const res = await fetch("/api/admin/translation-overrides", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          lang: selectedContentLang,
+          namespace: selectedContentNs,
+          key_path: keyPath,
+          value: value
+        })
+      });
+      if (res.ok) {
+        toast.success("Translation updated successfully!");
+        
+        const uniqueKey = `${selectedContentLang}.${selectedContentNs}.${keyPath}`;
+        setEditingOverrides(prev => ({ ...prev, [uniqueKey]: value }));
+        
+        // Update active i18next instance immediately
+        const i18n = (await import("@/i18n/config")).default;
+        const currentBundle = i18n.getResourceBundle(selectedContentLang, selectedContentNs) || {};
+        const updatedBundle = { ...currentBundle };
+        setNestedKey(updatedBundle, keyPath, value);
+        i18n.addResourceBundle(selectedContentLang, selectedContentNs, updatedBundle, true, true);
+        i18n.changeLanguage(i18n.language);
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to save translation override.");
+      }
+    } catch (err) {
+      console.error("Error saving override:", err);
+      toast.error("Failed to save translation override.");
+    }
+  };
+
+  const handleRevertOverride = async (keyPath: string) => {
+    try {
+      const res = await fetch(`/api/admin/translation-overrides?lang=${selectedContentLang}&namespace=${selectedContentNs}&key_path=${keyPath}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        toast.success("Translation reverted to default.");
+        
+        const uniqueKey = `${selectedContentLang}.${selectedContentNs}.${keyPath}`;
+        setEditingOverrides(prev => {
+          const next = { ...prev };
+          delete next[uniqueKey];
+          return next;
+        });
+
+        // Clear local pending edits for this key
+        setPendingEdits(prev => {
+          const next = { ...prev };
+          delete next[keyPath];
+          return next;
+        });
+
+        // Restore default value in active i18next instance
+        const i18n = (await import("@/i18n/config")).default;
+        const defaultBundle = defaultTranslations[selectedContentLang][selectedContentNs] || {};
+        
+        const parts = keyPath.split('.');
+        let defaultValue = defaultBundle;
+        for (const part of parts) {
+          if (defaultValue && part in defaultValue) {
+            defaultValue = defaultValue[part];
+          } else {
+            defaultValue = undefined;
+            break;
+          }
+        }
+
+        const currentBundle = i18n.getResourceBundle(selectedContentLang, selectedContentNs) || {};
+        const updatedBundle = { ...currentBundle };
+        if (defaultValue !== undefined) {
+          setNestedKey(updatedBundle, keyPath, defaultValue);
+        }
+        i18n.addResourceBundle(selectedContentLang, selectedContentNs, updatedBundle, true, true);
+        i18n.changeLanguage(i18n.language);
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to revert translation.");
+      }
+    } catch (err) {
+      console.error("Error reverting override:", err);
+      toast.error("Failed to revert translation.");
+    }
+  };
+
+  const fetchLanguagesList = async () => {
+    try {
+      const res = await fetch("/api/languages");
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          setActiveLanguages(data);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchAvailableLanguages = async () => {
+    try {
+      const res = await fetch("/api/admin/languages/available", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableLanguages(data);
+        if (data.length > 0) {
+          setSelectedAddLang(data[0].code);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddLanguage = async () => {
+    if (!selectedAddLang) return;
+    setAddingLanguage(true);
+    const addToast = toast.loading(`Auto-translating website text... Please wait.`);
+    try {
+      const res = await fetch("/api/admin/languages/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ lang: selectedAddLang })
+      });
+      if (res.ok) {
+        toast.success("Language added and auto-translated successfully!", { id: addToast });
+        await fetchLanguagesList();
+        await fetchAvailableLanguages();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to add language.", { id: addToast });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error adding language.", { id: addToast });
+    } finally {
+      setAddingLanguage(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "edit-content") {
+      fetchAdminOverrides();
+      fetchLanguagesList();
+      fetchAvailableLanguages();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    setContentPage(1);
+    setPendingEdits({});
+  }, [selectedContentLang, selectedContentNs]);
 
   const handleCategoryChange = async (value: string, type: 'standard' | 'ai') => {
     if (value === "Add New Category...") {
@@ -8423,7 +8680,8 @@ export function AdminPortal() {
                 { id: "enquiries", label: t("admin.nav.enquiries", { defaultValue: "Enquiries" }), icon: <MessageSquare size={18} /> },
                 { id: "blogs", label: t("admin.nav.blogs", { defaultValue: "Blogs Management" }), icon: <BookOpen size={18} /> },
                 { id: "faqs", label: "FAQ Management", icon: <HelpCircle size={18} /> },
-                { id: "backgrounds", label: "Background Settings", icon: <Image size={18} /> }
+                { id: "backgrounds", label: "Background Settings", icon: <Image size={18} /> },
+                { id: "edit-content", label: t("admin.nav.editContent", { defaultValue: "Edit Site Content" }), icon: <Globe size={18} /> }
               ].map(item => (
                 <button
                   key={item.id}
@@ -8450,7 +8708,12 @@ export function AdminPortal() {
           
           {/* Logout */}
           <button 
-            onClick={() => {
+            onClick={async () => {
+              try {
+                await fetch("/api/auth/logout", { method: "POST" });
+              } catch (err) {
+                console.error("Logout error:", err);
+              }
               localStorage.removeItem("tractorsewa_token");
               localStorage.removeItem("tractorsewa_user_role");
               localStorage.removeItem("tractorsewa_preview_mode");
@@ -10724,6 +10987,295 @@ export function AdminPortal() {
 
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ================================== */}
+          {/* TAB: EDIT SITE CONTENT             */}
+          {/* ================================== */}
+          {activeTab === "edit-content" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0]">
+                <div>
+                  <h2 className="text-2xl font-bold text-[#1A1A1A] font-sora" style={{ fontFamily: "'Sora', sans-serif" }}>Edit Site Content</h2>
+                  <p className="text-xs text-[#57585A] mt-0.5">Manage, customize, and translate static texts and labels across the entire website.</p>
+                </div>
+              </div>
+
+              {/* Language & Namespace Controls */}
+              <div className="flex flex-col lg:flex-row gap-4 justify-between bg-white border border-[#E2E8F0] p-5 rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.01)]">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Lang Selector */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-[#57585A] uppercase tracking-wider block font-sora">Language</span>
+                    <div className="flex flex-wrap bg-[#f5eee5]/50 border border-[#E7E0D5] p-1 rounded-xl gap-1">
+                      {activeLanguages.map(lang => (
+                        <button
+                          key={lang.code}
+                          onClick={() => setSelectedContentLang(lang.code)}
+                          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            selectedContentLang === lang.code
+                              ? "bg-[#172263] text-white shadow-sm font-extrabold"
+                              : "text-[#57585A] hover:text-[#172263]"
+                          }`}
+                        >
+                          {lang.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Add New Indian Language Option */}
+                  {availableLanguages.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-[#57585A] uppercase tracking-wider block font-sora">Add Indian Language</span>
+                      <div className="flex gap-2 items-center">
+                        <select
+                          value={selectedAddLang}
+                          onChange={(e) => setSelectedAddLang(e.target.value)}
+                          disabled={addingLanguage}
+                          className="px-3 py-1.5 bg-[#f5eee5]/50 border border-[#E7E0D5] rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#172263] text-[#57585A] h-[32px] cursor-pointer"
+                        >
+                          {availableLanguages.map(l => (
+                            <option key={l.code} value={l.code}>{l.label}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={handleAddLanguage}
+                          disabled={addingLanguage}
+                          className="px-4 py-1.5 bg-[#172263] hover:bg-[#11194A] disabled:bg-slate-300 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all flex items-center gap-1 h-[32px]"
+                        >
+                          {addingLanguage ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Adding...
+                            </>
+                          ) : (
+                            <>
+                              <Plus size={14} />
+                              Add
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Namespace Selector */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-[#57585A] uppercase tracking-wider block font-sora">Section</span>
+                    <div className="flex bg-[#f5eee5]/50 border border-[#E7E0D5] p-1 rounded-xl gap-1">
+                      {[
+                        { code: "pages", label: "Main Pages" },
+                        { code: "static", label: "Static Labels" },
+                        { code: "common", label: "Common Texts" }
+                      ].map(ns => (
+                        <button
+                          key={ns.code}
+                          onClick={() => setSelectedContentNs(ns.code)}
+                          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            selectedContentNs === ns.code
+                              ? "bg-[#172263] text-white shadow-sm font-extrabold"
+                              : "text-[#57585A] hover:text-[#172263]"
+                          }`}
+                        >
+                          {ns.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search input */}
+                <div className="space-y-1.5 lg:w-80">
+                  <span className="text-[10px] font-bold text-[#57585A] uppercase tracking-wider block font-sora">Search</span>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 text-[#57585A]" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Search content or key..."
+                      value={contentSearchTerm}
+                      onChange={(e) => {
+                        setContentSearchTerm(e.target.value);
+                        setContentPage(1);
+                      }}
+                      className="w-full pl-9 pr-8 py-2 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#172263] placeholder:text-[#57585A]/40"
+                    />
+                    {contentSearchTerm && (
+                      <button
+                        onClick={() => setContentSearchTerm("")}
+                        className="absolute right-3 top-2 text-[#57585A] hover:text-red-500 font-bold text-xs"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Items List */}
+              {loadingOverrides ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-white border border-[#E2E8F0] rounded-3xl">
+                  <Loader2 className="w-8 h-8 text-[#172263] animate-spin" />
+                  <span className="text-xs text-[#57585A] mt-2">Loading content overrides...</span>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {(() => {
+                    const flatKeysMap = flattenObject(defaultTranslations[selectedContentLang]?.[selectedContentNs] || {});
+                    
+                    const keys = Object.keys(flatKeysMap);
+                    const filtered = keys.filter(k => {
+                      const keyMatch = k.toLowerCase().includes(contentSearchTerm.toLowerCase());
+                      const defaultValMatch = flatKeysMap[k].toLowerCase().includes(contentSearchTerm.toLowerCase());
+                      const overrideVal = editingOverrides[`${selectedContentLang}.${selectedContentNs}.${k}`] || "";
+                      const overrideMatch = overrideVal.toLowerCase().includes(contentSearchTerm.toLowerCase());
+                      return keyMatch || defaultValMatch || overrideMatch;
+                    });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="text-center py-20 bg-white border border-[#E2E8F0] rounded-3xl space-y-2">
+                          <div className="text-slate-300 text-5xl">🔍</div>
+                          <h3 className="text-base font-bold text-[#1A1A1A] font-sora">No translations found</h3>
+                          <p className="text-xs text-[#57585A] max-w-md mx-auto">Try adjusting your search criteria or selecting a different section or language.</p>
+                        </div>
+                      );
+                    }
+
+                    const ITEMS_PER_PAGE = 10;
+                    const totalP = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                    const paginated = filtered.slice((contentPage - 1) * ITEMS_PER_PAGE, contentPage * ITEMS_PER_PAGE);
+
+                    return (
+                      <>
+                        <div className="grid gap-4">
+                          {paginated.map(k => {
+                            const defaultVal = flatKeysMap[k];
+                            const overrideKey = `${selectedContentLang}.${selectedContentNs}.${k}`;
+                            const savedOverride = editingOverrides[overrideKey];
+                            const isOverridden = savedOverride !== undefined;
+                            
+                            const displayVal = pendingEdits[k] !== undefined
+                              ? pendingEdits[k]
+                              : (savedOverride !== undefined ? savedOverride : "");
+
+                            const hasChanges = pendingEdits[k] !== undefined && pendingEdits[k] !== (savedOverride !== undefined ? savedOverride : "");
+                            const isLongText = defaultVal.length > 80;
+
+                            return (
+                              <div key={k} className="bg-white border border-[#E2E8F0] p-5 rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.01)] hover:border-slate-300 transition-all flex flex-col gap-4">
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-50 pb-2">
+                                  <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md max-w-full break-all">
+                                    {k}
+                                  </span>
+                                  <div className="flex gap-2">
+                                    {isOverridden && (
+                                      <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <CheckCircle2 size={10} /> Edited Custom Content
+                                      </span>
+                                    )}
+                                    {!isOverridden && (
+                                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+                                        Default System text
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {/* Default Value */}
+                                  <div className="space-y-1">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Default Value:</span>
+                                    <div className="p-3 bg-slate-50/50 border border-slate-100 rounded-xl text-xs text-slate-600 whitespace-pre-wrap break-words min-h-[42px] leading-relaxed">
+                                      {defaultVal}
+                                    </div>
+                                  </div>
+
+                                  {/* Custom Editor Value */}
+                                  <div className="space-y-1.5">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Custom Override Value:</span>
+                                    {isLongText ? (
+                                      <textarea
+                                        value={displayVal}
+                                        placeholder={defaultVal}
+                                        onChange={(e) => setPendingEdits(prev => ({ ...prev, [k]: e.target.value }))}
+                                        rows={3}
+                                        className="w-full p-3 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#172263] leading-relaxed resize-y"
+                                      />
+                                    ) : (
+                                      <input
+                                        type="text"
+                                        value={displayVal}
+                                        placeholder={defaultVal}
+                                        onChange={(e) => setPendingEdits(prev => ({ ...prev, [k]: e.target.value }))}
+                                        className="w-full px-3 py-2.5 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#172263]"
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-50">
+                                  {isOverridden && (
+                                    <button
+                                      onClick={() => handleRevertOverride(k)}
+                                      className="px-3.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition cursor-pointer"
+                                    >
+                                      Revert to Default
+                                    </button>
+                                  )}
+                                  <button
+                                    disabled={!hasChanges}
+                                    onClick={() => handleSaveOverride(k, displayVal)}
+                                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 ${
+                                      hasChanges
+                                        ? "bg-[#172263] hover:bg-[#11194A] text-white cursor-pointer"
+                                        : "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
+                                    }`}
+                                  >
+                                    Save Content
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Pagination controls */}
+                        {totalP > 1 && (
+                          <div className="flex items-center justify-between bg-white border border-[#E2E8F0] px-6 py-4 rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.01)] mt-4">
+                            <button
+                              disabled={contentPage === 1}
+                              onClick={() => setContentPage(p => Math.max(1, p - 1))}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                                contentPage === 1
+                                  ? "border-slate-100 text-slate-300 cursor-not-allowed"
+                                  : "border-[#E2E8F0] text-[#172263] hover:bg-[#f5eee5]/20 cursor-pointer"
+                              }`}
+                            >
+                              Previous
+                            </button>
+                            <span className="text-xs font-semibold text-[#57585A]">
+                              Page <strong className="text-[#1A1A1A]">{contentPage}</strong> of <strong className="text-[#1A1A1A]">{totalP}</strong>
+                            </span>
+                            <button
+                              disabled={contentPage === totalP}
+                              onClick={() => setContentPage(p => Math.min(totalP, p + 1))}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                                contentPage === totalP
+                                  ? "border-slate-100 text-slate-300 cursor-not-allowed"
+                                  : "border-[#E2E8F0] text-[#172263] hover:bg-[#f5eee5]/20 cursor-pointer"
+                              }`}
+                            >
+                              Next
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           )}
 
