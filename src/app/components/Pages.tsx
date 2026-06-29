@@ -738,7 +738,7 @@ export function HarvesterDetail() {
                             navigate(`/messages?userId=${harvester.userId}`);
                           }
                         }}
-                        className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors font-medium"
+                        className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors font-medium cursor-pointer"
                       >
                         {t("harvesterDetail.messageOwner", { defaultValue: "Message Owner" })}
                       </button>
@@ -1200,6 +1200,7 @@ export function ExploreOperators() {
 export function OperatorProfile() {
   const { t } = useTranslation(["pages", "static"]);
   const { id } = useParams();
+  const navigate = useNavigate();
   const [operator, setOperator] = useState<any>(null);
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1625,7 +1626,7 @@ export function OperatorProfile() {
                               navigate(`/messages?userId=${operator.user_id}`);
                             }
                           }}
-                          className="w-full py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors"
+                          className="w-full py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors cursor-pointer"
                         >
                           {t("operatorProfile.sendMessage", { defaultValue: "Send Message" })}
                         </button>
@@ -1945,12 +1946,16 @@ export function AddOperator() {
 
     setLoading(true);
     try {
+      const token = localStorage.getItem("tractorsewa_token");
       let imagePath = null;
       if (imageFile) {
         const formData = new FormData();
         formData.append("image", imageFile);
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
           body: formData
         });
         if (uploadRes.ok) {
@@ -1958,8 +1963,6 @@ export function AddOperator() {
           imagePath = uploadData.url;
         }
       }
-
-      const token = localStorage.getItem("tractorsewa_token");
       const res = await fetch("/api/operators", {
         method: "POST",
         headers: {
@@ -3018,12 +3021,16 @@ export function AddHarvester() {
 
     setLoading(true);
     try {
+      const token = localStorage.getItem("tractorsewa_token");
       const uploadedUrls: string[] = [];
       for (const file of photos) {
         const formData = new FormData();
         formData.append("image", file);
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
           body: formData
         });
         if (uploadRes.ok) {
@@ -3035,8 +3042,6 @@ export function AddHarvester() {
       }
 
       const imagePath = JSON.stringify(uploadedUrls);
-
-      const token = localStorage.getItem("tractorsewa_token");
       const res = await fetch("/api/harvesters", {
         method: "POST",
         headers: {
@@ -3688,12 +3693,16 @@ export function EditHarvester() {
 
     setLoading(true);
     try {
+      const token = localStorage.getItem("tractorsewa_token");
       const uploadedUrls = [...existingPhotos];
       for (const file of photos) {
         const formData = new FormData();
         formData.append("image", file);
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
           body: formData
         });
         if (uploadRes.ok) {
@@ -3705,8 +3714,6 @@ export function EditHarvester() {
       }
 
       const imagePath = JSON.stringify(uploadedUrls);
-
-      const token = localStorage.getItem("tractorsewa_token");
       const res = await fetch(`/api/harvesters/${id}`, {
         method: "PUT",
         headers: {
@@ -4816,7 +4823,7 @@ export function RequestDetail() {
                     navigate(`/messages?userId=${req.userId}`);
                   }
                 }}
-                className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center font-semibold text-center text-sm gap-2"
+                className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center font-semibold text-center text-sm gap-2 cursor-pointer"
               >
                 <MessageCircle size={16} /> {t("requestDetail.messageUser", { defaultValue: "Message User" })}
               </button>
@@ -6973,12 +6980,16 @@ export function EditProfile() {
 
     setSaving(true);
     try {
+      const token = localStorage.getItem("tractorsewa_token");
       let finalImagePath = imagePath;
       if (imageFile) {
         const formData = new FormData();
         formData.append("image", imageFile);
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
           body: formData
         });
         if (uploadRes.ok) {
@@ -6988,8 +6999,6 @@ export function EditProfile() {
           toast.error(t("editProfile.errorUploadImage", { defaultValue: "Failed to upload profile image" }));
         }
       }
-
-      const token = localStorage.getItem("tractorsewa_token");
       const body: any = { name, state, phone: finalPhone, bio, imagePath: finalImagePath };
       if (operatorProfile) {
         body.location = location;
@@ -7211,6 +7220,7 @@ export function AdminPortal() {
   const { t } = useTranslation(["pages", "static"]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [stats, setStats] = useState<any>({ totalUsers: 0, totalOperators: 0, totalHarvesters: 0, totalRequests: 0, blockedUsers: 0, loginHistory: [], performers: [] });
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -7862,10 +7872,14 @@ export function AdminPortal() {
     try {
       let uploadedUrl = blogImageUrl;
       if (blogImageFile) {
+        const token = localStorage.getItem("tractorsewa_token");
         const formData = new FormData();
         formData.append("image", blogImageFile);
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
           body: formData
         });
         if (uploadRes.ok) {
@@ -8296,6 +8310,11 @@ export function AdminPortal() {
   }, [adminFaqs, faqStatusFilter, faqSortFilter]);
 
   const pendingEnquiriesCount = enquiries.filter((enq: any) => enq.status === 'Active' || enq.status === 'Pending' || !enq.status).length;
+  const pendingVerificationsCount = adminOperators.filter((op: any) => op.selfie_image_path && (!op.verification_status || op.verification_status === "Pending")).length;
+  const pendingOperatorsCount = adminOperators.filter((op: any) => op.is_profile_completed === 1 && (!op.verification_status || op.verification_status === "Pending")).length;
+  const pendingHarvestersCount = harvesters.filter((h: any) => !h.verification_status || h.verification_status === "Pending").length;
+  const pendingFaqsCount = adminFaqs.filter((faq: any) => !faq.answer).length;
+  const totalAdminNotificationsCount = pendingVerificationsCount + pendingOperatorsCount + pendingHarvestersCount + pendingFaqsCount + pendingEnquiriesCount;
 
   // Performers sorting
   const sortedPerformers = [...(stats.performers || [])].sort((a: any, b: any) => {
@@ -8445,18 +8464,122 @@ export function AdminPortal() {
                   <p className="text-[#57585A] text-sm mt-1">{t("admin.analyticsHighlight", { defaultValue: "Platform analytics and administrative directory highlights." })}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => setActiveTab("enquiries")}
-                    className="p-2.5 text-[#57585A] hover:text-[#172263] hover:bg-zinc-100 rounded-full transition relative"
-                    title={t("admin.viewEnquiries", { defaultValue: "View Enquiries" })}
-                  >
-                    <Bell size={20} />
-                    {pendingEnquiriesCount > 0 && (
-                      <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-pulse">
-                        {pendingEnquiriesCount}
-                      </span>
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                      className="p-2.5 text-[#57585A] hover:text-[#172263] hover:bg-zinc-100 rounded-full transition relative cursor-pointer"
+                      title="Notifications"
+                    >
+                      <Bell size={20} />
+                      {totalAdminNotificationsCount > 0 && (
+                        <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-pulse">
+                          {totalAdminNotificationsCount}
+                        </span>
+                      )}
+                    </button>
+                    {showNotifDropdown && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-40 cursor-default" 
+                          onClick={() => setShowNotifDropdown(false)}
+                        />
+                        <div className="absolute right-0 mt-2 w-72 bg-white border border-[#E2E8F0] rounded-2xl shadow-xl z-50 p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2">
+                            <span className="text-xs font-extrabold uppercase tracking-wider text-[#1A1A1A] font-sora">Admin Alerts</span>
+                            <span className="bg-[#172263] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                              {totalAdminNotificationsCount} Actions
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            {/* ID Verifications */}
+                            <button
+                              onClick={() => {
+                                setActiveTab("verifications");
+                                setShowNotifDropdown(false);
+                              }}
+                              className="w-full text-left p-2.5 hover:bg-slate-50 rounded-xl transition flex justify-between items-center group cursor-pointer"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-[#1A1A1A] group-hover:text-[#172263]">ID Verifications</p>
+                                <p className="text-[10px] text-zinc-500 font-medium">Pending operator ID audits</p>
+                              </div>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${pendingVerificationsCount > 0 ? 'bg-red-50 text-red-600 font-black animate-pulse' : 'bg-zinc-100 text-zinc-400'}`}>
+                                {pendingVerificationsCount}
+                              </span>
+                            </button>
+
+                            {/* Operator Listings */}
+                            <button
+                              onClick={() => {
+                                setActiveTab("operators");
+                                setShowNotifDropdown(false);
+                              }}
+                              className="w-full text-left p-2.5 hover:bg-slate-50 rounded-xl transition flex justify-between items-center group cursor-pointer"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-[#1A1A1A] group-hover:text-[#172263]">Operator Profiles</p>
+                                <p className="text-[10px] text-zinc-500 font-medium">Pending listing approvals</p>
+                              </div>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${pendingOperatorsCount > 0 ? 'bg-amber-50 text-amber-600 font-black' : 'bg-zinc-100 text-zinc-400'}`}>
+                                {pendingOperatorsCount}
+                              </span>
+                            </button>
+
+                            {/* Harvester Listings */}
+                            <button
+                              onClick={() => {
+                                setActiveTab("harvesters");
+                                setShowNotifDropdown(false);
+                              }}
+                              className="w-full text-left p-2.5 hover:bg-slate-50 rounded-xl transition flex justify-between items-center group cursor-pointer"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-[#1A1A1A] group-hover:text-[#172263]">Machine Listings</p>
+                                <p className="text-[10px] text-zinc-500 font-medium">Pending machine approvals</p>
+                              </div>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${pendingHarvestersCount > 0 ? 'bg-[#172263]/10 text-[#172263] font-black' : 'bg-zinc-100 text-zinc-400'}`}>
+                                {pendingHarvestersCount}
+                              </span>
+                            </button>
+
+                            {/* FAQ Moderation */}
+                            <button
+                              onClick={() => {
+                                setActiveTab("faqs");
+                                setShowNotifDropdown(false);
+                              }}
+                              className="w-full text-left p-2.5 hover:bg-slate-50 rounded-xl transition flex justify-between items-center group cursor-pointer"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-[#1A1A1A] group-hover:text-[#172263]">FAQs Pending Answer</p>
+                                <p className="text-[10px] text-zinc-500 font-medium">Unanswered questions</p>
+                              </div>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${pendingFaqsCount > 0 ? 'bg-purple-50 text-purple-600 font-black' : 'bg-zinc-100 text-zinc-400'}`}>
+                                {pendingFaqsCount}
+                              </span>
+                            </button>
+
+                            {/* Enquiries */}
+                            <button
+                              onClick={() => {
+                                setActiveTab("enquiries");
+                                setShowNotifDropdown(false);
+                              }}
+                              className="w-full text-left p-2.5 hover:bg-slate-50 rounded-xl transition flex justify-between items-center group cursor-pointer"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-[#1A1A1A] group-hover:text-[#172263]">User Enquiries</p>
+                                <p className="text-[10px] text-zinc-500 font-medium">Active user enquiries</p>
+                              </div>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${pendingEnquiriesCount > 0 ? 'bg-emerald-50 text-emerald-600 font-black' : 'bg-zinc-100 text-zinc-400'}`}>
+                                {pendingEnquiriesCount}
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      </>
                     )}
-                  </button>
+                  </div>
                 </div>
               </div>
               
@@ -10693,6 +10816,32 @@ export function AdminPortal() {
                     </div>
                   ) : operatorVerificationDetails ? (
                     <div className="space-y-4">
+                      {/* Account Owner Profile Details */}
+                      {operatorVerificationDetails.operator && (
+                        <div className="bg-zinc-50 border border-zinc-200/80 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-[#172263] flex items-center justify-center text-white text-base font-black shrink-0 overflow-hidden ring-2 ring-zinc-200">
+                              {operatorVerificationDetails.operator.signupProfilePic ? (
+                                <img
+                                  src={operatorVerificationDetails.operator.signupProfilePic}
+                                  alt="Signup Profile"
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span>{operatorVerificationDetails.operator.signupName?.charAt(0) || '?'}</span>
+                              )}
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase font-extrabold tracking-wider text-[#57585A] block">Submitting User Account</span>
+                              <p className="font-extrabold text-sm text-[#1A1A1A] font-sora mt-0.5">{operatorVerificationDetails.operator.signupName || 'N/A'}</p>
+                            </div>
+                          </div>
+                          <div className="bg-white border border-zinc-150 rounded-xl px-3 py-2 shrink-0">
+                            <span className="text-[10px] uppercase font-extrabold tracking-wider text-[#57585A] block">Logged In Email</span>
+                            <span className="text-xs font-bold text-[#172263] font-mono mt-0.5 block">{operatorVerificationDetails.operator.signupEmail || 'N/A'}</span>
+                          </div>
+                        </div>
+                      )}
                       {/* Side by Side Images */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-slate-50 border border-zinc-200 rounded-2xl p-3 flex flex-col items-center">

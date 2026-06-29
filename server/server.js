@@ -11,6 +11,7 @@ const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const winston = require('winston');
 const dotenv = require('dotenv');
+const crypto = require('crypto');
 
 // Try loading .env from root directory first, then fallback to current directory
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -96,6 +97,20 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true,
   message: 'Too many login attempts, please try again later',
 });
+const enquiryLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: { error: 'Too many enquiries submitted from this device. Please try again after an hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const faqLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: { error: 'Too many FAQ questions submitted from this device. Please try again after an hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 app.use('/api/', apiLimiter);
 
 // 5. Structured Logging with Winston
@@ -163,19 +178,68 @@ const authenticateToken = (req, res, next) => {
 
   if (!token) return res.status(401).json({ error: 'Access token missing' });
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, async (err, decoded) => {
     if (err) return res.status(403).json({ error: 'Invalid or expired token' });
-    req.user = user;
-    next();
+    
+    try {
+      const [rows] = await db.query(
+        'SELECT id, name, email, role, state, phone, bio, image_path, is_blocked FROM users WHERE id = ?',
+        [decoded.id]
+      );
+      
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = rows[0];
+      if (user.is_blocked) {
+        return res.status(403).json({ error: 'Your account has been blocked by an administrator.' });
+      }
+
+      req.user = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        state: user.state,
+        phone: user.phone,
+        bio: user.bio,
+        imagePath: user.image_path
+      };
+
+      // Log the authenticated request details
+      logger.info(`Authenticated request by: ${req.user.name} (${req.user.email}), Role: ${req.user.role}, Image: ${req.user.imagePath || 'None'}`);
+
+      next();
+    } catch (error) {
+      console.error('Error verifying token user:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
   });
 };
 
-const getOptionalUser = (req) => {
+const getOptionalUser = async (req) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return null;
   try {
-    return jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const [rows] = await db.query(
+      'SELECT id, name, email, role, state, phone, bio, image_path, is_blocked FROM users WHERE id = ?',
+      [decoded.id]
+    );
+    if (rows.length === 0 || rows[0].is_blocked) return null;
+    const user = rows[0];
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      state: user.state,
+      phone: user.phone,
+      bio: user.bio,
+      imagePath: user.image_path
+    };
   } catch (err) {
     return null;
   }
@@ -201,19 +265,30 @@ const validateYear = (year) => {
   return /^\d{4}$/.test(year.toString().trim()) && parsed >= 1900 && parsed <= currentYear + 1;
 };
 
+const sanitizeInput = (val) => {
+  if (typeof val !== 'string') return val;
+  return val
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+};
+
 // --- API ROUTES ---
 
 // 1. Image Upload Endpoint
-app.post('/api/upload', (req, res) => {
+app.post('/api/upload', authenticateToken, (req, res) => {
   upload.single('image')(req, res, async (err) => {
     if (err) {
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(400).json({ error: 'File size too large. Maximum limit is 5MB.' });
         }
-        return res.status(400).json({ error: `Multer upload error: ${err.message}` });
+        return res.status(400).json({ error: 'Upload failed due to system limit constraints.' });
       }
-      return res.status(400).json({ error: err.message || 'File upload error.' });
+      return res.status(400).json({ error: err.message || 'File upload failed.' });
     }
 
     if (!req.file) {
@@ -251,12 +326,7 @@ app.post('/api/upload', (req, res) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Supabase upload error:', response.status, errorText);
-        let parsedError = errorText;
-        try {
-          const jsonErr = JSON.parse(errorText);
-          parsedError = jsonErr.message || jsonErr.error || errorText;
-        } catch (e) {}
-        return res.status(500).json({ error: `Supabase upload failed: ${parsedError}` });
+        return res.status(500).json({ error: 'Supabase upload failed. Please try again later.' });
       }
 
       const publicUrl = `https://${ref}.supabase.co/storage/v1/object/public/${bucket}/${fileName}`;
@@ -272,7 +342,7 @@ app.post('/api/upload', (req, res) => {
       if (fs.existsSync(localPath)) {
         fs.unlinkSync(localPath);
       }
-      res.status(500).json({ error: `Internal Server Error during upload: ${error.message}` });
+      res.status(500).json({ error: 'Internal Server Error during file upload.' });
     }
   });
 });
@@ -316,9 +386,11 @@ app.post('/api/auth/register', authLimiter, validateRegister, async (req, res) =
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = require('crypto').randomUUID();
+    const cleanName = sanitizeInput(name);
+    const cleanState = sanitizeInput(state);
     await db.query(
       'INSERT INTO users (id, name, email, password, role, state, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [userId, name, email, hashedPassword, 'user', state || null, cleanedPhone]
+      [userId, cleanName, email, hashedPassword, 'user', cleanState || null, cleanedPhone]
     );
 
     const token = jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
@@ -425,9 +497,12 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
   }
 
   try {
+    const cleanName = sanitizeInput(name);
+    const cleanState = sanitizeInput(state);
+    const cleanBio = sanitizeInput(bio);
     await db.query(
       'UPDATE users SET name = ?, state = ?, phone = ?, bio = ?, image_path = ? WHERE id = ?',
-      [name, state || null, cleanedPhone, bio || null, imagePath || null, req.user.id]
+      [cleanName, cleanState || null, cleanedPhone, cleanBio || null, imagePath || null, req.user.id]
     );
 
     res.json({ message: 'Profile updated successfully' });
@@ -453,19 +528,8 @@ app.get('/api/users/:id', authenticateToken, async (req, res) => {
 // 4. Operator Routes
 app.get('/api/operators', async (req, res) => {
   const { search, location, state, availability, limit, userId, status, sortBy } = req.query;
-  const caller = getOptionalUser(req);
-
-  let userRole = null;
-  if (caller) {
-    try {
-      const [users] = await db.query('SELECT role FROM users WHERE id = ?', [caller.id]);
-      if (users.length > 0) {
-        userRole = users[0].role;
-      }
-    } catch (err) {
-      console.error('Error fetching caller role:', err);
-    }
-  }
+  const caller = await getOptionalUser(req);
+  const userRole = caller ? caller.role : null;
   let queryStr = `
     SELECT o.*,
            COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'operator' AND target_id = o.id), 0) as avgRating,
@@ -571,15 +635,9 @@ app.get('/api/operators/:id', async (req, res) => {
       return res.status(404).json({ error: 'Operator not found' });
     }
     const op = rows[0];
-    const caller = getOptionalUser(req);
+    const caller = await getOptionalUser(req);
     const isOwner = caller && caller.id === op.user_id;
-    let userRole = null;
-    if (caller) {
-      const [users] = await db.query('SELECT role FROM users WHERE id = ?', [caller.id]);
-      if (users.length > 0) {
-        userRole = users[0].role;
-      }
-    }
+    const userRole = caller ? caller.role : null;
     const isAdmin = userRole === 'admin';
     if (op.verification_status !== 'Approved' && !isOwner && !isAdmin) {
       return res.status(404).json({ error: 'Operator not found' });
@@ -623,15 +681,21 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
     let result;
     const expertiseStr = Array.isArray(machineExpertise) ? JSON.stringify(machineExpertise) : JSON.stringify([machineExpertise]);
 
+    const cleanName = sanitizeInput(name);
+    const cleanLocation = sanitizeInput(location);
+    const cleanState = sanitizeInput(state);
+    const cleanAvailability = sanitizeInput(availability);
+    const cleanDescription = sanitizeInput(description);
+
     if (existing.length > 0) {
       result = await db.query(
         'UPDATE operators SET name = ?, experience = ?, location = ?, state = ?, machine_expertise = ?, availability = ?, description = ?, phone = ?, whatsapp = ?, image_path = ?, is_profile_completed = 1 WHERE user_id = ?',
-        [name, experience, location, state, expertiseStr, availability || 'Available', description || null, cleanedPhone, cleanedWhatsapp, imagePath || null, req.user.id]
+        [cleanName, experience, cleanLocation, cleanState, expertiseStr, cleanAvailability || 'Available', cleanDescription || null, cleanedPhone, cleanedWhatsapp, imagePath || null, req.user.id]
       );
     } else {
       result = await db.query(
         'INSERT INTO operators (id, user_id, name, experience, location, state, machine_expertise, availability, description, phone, whatsapp, image_path, verification_status, is_profile_completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'Unverified\', 1)',
-        [require('crypto').randomUUID(), req.user.id, name, experience, location, state, expertiseStr, availability || 'Available', description || null, cleanedPhone, cleanedWhatsapp, imagePath || null]
+        [require('crypto').randomUUID(), req.user.id, cleanName, experience, cleanLocation, cleanState, expertiseStr, cleanAvailability || 'Available', cleanDescription || null, cleanedPhone, cleanedWhatsapp, imagePath || null]
       );
     }
 
@@ -659,7 +723,7 @@ app.post('/api/operators/verify-id', authenticateToken, (req, res, next) => {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ error: 'File too large. Maximum file size allowed is 15MB.' });
       }
-      return res.status(400).json({ error: err.message || 'Error uploading files' });
+      return res.status(400).json({ error: 'Error uploading files. Ensure correct fields are uploaded.' });
     }
     next();
   });
@@ -809,19 +873,8 @@ app.post('/api/operators/verify-id', authenticateToken, (req, res, next) => {
 // 5. Harvester Routes
 app.get('/api/harvesters', async (req, res) => {
   const { search, location, state, company, limit, operatorId, status, userId, sortBy } = req.query;
-  const caller = getOptionalUser(req);
-
-  let userRole = null;
-  if (caller) {
-    try {
-      const [users] = await db.query('SELECT role FROM users WHERE id = ?', [caller.id]);
-      if (users.length > 0) {
-        userRole = users[0].role;
-      }
-    } catch (err) {
-      console.error('Error fetching caller role:', err);
-    }
-  }
+  const caller = await getOptionalUser(req);
+  const userRole = caller ? caller.role : null;
   let queryStr = `
     SELECT h.*, u.name as ownerName, u.image_path as ownerProfilePic,
            COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'machine' AND target_id = h.id), 0) as avgRating,
@@ -947,15 +1000,9 @@ app.get('/api/harvesters/:id', async (req, res) => {
       return res.status(404).json({ error: 'Harvester not found' });
     }
     const r = rows[0];
-    const caller = getOptionalUser(req);
+    const caller = await getOptionalUser(req);
     const isOwner = caller && caller.id === r.user_id;
-    let userRole = null;
-    if (caller) {
-      const [users] = await db.query('SELECT role FROM users WHERE id = ?', [caller.id]);
-      if (users.length > 0) {
-        userRole = users[0].role;
-      }
-    }
+    const userRole = caller ? caller.role : null;
     const isAdmin = userRole === 'admin';
     if (r.verification_status !== 'Approved' && !isOwner && !isAdmin) {
       return res.status(404).json({ error: 'Harvester not found' });
@@ -1019,29 +1066,44 @@ app.post('/api/harvesters', authenticateToken, async (req, res) => {
   }
 
   try {
+    const cleanMachineName = sanitizeInput(machineName);
+    const cleanCompany = sanitizeInput(company);
+    const cleanModel = sanitizeInput(model);
+    const cleanLocation = sanitizeInput(location);
+    const cleanState = sanitizeInput(state);
+    const cleanDescription = sanitizeInput(description);
+    const cleanSerialNo = sanitizeInput(serialNo);
+    const cleanChassisNo = sanitizeInput(chassisNo);
+    const cleanMfgMonthYear = sanitizeInput(mfgMonthYear);
+    const cleanEngineNo = sanitizeInput(engineNo);
+    const cleanEnginePower = sanitizeInput(enginePower);
+    const cleanEngineMake = sanitizeInput(engineMake);
+    const cleanEngineModel = sanitizeInput(engineModel);
+    const cleanServiceHotlineNo = sanitizeInput(serviceHotlineNo);
+
     await db.query(
       'INSERT INTO harvesters (id, user_id, machine_name, company, model, year, location, state, phone, whatsapp, description, image_path, serial_no, chassis_no, mfg_month_year, engine_no, engine_power, engine_make, engine_model, service_hotline_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         require('crypto').randomUUID(),
         req.user.id,
-        machineName,
-        company,
-        model,
+        cleanMachineName,
+        cleanCompany,
+        cleanModel,
         year ? parseInt(year) : null,
-        location,
-        state,
+        cleanLocation,
+        cleanState,
         cleanedPhone,
         cleanedWhatsapp,
-        description || null,
+        cleanDescription || null,
         imagePath || null,
-        serialNo || null,
-        chassisNo || null,
-        mfgMonthYear || null,
-        engineNo || null,
-        enginePower || null,
-        engineMake || null,
-        engineModel || null,
-        serviceHotlineNo || null
+        cleanSerialNo || null,
+        cleanChassisNo || null,
+        cleanMfgMonthYear || null,
+        cleanEngineNo || null,
+        cleanEnginePower || null,
+        cleanEngineMake || null,
+        cleanEngineModel || null,
+        cleanServiceHotlineNo || null
       ]
     );
     res.status(201).json({ message: 'Harvester listed successfully' });
@@ -1086,27 +1148,42 @@ app.put('/api/harvesters/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized to edit this machine listing' });
     }
 
+    const cleanMachineName = sanitizeInput(machineName);
+    const cleanCompany = sanitizeInput(company);
+    const cleanModel = sanitizeInput(model);
+    const cleanLocation = sanitizeInput(location);
+    const cleanState = sanitizeInput(state);
+    const cleanDescription = sanitizeInput(description);
+    const cleanSerialNo = sanitizeInput(serialNo);
+    const cleanChassisNo = sanitizeInput(chassisNo);
+    const cleanMfgMonthYear = sanitizeInput(mfgMonthYear);
+    const cleanEngineNo = sanitizeInput(engineNo);
+    const cleanEnginePower = sanitizeInput(enginePower);
+    const cleanEngineMake = sanitizeInput(engineMake);
+    const cleanEngineModel = sanitizeInput(engineModel);
+    const cleanServiceHotlineNo = sanitizeInput(serviceHotlineNo);
+
     await db.query(
       'UPDATE harvesters SET machine_name = ?, company = ?, model = ?, year = ?, location = ?, state = ?, phone = ?, whatsapp = ?, description = ?, image_path = ?, serial_no = ?, chassis_no = ?, mfg_month_year = ?, engine_no = ?, engine_power = ?, engine_make = ?, engine_model = ?, service_hotline_no = ?, verification_status = \'Pending\', verification_feedback = NULL WHERE id = ?',
       [
-        machineName,
-        company,
-        model,
+        cleanMachineName,
+        cleanCompany,
+        cleanModel,
         year ? parseInt(year) : null,
-        location,
-        state,
+        cleanLocation,
+        cleanState,
         cleanedPhone,
         cleanedWhatsapp,
-        description || null,
+        cleanDescription || null,
         imagePath !== undefined ? imagePath : harvester.image_path,
-        serialNo || null,
-        chassisNo || null,
-        mfgMonthYear || null,
-        engineNo || null,
-        enginePower || null,
-        engineMake || null,
-        engineModel || null,
-        serviceHotlineNo || null,
+        cleanSerialNo || null,
+        cleanChassisNo || null,
+        cleanMfgMonthYear || null,
+        cleanEngineNo || null,
+        cleanEnginePower || null,
+        cleanEngineMake || null,
+        cleanEngineModel || null,
+        cleanServiceHotlineNo || null,
         req.params.id
       ]
     );
@@ -1142,8 +1219,7 @@ app.delete('/api/harvesters/:id', authenticateToken, async (req, res) => {
 app.get('/api/requests', authenticateToken, async (req, res) => {
   try {
     // Check requester role
-    const [userRows] = await db.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
-    const userRole = userRows.length > 0 ? userRows[0].role : 'user';
+    const userRole = req.user.role || 'user';
 
     const { tab, userId, location, state, limit } = req.query;
     let queryStr = 'SELECT r.*, u.name as requesterName, u.phone as requesterPhone, u.image_path as requesterProfilePic FROM requests r JOIN users u ON r.user_id = u.id WHERE 1=1';
@@ -1242,15 +1318,7 @@ app.post('/api/requests', authenticateToken, async (req, res) => {
   const { type, location, state, machineType, duration, startDate, description } = req.body;
 
   // Look up user role to enforce harvester-only requests for non-admin users
-  let userRole = 'user';
-  try {
-    const [userRows] = await db.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
-    if (userRows.length > 0) {
-      userRole = userRows[0].role;
-    }
-  } catch (err) {
-    console.error('Error fetching user role for post request:', err);
-  }
+  const userRole = req.user.role || 'user';
 
   const finalType = userRole === 'admin' ? (type || 'harvester') : 'harvester';
 
@@ -1273,9 +1341,16 @@ app.post('/api/requests', authenticateToken, async (req, res) => {
   }
 
   try {
+    const cleanFinalType = sanitizeInput(finalType);
+    const cleanLocation = sanitizeInput(location);
+    const cleanState = sanitizeInput(state);
+    const cleanMachineType = sanitizeInput(machineType);
+    const cleanDuration = sanitizeInput(duration);
+    const cleanDescription = sanitizeInput(description);
+
     await db.query(
       'INSERT INTO requests (id, user_id, type, location, state, machine_type, duration, start_date, status, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [require('crypto').randomUUID(), req.user.id, finalType, location, state, machineType, duration || null, formattedDate, 'Pending', description || null]
+      [require('crypto').randomUUID(), req.user.id, cleanFinalType, cleanLocation, cleanState, cleanMachineType, cleanDuration || null, formattedDate, 'Pending', cleanDescription || null]
     );
     res.status(201).json({ message: 'Requirement posted successfully' });
   } catch (error) {
@@ -1372,9 +1447,10 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
 
   try {
     const messageId = require('crypto').randomUUID();
+    const cleanContent = sanitizeInput(content);
     await db.query(
       'INSERT INTO messages (id, sender_id, receiver_id, content) VALUES (?, ?, ?, ?)',
-      [messageId, req.user.id, receiverId, content]
+      [messageId, req.user.id, receiverId, cleanContent]
     );
     
     const [newMessage] = await db.query('SELECT * FROM messages WHERE id = ?', [messageId]);
@@ -1416,6 +1492,80 @@ app.put('/api/messages/unread/mark-read', authenticateToken, async (req, res) =>
   }
 });
 
+// 7.5. User Notifications Routes
+app.get('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    // 1. Fetch DB notifications (only unread notifications)
+    const [dbNotifications] = await db.query(
+      'SELECT id, type, message, target_id as targetId, is_read as isRead, created_at as createdAt, NULL as senderId FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY created_at DESC',
+      [req.user.id]
+    );
+
+    // 2. Fetch unread messages to dynamically construct "You got an message from..." notifications
+    const [unreadMessages] = await db.query(
+      `SELECT m.id, m.sender_id, m.created_at, u.name as senderName 
+       FROM messages m 
+       JOIN users u ON m.sender_id = u.id 
+       WHERE m.receiver_id = ? AND m.is_read = 0`,
+      [req.user.id]
+    );
+
+    // Filter unique senders, keeping the latest unread message per sender
+    const uniqueSenders = new Map();
+    unreadMessages.forEach(msg => {
+      const existing = uniqueSenders.get(msg.sender_id);
+      if (!existing || new Date(msg.created_at) > new Date(existing.created_at)) {
+        uniqueSenders.set(msg.sender_id, msg);
+      }
+    });
+
+    const msgNotifications = Array.from(uniqueSenders.values()).map(msg => ({
+      id: msg.id,
+      type: 'message',
+      message: `You got an message from ${msg.senderName}`,
+      isRead: 0,
+      createdAt: msg.created_at,
+      senderId: msg.sender_id
+    }));
+
+    // Merge and sort desc by date
+    const merged = [...dbNotifications, ...msgNotifications].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    res.json(merged);
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
+  try {
+    await db.query(
+      'UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+    res.json({ message: 'Notification marked as read' });
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/notifications/mark-all-read', authenticateToken, async (req, res) => {
+  try {
+    await db.query(
+      'UPDATE notifications SET is_read = 1 WHERE user_id = ?',
+      [req.user.id]
+    );
+    res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // 8. Blog Routes
 app.get('/api/blogs/categories', async (req, res) => {
   try {
@@ -1429,7 +1579,7 @@ app.get('/api/blogs/categories', async (req, res) => {
 
 app.get('/api/blogs', async (req, res) => {
   const { category, search, limit, offset, seed } = req.query;
-  const user = getOptionalUser(req);
+  const user = await getOptionalUser(req);
   const currentUserId = user ? user.id : null;
 
   let queryStr = `
@@ -1477,7 +1627,7 @@ app.get('/api/blogs', async (req, res) => {
 });
 
 app.get('/api/blogs/:id', async (req, res) => {
-  const user = getOptionalUser(req);
+  const user = await getOptionalUser(req);
   const currentUserId = user ? user.id : null;
   const blogId = req.params.id;
 
@@ -1551,17 +1701,20 @@ app.post('/api/blogs/:id/comments', authenticateToken, async (req, res) => {
     const [users] = await db.query('SELECT name FROM users WHERE id = ?', [userId]);
     const userName = users[0] ? users[0].name : req.user.name || 'Anonymous';
 
+    const cleanContent = sanitizeInput(content);
+    const cleanUserName = sanitizeInput(userName);
+
     const [result] = await db.query(
       'INSERT INTO blog_comments (blog_id, user_id, user_name, content) VALUES (?, ?, ?, ?)',
-      [blogId, userId, userName, content]
+      [blogId, userId, cleanUserName, cleanContent]
     );
 
     res.status(201).json({
       id: result.insertId,
       blog_id: parseInt(blogId, 10),
       user_id: userId,
-      user_name: userName,
-      content,
+      user_name: cleanUserName,
+      content: cleanContent,
       created_at: new Date().toISOString()
     });
   } catch (error) {
@@ -1572,7 +1725,7 @@ app.post('/api/blogs/:id/comments', authenticateToken, async (req, res) => {
 
 
 // 9. Enquiry Routes
-app.post('/api/enquiries', async (req, res) => {
+app.post('/api/enquiries', enquiryLimiter, async (req, res) => {
   const { name, phone, location, requirement, message, dateNeeded } = req.body;
   if (!name || !phone || !location || !requirement || !message) {
     return res.status(400).json({ error: 'Please provide all required fields' });
@@ -1596,9 +1749,14 @@ app.post('/api/enquiries', async (req, res) => {
       }
     }
 
+    const cleanName = sanitizeInput(name);
+    const cleanLocation = sanitizeInput(location);
+    const cleanRequirement = sanitizeInput(requirement);
+    const cleanMessage = sanitizeInput(message);
+
     await db.query(
       'INSERT INTO enquiries (id, name, phone, location, requirement, message, date_needed, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [enquiryId, name, cleanedPhone, location, requirement, message, formattedDate, 'Active']
+      [enquiryId, cleanName, cleanedPhone, cleanLocation, cleanRequirement, cleanMessage, formattedDate, 'Active']
     );
     res.status(201).json({ message: 'Enquiry submitted successfully' });
   } catch (error) {
@@ -1612,8 +1770,7 @@ app.post('/api/enquiries', async (req, res) => {
 
 const isAdmin = async (req, res, next) => {
   try {
-    const [users] = await db.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
-    if (users.length === 0 || users[0].role !== 'admin') {
+    if (!req.user || req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied. Administrator privileges required.' });
     }
     next();
@@ -1823,7 +1980,10 @@ app.put('/api/admin/requests/:id/status', authenticateToken, isAdmin, async (req
 app.get('/api/admin/operators/:id/verification-details', authenticateToken, isAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const [rows] = await db.query('SELECT o.*, u.email FROM operators o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?', [id]);
+    const [rows] = await db.query(
+      'SELECT o.*, u.name as signupName, u.email as signupEmail, u.image_path as signupProfilePic FROM operators o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?',
+      [id]
+    );
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Operator profile not found.' });
     }
@@ -1863,7 +2023,6 @@ app.get('/api/admin/operators/:id/verification-details', authenticateToken, isAd
       operator: {
         id: operator.id,
         name: operator.name,
-        email: operator.email,
         experience: operator.experience,
         location: operator.location,
         state: operator.state,
@@ -1872,7 +2031,10 @@ app.get('/api/admin/operators/:id/verification-details', authenticateToken, isAd
         verification_status: operator.verification_status,
         verification_feedback: operator.verification_feedback,
         consent_timestamp: operator.consent_timestamp,
-        consent_signature: operator.consent_signature
+        consent_signature: operator.consent_signature,
+        signupName: operator.signupName,
+        signupEmail: operator.signupEmail,
+        signupProfilePic: operator.signupProfilePic
       },
       verificationFiles: {
         selfieUrl,
@@ -1933,6 +2095,30 @@ app.put('/api/admin/listings/:type/:id/verify', authenticateToken, isAdmin, asyn
       'INSERT INTO messages (id, sender_id, receiver_id, content) VALUES (?, ?, ?, ?)',
       [messageId, adminId, ownerId, content]
     );
+
+    // Also trigger user notifications for listings verifications
+    const notifId = require('crypto').randomUUID();
+    let notifMessage = '';
+    if (type === 'harvester') {
+      if (status === 'Approved') {
+        notifMessage = `Your post for harvestor ${postName} has been accepted.`;
+      } else if (status === 'Rejected') {
+        notifMessage = `Your post for harvestor ${postName} has been rejected.`;
+      }
+    } else if (type === 'operator') {
+      if (status === 'Approved') {
+        notifMessage = `Your verification has been approved by the admin.`;
+      } else if (status === 'Rejected') {
+        notifMessage = `Your verification has been rejected by the admin.`;
+      }
+    }
+
+    if (notifMessage) {
+      await db.query(
+        'INSERT INTO notifications (id, user_id, type, message, target_id) VALUES (?, ?, ?, ?, ?)',
+        [notifId, ownerId, `${type}_verification`, notifMessage, id]
+      );
+    }
 
     res.json({ message: `${type === 'harvester' ? 'Harvester' : 'Operator'} verification status updated to ${status} successfully.` });
   } catch (error) {
@@ -2420,13 +2606,66 @@ app.post('/api/ratings', authenticateToken, async (req, res) => {
     }
 
     const ratingId = crypto.randomUUID();
+    const cleanReview = sanitizeInput(review);
     // Upsert rating using ON DUPLICATE KEY UPDATE:
     await db.query(
       `INSERT INTO ratings (id, rater_id, target_type, target_id, rating, review)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE rating = VALUES(rating), review = VALUES(review)`,
-      [ratingId, raterId, targetType, targetId, numRating, review || null]
+      [ratingId, raterId, targetType, targetId, numRating, cleanReview || null]
     );
+
+    // Dynamic Notifications Triggering
+    let targetOwnerId = '';
+    if (targetType === 'operator') {
+      const [ops] = await db.query('SELECT user_id FROM operators WHERE id = ?', [targetId]);
+      if (ops.length > 0) targetOwnerId = ops[0].user_id;
+    } else if (targetType === 'machine') {
+      const [harvs] = await db.query('SELECT user_id FROM harvesters WHERE id = ?', [targetId]);
+      if (harvs.length > 0) targetOwnerId = harvs[0].user_id;
+    }
+
+    if (targetOwnerId) {
+      // Clear any existing rating notification for this specific target post to prevent duplication
+      await db.query(
+        'DELETE FROM notifications WHERE user_id = ? AND type = ? AND target_id = ?',
+        [targetOwnerId, `rating_${targetType}`, targetId]
+      );
+
+      // 1. Rating notification
+      const rateNotifId = require('crypto').randomUUID();
+      const rateNotifMsg = targetType === 'operator'
+        ? `Your operator post got a review.`
+        : `You got a rating on your post`;
+      await db.query(
+        'INSERT INTO notifications (id, user_id, type, message, target_id) VALUES (?, ?, ?, ?, ?)',
+        [rateNotifId, targetOwnerId, `rating_${targetType}`, rateNotifMsg, targetId]
+      );
+
+      // 2. Comments count notification
+      const [cmtCountRows] = await db.query(
+        'SELECT COUNT(*) as count FROM ratings WHERE target_type = ? AND target_id = ? AND review IS NOT NULL AND review != \'\'',
+        [targetType, targetId]
+      );
+      const commentCount = cmtCountRows[0].count;
+      if (commentCount > 0) {
+        const commentNotifId = require('crypto').randomUUID();
+        const commentNotifMsg = targetType === 'operator'
+          ? `Your operator post got ${commentCount} comments`
+          : `You got ${commentCount} comments on the post.`;
+        
+        // Remove older comment count notifications for this specific target post to prevent flooding
+        await db.query(
+          "DELETE FROM notifications WHERE user_id = ? AND type = ? AND target_id = ?",
+          [targetOwnerId, `comment_${targetType}`, targetId]
+        );
+
+        await db.query(
+          'INSERT INTO notifications (id, user_id, type, message, target_id) VALUES (?, ?, ?, ?, ?)',
+          [commentNotifId, targetOwnerId, `comment_${targetType}`, commentNotifMsg, targetId]
+        );
+      }
+    }
 
     res.status(201).json({ message: 'Rating submitted successfully' });
   } catch (error) {
@@ -2895,7 +3134,7 @@ app.delete('/api/admin/blogs/comments/:commentId', authenticateToken, isAdmin, a
 });
 
 // FAQ Routes
-app.post('/api/faqs', async (req, res) => {
+app.post('/api/faqs', faqLimiter, async (req, res) => {
   const { question } = req.body;
   if (!question || !question.trim()) {
     return res.status(400).json({ error: 'Question is required' });
@@ -2903,9 +3142,10 @@ app.post('/api/faqs', async (req, res) => {
 
   try {
     const faqId = require('crypto').randomUUID();
+    const cleanQuestion = sanitizeInput(question.trim());
     await db.query(
       'INSERT INTO faqs (id, question) VALUES (?, ?)',
-      [faqId, question.trim()]
+      [faqId, cleanQuestion]
     );
     res.status(201).json({ message: 'Question submitted successfully. It will be displayed after admin answers it.' });
   } catch (error) {
@@ -2978,6 +3218,12 @@ app.delete('/api/admin/faqs/:id', authenticateToken, isAdmin, async (req, res) =
     console.error('Error deleting FAQ:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
+});
+
+// Global Error Handler Middleware
+app.use((err, req, res, next) => {
+  logger.error('Unhandled server error: ' + (err.stack || err));
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 // Start Server and Initialize Database

@@ -33,6 +33,7 @@ import {
   InboxIcon,
   Globe,
   ShieldCheck,
+  Star,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -684,6 +685,11 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const [userImage, setUserImage] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // User notifications states
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifUnreadCount, setNotifUnreadCount] = useState(0);
+
   // Dialog state
   const [chooserOpen, setChooserOpen] = useState(false);
   const [chooserMode, setChooserMode] = useState<"login" | "register">("login");
@@ -757,6 +763,119 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
     window.addEventListener("user-profile-updated", fetchUser);
     return () => window.removeEventListener("user-profile-updated", fetchUser);
   }, [isAuthenticated, token]);
+
+  const fetchNotifications = () => {
+    if (isAuthenticated && token) {
+      fetch("/api/notifications", {
+        headers: { "Authorization": `Bearer ${token}` }
+      })
+        .then(res => res.ok ? res.json() : [])
+        .then(data => {
+          if (Array.isArray(data)) {
+            setNotifications(data);
+            setNotifUnreadCount(data.filter((n: any) => !n.isRead).length);
+          }
+        })
+        .catch(err => console.error("Failed to fetch notifications:", err));
+    }
+  };
+
+  const handleNotifClick = async (notif: any) => {
+    // 1. Mark as read on backend (if it's not a message and is not already read)
+    if (notif.type !== 'message' && !notif.isRead) {
+      try {
+        await fetch(`/api/notifications/${notif.id}/read`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error("Failed to mark notification as read:", err);
+      }
+    } else if (notif.type === 'message') {
+      // Mark message as read
+      try {
+        await fetch(`/api/messages/unread/mark-read`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ messageIds: [notif.id] })
+        });
+      } catch (err) {
+        console.error("Failed to mark message as read:", err);
+      }
+    }
+
+    // 2. Perform navigation
+    if (notif.type === 'message') {
+      navigate(`/messages?userId=${notif.senderId}`);
+    } else if (notif.type.includes('operator') && notif.targetId) {
+      navigate(`/operators/${notif.targetId}`);
+    } else if (notif.type.includes('harvester') && notif.targetId) {
+      navigate(`/harvesters/${notif.targetId}`);
+    } else if (notif.type.includes('machine') && notif.targetId) {
+      navigate(`/harvesters/${notif.targetId}`);
+    } else if (notif.type.includes('rating') && notif.targetId) {
+      // General ratings fallback checking type name prefix
+      if (notif.type.endsWith('operator')) {
+        navigate(`/operators/${notif.targetId}`);
+      } else {
+        navigate(`/harvesters/${notif.targetId}`);
+      }
+    } else if (notif.type.includes('comment') && notif.targetId) {
+      if (notif.type.endsWith('operator')) {
+        navigate(`/operators/${notif.targetId}`);
+      } else {
+        navigate(`/harvesters/${notif.targetId}`);
+      }
+    } else if (notif.type.includes('harvester')) {
+      navigate('/profile?tab=listings');
+    } else if (notif.type.includes('operator')) {
+      navigate('/profile?tab=operator');
+    } else {
+      navigate('/dashboard');
+    }
+
+    // 3. Immediately filter out from list so it disappears
+    setNotifications(prev => prev.filter(n => n.id !== notif.id));
+    setNotifUnreadCount(prev => Math.max(0, prev - 1));
+    setShowNotifications(false);
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch(`/api/notifications/mark-all-read`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      // Also mark messages as read
+      if (notifications.some(n => n.type === 'message')) {
+        const msgIds = notifications.filter(n => n.type === 'message').map(n => n.id);
+        if (msgIds.length > 0) {
+          await fetch(`/api/messages/unread/mark-read`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ messageIds: msgIds })
+          });
+        }
+      }
+      setNotifications([]);
+      setNotifUnreadCount(0);
+      setShowNotifications(false);
+    } catch (err) {
+      console.error("Failed to mark all as read:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 5000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, token, location.pathname]);
 
   useEffect(() => {
     fetchUnreadCount();
@@ -907,6 +1026,82 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+
+              {/* User Notification Bell Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-2 text-[#57585A] hover:text-[#172263] hover:bg-zinc-100 rounded-full transition relative cursor-pointer focus:outline-none"
+                  title="Notifications"
+                >
+                  <Bell size={20} />
+                  {notifUnreadCount > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-pulse">
+                      {notifUnreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {showNotifications && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40 cursor-default"
+                      onClick={() => setShowNotifications(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-80 bg-white border border-[#E2E8F0] rounded-2xl shadow-xl z-50 p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2">
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-[#1A1A1A] font-sora">Alerts</span>
+                        {notifUnreadCount > 0 && (
+                          <button
+                            onClick={handleMarkAllRead}
+                            className="text-[10px] text-[#172263] hover:underline font-bold cursor-pointer"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
+                        {notifications.length > 0 ? (
+                          notifications.map((notif) => (
+                            <button
+                              key={notif.id}
+                              onClick={() => handleNotifClick(notif)}
+                              className="w-full text-left p-2.5 hover:bg-slate-50 rounded-xl transition flex gap-3 items-start group cursor-pointer"
+                            >
+                              <div className="mt-0.5 p-1.5 bg-slate-100 group-hover:bg-[#172263]/10 rounded-lg text-[#57585A] group-hover:text-[#172263] transition-colors shrink-0">
+                                {notif.type === 'message' ? (
+                                  <MessageSquare size={14} />
+                                ) : notif.type === 'rating' ? (
+                                  <Star size={14} fill="currentColor" />
+                                ) : notif.type === 'comment' ? (
+                                  <MessageSquare size={14} />
+                                ) : notif.type.includes('verification') ? (
+                                  <UserCheck size={14} />
+                                ) : (
+                                  <Bell size={14} />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-[#1A1A1A] leading-snug group-hover:text-[#172263] transition-colors break-words">
+                                  {notif.message}
+                                </p>
+                                <p className="text-[9px] text-zinc-400 font-bold mt-1">
+                                  {new Date(notif.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                </p>
+                              </div>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="text-center py-6">
+                            <Bell className="w-8 h-8 text-zinc-300 mx-auto mb-1.5" />
+                            <p className="text-xs text-[#57585A] font-semibold">No new notifications</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
               <LanguageSwitcher />
 

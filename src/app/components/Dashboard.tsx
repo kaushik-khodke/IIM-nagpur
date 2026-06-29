@@ -329,6 +329,32 @@ export function Dashboard() {
     fetchData();
   }, [userName]);
 
+  // Poll unread messages every 5 seconds to keep notifications updated in real-time
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchUnread = async () => {
+      try {
+        const unreadRes = await fetch('/api/messages/unread', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (unreadRes.ok) {
+          const unreadData = await unreadRes.json();
+          const uniqueSenders: Record<string, any> = {};
+          unreadData.forEach((m: any) => {
+            uniqueSenders[m.sender_id] = m;
+          });
+          setUnreadMessages(Object.values(uniqueSenders));
+        }
+      } catch (err) {
+        console.error("Error polling unread messages:", err);
+      }
+    };
+
+    const interval = setInterval(fetchUnread, 5000);
+    return () => clearInterval(interval);
+  }, [token]);
+
   // Sync debounced search term
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -676,7 +702,7 @@ export function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* LEFT COLUMN: Available Listings */}
-          <div className={`${token ? 'lg:col-span-8' : 'lg:col-span-12'} space-y-6`}>
+          <div className="lg:col-span-12 space-y-6">
             <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3 mb-2">
               <h2 className="text-lg font-extrabold text-[#1A1A1A] font-sora">Available Listings</h2>
               {token && (
@@ -1047,70 +1073,7 @@ export function Dashboard() {
             )}
           </div>
 
-          {token && (
-            /* RIGHT COLUMN: Sidebar Widgets */
-            <div className="lg:col-span-4 space-y-6">
-              
-
-              {/* Message Notifications Widget */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
-                  <h2 className="text-lg font-extrabold text-[#1A1A1A] font-sora">Message Notifications</h2>
-                  {unreadMessages.length > 0 && (
-                    <span className="bg-[#D97706] text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                      {unreadMessages.length} New
-                    </span>
-                  )}
-                </div>
-
-                <div className="bg-white border border-[#E2E8F0] rounded-3xl p-5 shadow-xs flex flex-col min-h-[220px] justify-between">
-                  {unreadMessages.length > 0 ? (
-                    <div className="space-y-4 overflow-y-auto max-h-[160px] pr-1">
-                      {unreadMessages.map((msg, i) => (
-                        <div 
-                          key={i} 
-                          onClick={() => navigate(`/messages?userId=${msg.sender_id}`)}
-                          className="flex gap-3 items-center border-b border-[#F8FAFC] pb-2 last:border-0 last:pb-0 cursor-pointer hover:bg-slate-50 p-1.5 rounded-xl transition-all"
-                        >
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-100">
-                            {msg.senderProfilePic ? (
-                              <img 
-                                src={msg.senderProfilePic.startsWith('http') || msg.senderProfilePic.startsWith('/') ? msg.senderProfilePic : `/${msg.senderProfilePic}`} 
-                                alt={msg.senderName} 
-                                className="w-full h-full object-cover" 
-                              />
-                            ) : (
-                              <span className="text-white font-extrabold text-xs">{msg.senderName?.charAt(0)}</span>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-[#1A1A1A] truncate">
-                              {msg.senderName}
-                            </p>
-                          </div>
-                          <div className="text-[10px] text-gray-400 font-semibold shrink-0">
-                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center py-10">
-                      <Inbox className="w-8 h-8 text-gray-300 mb-2" />
-                      <p className="text-xs text-[#57585A] text-center font-medium">No unread messages</p>
-                    </div>
-                  )}
-
-                  <div className="mt-4 border-t border-[#E2E8F0]/60 pt-3">
-                    <Link to="/messages" className="w-full py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-xs font-bold text-[#172263] rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-xs">
-                      Open Inbox <ArrowRight size={12} className="ml-1.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          )}
+          {/* Right column sidebar is removed in favor of the global navbar notification bell */}
 
         </div>
       </div>

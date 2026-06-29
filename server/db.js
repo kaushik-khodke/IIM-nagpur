@@ -482,6 +482,27 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create Notifications Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        message TEXT NOT NULL,
+        target_id VARCHAR(36) DEFAULT NULL,
+        is_read TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    try {
+      await activePool.query("ALTER TABLE notifications ADD COLUMN target_id VARCHAR(36) DEFAULT NULL AFTER message");
+      console.log('Successfully added target_id column to notifications table.');
+    } catch (err) {
+      // Column might already exist, safe to ignore
+    }
+
     try {
       await activePool.query('ALTER TABLE blogs ADD COLUMN image_url VARCHAR(255) DEFAULT NULL AFTER date');
       console.log('Successfully added image_url column to blogs table.');
