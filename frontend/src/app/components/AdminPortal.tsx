@@ -154,6 +154,7 @@ export function AdminPortal() {
   const [loadingOverrides, setLoadingOverrides] = useState(false);
   const [pendingEdits, setPendingEdits] = useState<Record<string, string>>({});
   const [contentPage, setContentPage] = useState(1);
+  const [selectedPageGroup, setSelectedPageGroup] = useState("All");
 
   // Dynamic Languages lists
   const [activeLanguages, setActiveLanguages] = useState<any[]>([
@@ -504,6 +505,7 @@ export function AdminPortal() {
   useEffect(() => {
     setContentPage(1);
     setPendingEdits({});
+    setSelectedPageGroup("All");
   }, [selectedContentLang, selectedContentNs]);
 
   const handleCategoryChange = async (value: string, type: 'standard' | 'ai') => {
@@ -3968,6 +3970,65 @@ export function AdminPortal() {
                 </div>
               </div>
 
+              {/* Page Selector Tabs */}
+              {!loadingOverrides && (() => {
+                const flatKeysMap = flattenObject(defaultTranslations[selectedContentLang]?.[selectedContentNs] || {});
+                const keys = Object.keys(flatKeysMap);
+                const pagesSet = new Set<string>();
+                keys.forEach(k => {
+                  const dotIdx = k.indexOf('.');
+                  pagesSet.add(dotIdx !== -1 ? k.substring(0, dotIdx) : "general");
+                });
+                const pagesList = Array.from(pagesSet).sort();
+
+                if (pagesList.length <= 1) return null;
+
+                return (
+                  <div className="bg-white border border-[#E2E8F0] p-5 rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.01)] space-y-3">
+                    <span className="text-[10px] font-bold text-[#57585A] uppercase tracking-wider block font-sora">
+                      Filter by Page / Category
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => { setSelectedPageGroup("All"); setContentPage(1); }}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          selectedPageGroup === "All"
+                            ? "bg-[#172263] text-white shadow-sm font-extrabold"
+                            : "bg-slate-50 text-[#57585A] hover:bg-slate-100 hover:text-[#172263]"
+                        }`}
+                      >
+                        All Categories ({keys.length})
+                      </button>
+                      {pagesList.map(group => {
+                        const count = keys.filter(k => {
+                          const dotIdx = k.indexOf('.');
+                          const kGroup = dotIdx !== -1 ? k.substring(0, dotIdx) : "general";
+                          return kGroup === group;
+                        }).length;
+
+                        const label = group
+                          .replace(/([A-Z])/g, ' $1')
+                          .replace(/^./, str => str.toUpperCase());
+
+                        return (
+                          <button
+                            key={group}
+                            onClick={() => { setSelectedPageGroup(group); setContentPage(1); }}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              selectedPageGroup === group
+                                ? "bg-[#172263] text-white shadow-sm font-extrabold"
+                                : "bg-slate-50 text-[#57585A] hover:bg-slate-100 hover:text-[#172263]"
+                            }`}
+                          >
+                            {label} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Items List */}
               {loadingOverrides ? (
                 <div className="flex flex-col items-center justify-center py-20 bg-white border border-[#E2E8F0] rounded-3xl">
@@ -3981,6 +4042,12 @@ export function AdminPortal() {
                     
                     const keys = Object.keys(flatKeysMap);
                     const filtered = keys.filter(k => {
+                      if (selectedPageGroup !== "All") {
+                        const dotIdx = k.indexOf('.');
+                        const kGroup = dotIdx !== -1 ? k.substring(0, dotIdx) : "general";
+                        if (kGroup !== selectedPageGroup) return false;
+                      }
+
                       const keyMatch = k.toLowerCase().includes(contentSearchTerm.toLowerCase());
                       const defaultValMatch = flatKeysMap[k].toLowerCase().includes(contentSearchTerm.toLowerCase());
                       const overrideVal = editingOverrides[`${selectedContentLang}.${selectedContentNs}.${k}`] || "";
