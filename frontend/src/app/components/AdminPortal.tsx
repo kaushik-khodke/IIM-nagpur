@@ -4135,7 +4135,7 @@ export function AdminPortal() {
           )}
 
         </div>
-      )}
+      </div>
 
       {/* Confirmation Modal */}
       {confirmOpen && (
