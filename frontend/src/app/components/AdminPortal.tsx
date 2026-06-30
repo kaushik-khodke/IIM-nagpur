@@ -114,7 +114,7 @@ import { ImageCropperDialog } from "./ImageCropperDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { INDIAN_STATES, MACHINE_TYPES, COMPANIES, HARVESTER_MODELS, HARVESTER_COMPANIES, renderMarkdown, getStatusBadge, getUserVerificationStatusBadge } from "./pagesShared";
+import { INDIAN_STATES, MACHINE_TYPES, COMPANIES, HARVESTER_MODELS, HARVESTER_COMPANIES, renderMarkdown, getStatusBadge, getUserVerificationStatusBadge, getAllImages } from "./pagesShared";
 
 // ===========================
 // ADMIN CONTROL PORTAL

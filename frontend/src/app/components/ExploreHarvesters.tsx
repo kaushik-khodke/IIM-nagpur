@@ -69,7 +69,7 @@ import { ImageCropperDialog } from "./ImageCropperDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { INDIAN_STATES, MACHINE_TYPES, COMPANIES, HARVESTER_MODELS, HARVESTER_COMPANIES, renderMarkdown } from "./pagesShared";
+import { INDIAN_STATES, MACHINE_TYPES, COMPANIES, HARVESTER_MODELS, HARVESTER_COMPANIES, renderMarkdown, getAllImages } from "./pagesShared";
 
 // ===========================
 // EXPLORE HARVESTERS
@@ -329,21 +329,3 @@ export function ExploreHarvesters() {
     </div>
   );
 }
-
-function getAllImages(imagePath?: string | null): string[] {
-  if (!imagePath) return [];
-  const trimmed = imagePath.trim();
-  if (trimmed.startsWith("[")) {
-    try {
-      const arr = JSON.parse(trimmed);
-      if (Array.isArray(arr) && arr.length > 0) {
-        return arr;
-      }
-    } catch (e) {}
-  }
-  if (trimmed.includes(",")) {
-    return trimmed.split(",").map(p => p.trim()).filter(Boolean);
-  }
-  return [trimmed];
-}
-

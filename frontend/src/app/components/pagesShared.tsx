@@ -246,3 +246,20 @@ export const getUserVerificationStatusBadge = (status?: string) => {
       );
   }
 };
+
+export function getAllImages(imagePath?: string | null): string[] {
+  if (!imagePath) return [];
+  const trimmed = imagePath.trim();
+  if (trimmed.startsWith("[")) {
+    try {
+      const arr = JSON.parse(trimmed);
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr;
+      }
+    } catch (e) {}
+  }
+  if (trimmed.includes(",")) {
+    return trimmed.split(",").map(p => p.trim()).filter(Boolean);
+  }
+  return [trimmed];
+}
