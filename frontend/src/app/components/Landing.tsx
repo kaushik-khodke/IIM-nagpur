@@ -54,6 +54,8 @@ import {
 
   getFirstImage,
 
+  DynamicText,
+
 } from "./shared";
 
 import { Canvas } from "@react-three/fiber";
@@ -148,11 +150,13 @@ function ProfileCard({ item, currentUserId, t }: { item: any; currentUserId: str
                   className="text-lg text-slate-800 font-bold font-sora line-clamp-1 group-hover:text-[#172263] transition-colors"
                   style={{ fontFamily: "'Sora', sans-serif" }}
                 >
-                  {item.name}
+                  <DynamicText>{item.name}</DynamicText>
                 </h4>
                 <p className="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
                   <MapPin size={13} className="text-amber-500 shrink-0" />
-                  <span className="line-clamp-1">{item.location}, {item.state}</span>
+                  <span className="line-clamp-1">
+                    <DynamicText>{item.location}</DynamicText>, <DynamicText>{item.state}</DynamicText>
+                  </span>
                 </p>
               </div>
             </div>
@@ -164,13 +168,17 @@ function ProfileCard({ item, currentUserId, t }: { item: any; currentUserId: str
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
                       {t("landing.directory.company", { ns: "pages" })}
                     </span>
-                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">{item.company}</span>
+                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">
+                      <DynamicText>{item.company}</DynamicText>
+                    </span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
                       {t("landing.directory.model", { ns: "pages" })}
                     </span>
-                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">{item.model}</span>
+                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">
+                      <DynamicText>{item.model}</DynamicText>
+                    </span>
                   </div>
                   <div className="col-span-2">
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
@@ -208,7 +216,7 @@ function ProfileCard({ item, currentUserId, t }: { item: any; currentUserId: str
                       {Array.isArray(item.machineExpertise) && item.machineExpertise.length > 0 ? (
                         item.machineExpertise.slice(0, 2).map((exp: string, idx: number) => (
                           <span key={idx} className="bg-slate-50 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-medium border border-slate-200/60 line-clamp-1">
-                            {exp}
+                            <DynamicText>{exp}</DynamicText>
                           </span>
                         ))
                       ) : (
@@ -370,7 +378,7 @@ function BlogCard3D({
 
               <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 border border-green-200 rounded-full">
 
-                {category}
+                <DynamicText>{category}</DynamicText>
 
               </span>
 
@@ -388,7 +396,7 @@ function BlogCard3D({
 
             >
 
-              {title}
+              <DynamicText>{title}</DynamicText>
 
             </CardItem>
 
@@ -402,7 +410,7 @@ function BlogCard3D({
 
             >
 
-              {shortDescription}
+              <DynamicText>{shortDescription}</DynamicText>
 
             </CardItem>
 

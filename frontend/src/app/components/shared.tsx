@@ -326,7 +326,7 @@ export function OperatorCard({
               className="text-[#1A1A1A] text-sm font-bold line-clamp-1 mb-0.5 flex items-center gap-1"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              <span>{name}</span>
+              <span><DynamicText>{name}</DynamicText></span>
               {verification_status === 'Approved' && (
                 <ShieldCheck size={14} className="text-emerald-600 shrink-0 animate-pulse" title="Verified Operator" />
               )}
@@ -334,7 +334,7 @@ export function OperatorCard({
 
             {/* Location */}
             <p className="text-[#57585A] text-xs flex items-center gap-1 mb-2 font-medium line-clamp-1">
-              <MapPin size={11} className="text-[#E82326]" /> {location}
+              <MapPin size={11} className="text-[#E82326]" /> <DynamicText>{location}</DynamicText>
             </p>
 
             {/* Machine Expertise badges (fixed height container with slice) */}
@@ -438,11 +438,11 @@ export function HarvesterCard({
             className="text-[#1A1A1A] text-base mb-0.5"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
           >
-            {machineName}
+            <DynamicText>{machineName}</DynamicText>
           </h3>
-          <p className="text-[#57585A] text-sm mb-2">{model}</p>
+          <p className="text-[#57585A] text-sm mb-2"><DynamicText>{model}</DynamicText></p>
           <p className="text-[#57585A] text-sm flex items-center gap-1 mb-3">
-            <MapPin size={12} /> {location}
+            <MapPin size={12} /> <DynamicText>{location}</DynamicText>
           </p>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center overflow-hidden shrink-0">
@@ -452,7 +452,7 @@ export function HarvesterCard({
                 <span className="text-white text-xs font-bold">{ownerName.charAt(0)}</span>
               )}
             </div>
-            <span className="text-xs text-[#57585A]">{t("exploreHarvesters.owner", { name: ownerName, defaultValue: `Owner: ${ownerName}` })}</span>
+            <span className="text-xs text-[#57585A]"><DynamicText>{t("exploreHarvesters.owner", { name: ownerName, defaultValue: `Owner: ${ownerName}` })}</DynamicText></span>
           </div>
         </div>
       </div>
@@ -504,7 +504,7 @@ export function BlogCard({
         <div className="p-5">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 border border-green-200 rounded-full">
-              {category}
+              <DynamicText>{category}</DynamicText>
             </span>
             <span className="text-xs text-[#57585A]">{date}</span>
           </div>
@@ -512,9 +512,9 @@ export function BlogCard({
             className="text-[#1A1A1A] text-base mb-2 line-clamp-2"
             style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}
           >
-            {title}
+            <DynamicText>{title}</DynamicText>
           </h3>
-          <p className="text-[#57585A] text-sm line-clamp-2 mb-4">{shortDescription}</p>
+          <p className="text-[#57585A] text-sm line-clamp-2 mb-4"><DynamicText>{shortDescription}</DynamicText></p>
           <span className="text-[#172263] text-sm font-medium group-hover:underline">
             {t("blogs.readMore", { ns: "pages" })} →
           </span>
@@ -645,23 +645,42 @@ export function AuthRequiredDialog({
 // ---- Language Switcher ----
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation("common");
+  const [languages, setLanguages] = useState<any[]>([
+    { code: "en", label: "English" },
+    { code: "hi", label: "हिंदी" },
+    { code: "mr", label: "मराठी" },
+  ]);
 
-  const languages = [
-    { code: "en", label: "English", short: "Eng" },
-    { code: "hi", label: "हिन्दी", short: "Hin" },
-    { code: "mr", label: "मराठी", short: "Mar" },
-  ];
+  useEffect(() => {
+    const fetchLangs = async () => {
+      try {
+        const res = await fetch("/api/languages");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            setLanguages(data);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching languages:", err);
+      }
+    };
+    fetchLangs();
+  }, []);
+
+  const currentLang = languages.find((l) => l.code === i18n.language) || { code: "en", label: "English" };
+  const shortLabel = currentLang.code === "en" ? "Eng" : currentLang.code === "hi" ? "Hin" : currentLang.code === "mr" ? "Mar" : currentLang.label.substring(0, 3);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-1.5 px-3 py-2 text-[#57585A] hover:text-[#172263] transition-colors rounded-xl hover:bg-blue-50 text-sm">
           <Globe size={16} />
-          <span className="hidden sm:inline">{languages.find((l) => l.code === i18n.language)?.short || "Eng"}</span>
+          <span className="hidden sm:inline">{shortLabel}</span>
           <ChevronDown size={13} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-white border border-[#E2E8F0] rounded-xl min-w-[120px]">
+      <DropdownMenuContent align="end" className="bg-white border border-[#E2E8F0] rounded-xl min-w-[120px] max-h-[300px] overflow-y-auto">
         {languages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
@@ -699,7 +718,12 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const navigate = useNavigate();
   const location = useLocation();
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout API error:", err);
+    }
     localStorage.removeItem("tractorsewa_token");
     localStorage.removeItem("tractorsewa_preview_mode");
     localStorage.removeItem("tractorsewa_user_role");
@@ -1362,6 +1386,51 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
       </div>
     </div>
   );
+}
+
+// ---- Dynamic Translation Component ----
+export function DynamicText({ children }: { children: string }) {
+  const { i18n } = useTranslation();
+  const [translated, setTranslated] = useState(children);
+
+  useEffect(() => {
+    if (!children || typeof children !== "string" || !children.trim()) {
+      setTranslated(children);
+      return;
+    }
+
+    if (i18n.language === "en") {
+      setTranslated(children);
+      return;
+    }
+
+    let isMounted = true;
+    const translate = async () => {
+      try {
+        const res = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: children, targetLang: i18n.language })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            setTranslated(data.translation);
+          }
+        }
+      } catch (err) {
+        console.error("Dynamic translation failed:", err);
+      }
+    };
+
+    translate();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [children, i18n.language]);
+
+  return <>{translated}</>;
 }
 
 

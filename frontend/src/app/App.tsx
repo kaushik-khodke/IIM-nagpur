@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster, toast } from "sonner";
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { ProtectedRoute } from "./components/shared";
 
 // Lazy-loaded page components
@@ -86,7 +86,66 @@ function MessageNotifier() {
   return null;
 }
 
+function setNestedKey(obj: any, path: string, value: any) {
+  const parts = path.split('.');
+  let current = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    if (!(part in current)) {
+      current[part] = {};
+    }
+    current = current[part];
+  }
+  current[parts[parts.length - 1]] = value;
+}
+
 export default function App() {
+  const [translationsLoaded, setTranslationsLoaded] = useState(false);
+
+  useEffect(() => {
+    const fetchTranslations = async () => {
+      try {
+        const res = await fetch("/api/translation-overrides");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const bundles: Record<string, Record<string, Record<string, any>>> = {};
+            data.forEach((override: any) => {
+              const { lang, namespace, key_path, value } = override;
+              if (!bundles[lang]) bundles[lang] = {};
+              if (!bundles[lang][namespace]) bundles[lang][namespace] = {};
+              
+              setNestedKey(bundles[lang][namespace], key_path, value);
+            });
+
+            const i18n = (await import("../i18n/config")).default;
+            Object.keys(bundles).forEach(lang => {
+              Object.keys(bundles[lang]).forEach(ns => {
+                i18n.addResourceBundle(lang, ns, bundles[lang][ns], true, true);
+              });
+            });
+
+            // Refresh translation views
+            await i18n.changeLanguage(i18n.language);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load translation overrides:", error);
+      } finally {
+        setTranslationsLoaded(true);
+      }
+    };
+    fetchTranslations();
+  }, []);
+
+  if (!translationsLoaded) {
+    return (
+      <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-blue-200 border-t-[#172263] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <MessageNotifier />

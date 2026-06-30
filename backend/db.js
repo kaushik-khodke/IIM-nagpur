@@ -578,15 +578,102 @@ async function initializeDatabase() {
       console.log('Database migration note:', err.message);
     }
 
+    // Create Translation Overrides Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS translation_overrides (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        lang VARCHAR(10) NOT NULL,
+        namespace VARCHAR(50) NOT NULL,
+        key_path VARCHAR(255) NOT NULL,
+        value TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_translation (lang, namespace, key_path)
+      )
+    `);
+
+    // Create Dynamic Translations Cache Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS dynamic_translations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        source_hash VARCHAR(64) NOT NULL,
+        source_text TEXT NOT NULL,
+        lang VARCHAR(10) NOT NULL,
+        translated_text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_dyn_trans (source_hash, lang)
+      )
+    `);
+
     console.log('Database tables verified/created successfully.');
 
     // Seed tables if empty
     await seedData(activePool);
 
+    // Seed translations if empty
+    await seedTranslations(activePool);
+
   } catch (error) {
     console.error('Database Initialization Error:', error);
     throw error;
   }
+}
+
+async function seedTranslations(activePool) {
+  try {
+    const [countRow] = await activePool.query('SELECT COUNT(*) as count FROM translation_overrides');
+    if (countRow[0].count > 0) {
+      console.log('translation_overrides table already seeded.');
+      return;
+    }
+
+    console.log('Seeding translation_overrides table from local JSON files...');
+    const localesDir = path.resolve(__dirname, '../src/i18n/locales');
+    if (!fs.existsSync(localesDir)) {
+      console.warn('Warning: Locales directory not found at', localesDir);
+      return;
+    }
+
+    const langs = fs.readdirSync(localesDir);
+    for (const lang of langs) {
+      const langPath = path.join(localesDir, lang);
+      if (!fs.statSync(langPath).isDirectory()) continue;
+
+      const files = fs.readdirSync(langPath);
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        const namespace = file.replace('.json', '');
+        const filePath = path.join(langPath, file);
+        const fileContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+        const flatTranslations = flattenObject(fileContent);
+        for (const [key_path, value] of Object.entries(flatTranslations)) {
+          await activePool.query(
+            'INSERT IGNORE INTO translation_overrides (lang, namespace, key_path, value) VALUES (?, ?, ?, ?)',
+            [lang, namespace, key_path, value]
+          );
+        }
+      }
+    }
+    console.log('Successfully seeded all translation files into database.');
+  } catch (error) {
+    console.error('Error seeding translations:', error.message);
+  }
+}
+
+function flattenObject(obj, prefix = '') {
+  const result = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const propName = prefix ? `${prefix}.${key}` : key;
+      if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+        Object.assign(result, flattenObject(obj[key], propName));
+      } else {
+        result[propName] = String(obj[key]);
+      }
+    }
+  }
+  return result;
 }
 
 async function seedData(activePool) {
