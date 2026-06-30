@@ -14,7 +14,7 @@ build/
 **/.env.local
 
 # Local User Uploads (images & attachments)
-server/uploads/
+backend/uploads/
 
 # IDE / Editor
 .vscode/
@@ -45,7 +45,7 @@ coverage/
 *.tsbuildinfo
 
 # Server logs
-server/logs/
+backend/logs/
 
 # Media recordings
 *.mp4

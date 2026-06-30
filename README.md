@@ -80,31 +80,23 @@ The application features a fully responsive layout with protected routes for aut
 
 ```text
 IIM-nagpur/
-├── server/                     # Backend Express server
-│   ├── logs/                   # Winston output logs (error.log, combined.log)
-│   ├── uploads/                # Local temporary upload staging
-│   ├── ca.pem                  # Database SSL Certificate
-│   ├── db.js                   # Database pool, auto-initialization & seeding
-│   ├── server.js               # Express application and API route declarations
-│   └── package.json            # Backend scripts and dependencies
-├── src/                        # Frontend source code
-│   ├── app/
-│   │   ├── App.tsx             # Routing configuration and global contexts
-│   │   └── components/         # Page components
-│   │       ├── Auth.tsx        # Authentication flows
-│   │       ├── Landing.tsx     # 3D interactive landing page
-│   │       ├── Dashboard.tsx   # User panel
-│   │       ├── Pages.tsx       # Core views (Blogs, Harvesters, Operators, Requests, Admin)
-│   │       ├── Settings.tsx    # App preference management
-│   │       └── shared.tsx      # Protected routes, Navbar, Footer
-│   ├── components/
-│   │   └── ui/                 # Reusable shadcn/ui components
-│   ├── imports/                # Localization JSON files, image references, and static assets
-│   └── main.tsx                # Frontend entry point
-├── public/                     # Public static assets (models, fallback images)
-├── vite.config.ts              # Vite configurations
-├── tailwind.config.js          # Tailwind CSS configurations
-├── package.json                # Root package (coordinates installation)
+├── frontend/                   # Frontend React & Vite application
+│   ├── src/                    # Component logic and views
+│   │   ├── app/
+│   │   │   ├── App.tsx         # Routing configuration
+│   │   │   └── components/     # App page views (Auth, Landing, Dashboard, etc.)
+│   │   └── components/ui/      # Reusable shadcn/ui primitives
+│   ├── public/                 # Static public assets (3D models, videos)
+│   ├── vite.config.ts          # Vite configuration
+│   ├── package.json            # Frontend script commands and dependencies
+│   └── .env                    # Frontend environment configurations
+├── backend/                    # Backend API Express server
+│   ├── db.js                   # Database pool creation and initialization script
+│   ├── server.js               # API routes, middlewares, Express application
+│   ├── SECURITY_DEPLOYMENT_GUIDE.md # Production security & deployment guidelines
+│   ├── package.json            # Backend script commands and dependencies
+│   └── .env                    # Backend database connection configurations
+├── package.json                # Root workspaces project orchestrator
 └── README.md                   # Project documentation
 ```
 
@@ -114,7 +106,7 @@ IIM-nagpur/
 
 ### Prerequisites
 * **Node.js** (v18 or higher)
-* **pnpm** (v8 or higher) or **npm**
+* **npm** or **pnpm**
 
 ---
 
@@ -127,53 +119,41 @@ IIM-nagpur/
    ```
 
 2. **Install Dependencies**:
-   The root project has a `postinstall` script configured to automatically install all dependencies for both the root (frontend) and the `server` directory. Run:
+   Install dependencies in both the `frontend/` and `backend/` workspaces in one command from the root:
    ```bash
-   pnpm install
-   # or
-   npm install
+   npm run install:all
    ```
 
 3. **Configure Environment Variables**:
-   Create a `.env` file in the root directory (or inside the `server/` directory) and populate it with the following configuration:
-   ```env
-   PORT=5000
-   JWT_SECRET=your_jwt_secret_must_be_at_least_32_characters
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
-   DB_USER=root
-   DB_PASSWORD=your_mysql_password
-   DB_NAME=tractorsewa
-   DB_SSL_REQUIRED=false
-   ```
+   * **Backend**: Copy the environment setup variables into a `.env` file inside the `backend/` directory:
+     ```env
+     PORT=5000
+     JWT_SECRET=your_jwt_secret_must_be_at_least_32_characters
+     DB_HOST=127.0.0.1
+     DB_PORT=3306
+     DB_USER=root
+     DB_PASSWORD=your_mysql_password
+     DB_NAME=tractorsewa
+     DB_SSL_REQUIRED=false
+     ```
+   * **Frontend**: Populated automatically with Vite-specific keys if needed (inside `frontend/.env`).
 
 4. **Start the Database**:
-   Ensure your local MySQL / MariaDB server is active, or use a remote MySQL database instance (by providing corresponding host/ssl variables).
+   Ensure your local MySQL / MariaDB server is active, and configure credentials in `backend/.env`.
 
 5. **Run the Application**:
-   You can start both the backend API server and the frontend Vite server.
-   
-   * **To run the backend server**:
-     ```bash
-     cd server
-     npm run dev
-     ```
-     The backend API will start at `http://localhost:5000`.
-     
-   * **To run the frontend server**:
-     In a new terminal window in the root directory, run:
-     ```bash
-     pnpm run dev
-     # or
-     npm run dev
-     ```
-     The frontend application will be active at `http://localhost:5173`.
+   Run both servers concurrently in development mode with a single command from the root folder:
+   ```bash
+   npm run dev
+   ```
+   * The frontend application will be active at `http://localhost:5173`.
+   * The backend API server will start at `http://localhost:5000`.
 
 ---
 
 ## 🗄️ Database Auto-Initialization & Seeding
 
-The server features an automated database initializer (`server/db.js`). When you start the backend server for the first time, it will automatically:
+The server features an automated database initializer (`backend/db.js`). When you start the backend server for the first time, it will automatically:
 1. Create the database (`tractorsewa`) if it does not exist.
 2. Initialize all necessary table schemas (`users`, `operators`, `harvesters`, `requests`, `enquiries`, `messages`, `blogs`, `blog_likes`, `blog_comments`, `ratings`, `login_logs`).
 3. Migrate newer column updates (like `views`, `whatsapp`, `bio`, `image_path`, security fields) seamlessly.
