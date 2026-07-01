@@ -1070,6 +1070,7 @@ export function AddOperator() {
         onOpenChange={setCropperOpen}
         imageSrc={cropperImageSrc}
         aspect={1}
+        cropShape="round"
         onCropCompleteAction={async (croppedUrl) => {
           setImagePreview(croppedUrl);
           const res = await fetch(croppedUrl);

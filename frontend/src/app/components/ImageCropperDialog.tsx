@@ -16,6 +16,7 @@ interface ImageCropperDialogProps {
   imageSrc: string | null;
   onCropCompleteAction: (croppedImageBlobUrl: string) => void;
   aspect?: number;
+  cropShape?: 'rect' | 'round';
 }
 
 export function ImageCropperDialog({
@@ -23,7 +24,8 @@ export function ImageCropperDialog({
   onOpenChange,
   imageSrc,
   onCropCompleteAction,
-  aspect = 4 / 3
+  aspect = 4 / 3,
+  cropShape = 'rect'
 }: ImageCropperDialogProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
@@ -65,6 +67,7 @@ export function ImageCropperDialog({
               crop={crop}
               zoom={zoom}
               aspect={aspect}
+              cropShape={cropShape}
               onCropChange={setCrop}
               onCropComplete={onCropCompleteHandler}
               onZoomChange={setZoom}

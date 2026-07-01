@@ -247,8 +247,8 @@ export function EditProfile() {
         <form onSubmit={handleSave} className="bg-white rounded-2xl border border-[#E2E8F0] p-8 space-y-5 shadow-[0_2px_16px_rgba(232,114,12,0.06)]">
           {/* Profile Picture Upload preview */}
           <div className="flex flex-col items-center gap-4 p-4 bg-[#F4F6FA] border border-zinc-200/60 rounded-2xl mb-6">
-            <div className="relative w-24 h-24 rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden flex items-center justify-center group select-none">
-              <Avatar className="w-full h-full rounded-2xl">
+            <div className="relative w-24 h-24 rounded-full bg-white border border-zinc-200 shadow-sm overflow-hidden flex items-center justify-center group select-none">
+              <Avatar className="w-full h-full rounded-full">
                 {imagePreview ? <AvatarImage src={imagePreview} alt="Profile Preview" className="object-cover" /> : null}
                 <AvatarFallback className="bg-white">
                   <User size={36} className="text-zinc-400" />
@@ -402,6 +402,7 @@ export function EditProfile() {
         onOpenChange={setCropperOpen}
         imageSrc={cropperImageSrc}
         aspect={1}
+        cropShape="round"
         onCropCompleteAction={async (croppedUrl) => {
           setImagePreview(croppedUrl);
           const res = await fetch(croppedUrl);

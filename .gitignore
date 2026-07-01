@@ -46,9 +46,3 @@ coverage/
 
 # Server logs
 backend/logs/
-
-# Media recordings
-*.mp4
-!public/videos/*.mp4
-*.webm
-*.mov

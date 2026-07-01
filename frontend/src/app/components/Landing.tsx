@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, memo, useRef, useMemo } from "react";
 
 import { Link, useNavigate } from "react-router-dom";
+import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
 
 import { motion, useInView } from "motion/react";
 
@@ -523,16 +524,6 @@ function VideoBackground({ src, className, style }: { src: string; className?: s
 
 function ServicingEnquirySection() {
   const [bgImage, setBgImage] = useState('/enquiry_background/background.png');
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    state: '',
-    district: '',
-    message: ''
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     fetch('/api/site-settings')
@@ -544,55 +535,6 @@ function ServicingEnquirySection() {
       })
       .catch(() => { });
   }, []);
-
-  const selectedStateData = districtsData.states.find((s: any) => s.state === formData.state);
-  const districts = selectedStateData ? selectedStateData.districts : [];
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-
-    if (!formData.name || !formData.phone || !formData.state || !formData.district) {
-      setErrorMsg('Please fill in all required fields.');
-      return;
-    }
-
-    const cleanPhone = formData.phone.trim();
-    if (!/^\d{10}$/.test(cleanPhone)) {
-      setErrorMsg('Invalid phone number. Must be exactly 10 digits.');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/enquiries', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          phone: cleanPhone,
-          location: `${formData.district}, ${formData.state}`,
-          requirement: 'Servicing',
-          message: formData.message
-        })
-      });
-
-      if (res.ok) {
-        setSuccess(true);
-        setFormData({ name: '', phone: '', state: '', district: '', message: '' });
-      } else {
-        const err = await res.json();
-        setErrorMsg(err.error || 'Failed to submit enquiry.');
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg('Error connecting to the server.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <section
@@ -650,121 +592,21 @@ function ServicingEnquirySection() {
           </div>
         </div>
 
-        {/* Right Side Form Card */}
+        {/* Right Side CTA Card */}
         <div className="lg:col-span-6 flex justify-center">
-          <div className="bg-white rounded-[2rem] shadow-2xl p-8 max-w-lg w-full transition-all duration-300 text-left">
-            {success ? (
-              <div className="text-center py-12 space-y-4">
-                <div className="w-16 h-16 bg-green-50 border border-green-200 rounded-full flex items-center justify-center mx-auto text-green-600">
-                  <svg className="w-8 h-8 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900 font-sora">Thank You!</h3>
-                <p className="text-slate-600 text-sm max-w-sm mx-auto">
-                  Your servicing request has been submitted successfully. Our technical support team will contact you within 2 hours.
-                </p>
-                <button
-                  onClick={() => setSuccess(false)}
-                  className="mt-6 text-sm font-bold text-[#172263] hover:underline"
-                >
-                  Submit another request
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-900 font-sora">Request Machine Service</h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Fill out the details below. Our technical team will contact you within 2 hours.
-                  </p>
-                </div>
-
-                {errorMsg && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-600">
-                    {errorMsg}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Full Name *</label>
-                    <input
-                      type="text"
-                      placeholder="Your Name"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-800 animate-in fade-in"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Phone Number *</label>
-                    <input
-                      type="tel"
-                      placeholder="10-digit Mobile No."
-                      required
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-800"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">State *</label>
-                    <select
-                      required
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value, district: '' })}
-                      className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-700 font-sora"
-                    >
-                      <option value="">Select State</option>
-                      {districtsData.states.map((s: any) => (
-                        <option key={s.state} value={s.state}>{s.state}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">District *</label>
-                    <select
-                      required
-                      value={formData.district}
-                      disabled={!formData.state}
-                      onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-700 disabled:opacity-50 font-sora"
-                    >
-                      <option value="">Select District</option>
-                      {districts.map((d: string) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Issue Details & Specific Requests (Optional)</label>
-                  <textarea
-                    rows={4}
-                    placeholder="Please describe what servicing or repair is needed for your machine..."
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#172263] focus:bg-white transition-all text-slate-800"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-3.5 bg-[#172263] hover:bg-[#11194A] disabled:opacity-75 transition-all text-white font-bold text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-blue-900/10 cursor-pointer"
-                >
-                  {submitting ? 'Submitting...' : 'Submit Servicing Request'}
-                </button>
-              </form>
-            )}
+          <div className="bg-white rounded-[2rem] shadow-2xl p-10 max-w-lg w-full flex flex-col items-center justify-center text-center gap-6 border border-slate-100 min-h-[450px]">
+            <img src={tractorSevaLogo} alt="Tractor Seva Logo" className="h-14 w-auto object-contain mb-2" />
+            <h3 className="text-3xl font-black text-[#1A1A1A] font-sora leading-tight" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Request Machine Service
+            </h3>
+            <a
+              href="https://tractorseva.com/franchise"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#172263] hover:bg-[#11194A] text-white font-bold text-base rounded-2xl shadow-lg shadow-blue-900/10 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all w-full cursor-pointer uppercase tracking-wider mt-4"
+            >
+              Book Service Now <ArrowRight size={18} />
+            </a>
           </div>
         </div>
 
