@@ -437,7 +437,8 @@ async function initializeDatabase() {
         blog_id INT NOT NULL,
         user_id VARCHAR(36) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_user_blog_like (user_id, blog_id)
+        UNIQUE KEY unique_user_blog_like (user_id, blog_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 
@@ -449,9 +450,38 @@ async function initializeDatabase() {
         user_id VARCHAR(36) NOT NULL,
         user_name VARCHAR(255) NOT NULL,
         content TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
+
+    // Safe Alter Table migrations to add foreign key constraints for existing tables
+    try {
+      await activePool.query(`
+        ALTER TABLE blog_likes 
+        ADD CONSTRAINT fk_blog_likes_user 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `);
+      console.log('Added fk_blog_likes_user foreign key constraint.');
+    } catch (err) {
+      if (err.errno !== 1061 && err.errno !== 1022 && err.errno !== 1826) {
+        console.error('Error adding foreign key constraint to blog_likes:', err);
+      }
+    }
+
+    try {
+      await activePool.query(`
+        ALTER TABLE blog_comments 
+        ADD CONSTRAINT fk_blog_comments_user 
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `);
+      console.log('Added fk_blog_comments_user foreign key constraint.');
+    } catch (err) {
+      if (err.errno !== 1061 && err.errno !== 1022 && err.errno !== 1826) {
+        console.error('Error adding foreign key constraint to blog_comments:', err);
+      }
+    }
+
 
     // Create Enquiries Table
     await activePool.query(`
@@ -494,6 +524,28 @@ async function initializeDatabase() {
         UNIQUE KEY unique_user_date (user_id, login_date)
       )
     `);
+
+    // Create Admin Audit Logs Table
+    try {
+      await activePool.query(`
+        CREATE TABLE IF NOT EXISTS admin_audit_logs (
+          id VARCHAR(36) PRIMARY KEY,
+          admin_id VARCHAR(36) NOT NULL,
+          admin_email VARCHAR(255) NOT NULL,
+          action VARCHAR(100) NOT NULL,
+          ip_address VARCHAR(45) NOT NULL,
+          user_agent TEXT,
+          status VARCHAR(50) NOT NULL,
+          details TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('Successfully initialized admin_audit_logs table.');
+    } catch (err) {
+      console.error('Error creating admin_audit_logs table:', err);
+    }
+
 
     // Create FAQs Table
     await activePool.query(`

@@ -126,7 +126,17 @@ const faqLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+const adminBulkUploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Max 10 bulk upload requests per 15 minutes per IP
+  message: { error: 'Too many bulk user import requests. Please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use('/api/', apiLimiter);
+
 
 // 5. Structured Logging with Winston
 const logger = winston.createLogger({
@@ -552,10 +562,20 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
     const cleanName = sanitizeInput(name);
     const cleanState = sanitizeInput(state);
     const cleanBio = sanitizeInput(bio);
+
+    // Retrieve old avatar to clean up storage if updated
+    const [userRows] = await db.query('SELECT image_path FROM users WHERE id = ?', [req.user.id]);
+    const oldAvatar = userRows.length > 0 ? userRows[0].image_path : null;
+
     await db.query(
       'UPDATE users SET name = ?, state = ?, phone = ?, bio = ?, image_path = ? WHERE id = ?',
       [cleanName, cleanState || null, cleanedPhone, cleanBio || null, imagePath || null, req.user.id]
     );
+
+    // If old avatar exists and is different from the newly set one, delete it from storage
+    if (oldAvatar && oldAvatar !== imagePath) {
+      await deleteFromSupabase(oldAvatar);
+    }
 
     res.json({ message: 'Profile updated successfully' });
   } catch (error) {
@@ -1260,9 +1280,24 @@ app.delete('/api/harvesters/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized to delete this machine listing' });
     }
 
-    await db.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id = ?", [req.params.id]);
-    await db.query('DELETE FROM harvesters WHERE id = ?', [req.params.id]);
-    res.json({ message: 'Harvester listing deleted successfully' });
+    if (harvester.image_path) {
+      await deleteFromSupabase(parseImagePaths(harvester.image_path));
+    }
+
+    const activePool = await db.getPool();
+    const conn = await activePool.getConnection();
+    try {
+      await conn.beginTransaction();
+      await conn.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id = ?", [req.params.id]);
+      await conn.query('DELETE FROM harvesters WHERE id = ?', [req.params.id]);
+      await conn.commit();
+      res.json({ message: 'Harvester listing deleted successfully' });
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -2035,6 +2070,34 @@ app.delete('/api/admin/users/:id/data', authenticateToken, isAdmin, async (req, 
   const activePool = await db.getPool();
   const conn = await activePool.getConnection();
   try {
+    // 1. Gather all files to delete from Supabase
+    const supabaseFiles = [];
+    
+    // Get harvester images
+    const [harvesters] = await db.query('SELECT image_path FROM harvesters WHERE user_id = ?', [userId]);
+    harvesters.forEach(h => {
+      if (h.image_path) {
+        supabaseFiles.push(...parseImagePaths(h.image_path));
+      }
+    });
+
+    // Get operator images
+    const [operators] = await db.query(
+      'SELECT image_path, selfie_image_path, license_front_path, license_back_path FROM operators WHERE user_id = ?',
+      [userId]
+    );
+    operators.forEach(op => {
+      if (op.image_path) supabaseFiles.push(op.image_path);
+      if (op.selfie_image_path) supabaseFiles.push(op.selfie_image_path);
+      if (op.license_front_path) supabaseFiles.push(op.license_front_path);
+      if (op.license_back_path) supabaseFiles.push(op.license_back_path);
+    });
+
+    // Perform Supabase Storage Cleanup
+    if (supabaseFiles.length > 0) {
+      await deleteFromSupabase(supabaseFiles);
+    }
+
     await conn.beginTransaction();
 
     // Delete ratings given by user
@@ -2051,6 +2114,13 @@ app.delete('/api/admin/users/:id/data', authenticateToken, isAdmin, async (req, 
     
     // Delete user messages
     await conn.query('DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?', [userId, userId]);
+
+    // Delete notifications
+    await conn.query('DELETE FROM notifications WHERE user_id = ?', [userId]);
+
+    // Delete blog engagement
+    await conn.query('DELETE FROM blog_likes WHERE user_id = ?', [userId]);
+    await conn.query('DELETE FROM blog_comments WHERE user_id = ?', [userId]);
 
     // Delete base listings
     await conn.query('DELETE FROM harvesters WHERE user_id = ?', [userId]);
@@ -2074,9 +2144,24 @@ app.delete('/api/admin/users/:id/data', authenticateToken, isAdmin, async (req, 
 // 5. Admin Delete Specific Harvester
 app.delete('/api/admin/harvesters/:id', authenticateToken, isAdmin, async (req, res) => {
   try {
-    await db.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id = ?", [req.params.id]);
-    await db.query('DELETE FROM harvesters WHERE id = ?', [req.params.id]);
-    res.json({ message: 'Harvester listing deleted by administrator.' });
+    const [rows] = await db.query('SELECT image_path FROM harvesters WHERE id = ?', [req.params.id]);
+    if (rows.length > 0 && rows[0].image_path) {
+      await deleteFromSupabase(parseImagePaths(rows[0].image_path));
+    }
+    const activePool = await db.getPool();
+    const conn = await activePool.getConnection();
+    try {
+      await conn.beginTransaction();
+      await conn.query("DELETE FROM ratings WHERE target_type = 'machine' AND target_id = ?", [req.params.id]);
+      await conn.query('DELETE FROM harvesters WHERE id = ?', [req.params.id]);
+      await conn.commit();
+      res.json({ message: 'Harvester listing deleted by administrator.' });
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -2085,12 +2170,19 @@ app.delete('/api/admin/harvesters/:id', authenticateToken, isAdmin, async (req, 
 
 // 6. Admin Delete Specific Request
 app.delete('/api/admin/requests/:id', authenticateToken, isAdmin, async (req, res) => {
+  const activePool = await db.getPool();
+  const conn = await activePool.getConnection();
   try {
-    await db.query('DELETE FROM requests WHERE id = ?', [req.params.id]);
+    await conn.beginTransaction();
+    await conn.query('DELETE FROM requests WHERE id = ?', [req.params.id]);
+    await conn.commit();
     res.json({ message: 'Request deleted by administrator.' });
   } catch (error) {
+    await conn.rollback();
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    conn.release();
   }
 });
 
@@ -2376,40 +2468,163 @@ app.get('/api/admin/users/query', authenticateToken, isAdmin, async (req, res) =
   }
 });
 
-// 8. Admin Bulk User Upload via CSV
-app.post('/api/admin/users/bulk', authenticateToken, isAdmin, csvUpload.single('file'), async (req, res) => {
-  const { defaultPassword } = req.body;
-  if (!req.file) {
-    return res.status(400).json({ error: 'No CSV file uploaded.' });
+// Helper to parse image path(s) into an array
+function parseImagePaths(imagePath) {
+  if (!imagePath) return [];
+  const trimmed = imagePath.trim();
+  if (trimmed.startsWith('[')) {
+    try {
+      const arr = JSON.parse(trimmed);
+      if (Array.isArray(arr)) return arr;
+    } catch (e) {}
   }
-  if (!defaultPassword || defaultPassword.length < 6) {
-    return res.status(400).json({ error: 'Please specify a valid default password (minimum 6 characters).' });
+  if (trimmed.includes(',')) {
+    return trimmed.split(',').map(p => p.trim()).filter(Boolean);
+  }
+  return [trimmed];
+}
+
+// Helper to remove files from Supabase storage
+async function deleteFromSupabase(paths) {
+  if (!paths || paths.length === 0) return;
+  const filePaths = Array.isArray(paths) ? paths : [paths];
+  const targets = filePaths
+    .filter(Boolean)
+    .map(p => {
+      if (p.startsWith('http')) {
+        try {
+          const url = new URL(p);
+          const searchStr = `/storage/v1/object/public/${supabaseBucket}/`;
+          const index = url.pathname.indexOf(searchStr);
+          if (index !== -1) {
+            return url.pathname.slice(index + searchStr.length);
+          }
+        } catch (e) {
+          return null;
+        }
+        return null;
+      }
+      return p;
+    })
+    .filter(Boolean);
+  
+  if (targets.length === 0) return;
+  try {
+    const { error } = await supabase.storage.from(supabaseBucket).remove(targets);
+    if (error) {
+      console.error('Failed to remove files from Supabase:', error);
+    } else {
+      console.log('Successfully removed files from Supabase:', targets);
+    }
+  } catch (err) {
+    console.error('Error during Supabase file removal:', err);
+  }
+}
+
+// Helper for admin audit logging
+async function logAdminAudit(adminId, adminEmail, action, ip, userAgent, status, details) {
+  try {
+    const auditId = crypto.randomUUID();
+    await db.query(
+      'INSERT INTO admin_audit_logs (id, admin_id, admin_email, action, ip_address, user_agent, status, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [auditId, adminId, adminEmail, action, ip || 'unknown', userAgent || null, status, details || null]
+    );
+  } catch (err) {
+    console.error('Failed to write admin audit log:', err);
+  }
+}
+
+const VALID_INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 
+  'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 
+  'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 
+  'Uttarakhand', 'West Bengal', 'Andaman and Nicobar Islands', 'Chandigarh', 
+  'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Jammu and Kashmir', 
+  'Ladakh', 'Lakshadweep', 'Puducherry'
+];
+
+const isStrongPassword = (pass) => {
+  if (!pass || pass.length < 10) return false;
+  const hasUpper = /[A-Z]/.test(pass);
+  const hasLower = /[a-z]/.test(pass);
+  const hasDigit = /[0-9]/.test(pass);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+  return hasUpper && hasLower && hasDigit && hasSpecial;
+};
+
+// 8. Admin Bulk User Upload via CSV (High Security Overengineered Version)
+app.post('/api/admin/users/bulk', authenticateToken, isAdmin, adminBulkUploadLimiter, csvUpload.single('file'), async (req, res) => {
+  const { defaultPassword, adminPassword } = req.body;
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  const adminId = req.user.id;
+  const adminEmail = req.user.email;
+
+  // 1. Check for missing CSV file
+  if (!req.file) {
+    await logAdminAudit(adminId, adminEmail, 'BULK_IMPORT', ip, userAgent, 'failed', 'No CSV file uploaded.');
+    return res.status(400).json({ error: 'No CSV file uploaded.' });
   }
 
   const filePath = req.file.path;
-  const reports = { success: 0, failed: 0, errors: [] };
 
   try {
+    // 2. Dual-Factor Admin Password Verification
+    if (!adminPassword) {
+      await logAdminAudit(adminId, adminEmail, 'BULK_IMPORT', ip, userAgent, 'unauthorized', 'Missing admin password verification.');
+      return res.status(401).json({ error: 'Re-authentication required. Please enter your administrator password.' });
+    }
+
+    const [admins] = await db.query('SELECT password FROM users WHERE id = ?', [adminId]);
+    if (admins.length === 0) {
+      await logAdminAudit(adminId, adminEmail, 'BULK_IMPORT', ip, userAgent, 'failed', 'Administrator record not found.');
+      return res.status(403).json({ error: 'Access denied: Admin record not found.' });
+    }
+
+    const adminMatch = await bcrypt.compare(adminPassword, admins[0].password);
+    if (!adminMatch) {
+      await logAdminAudit(adminId, adminEmail, 'BULK_IMPORT', ip, userAgent, 'unauthorized', 'Incorrect administrator password supplied.');
+      return res.status(403).json({ error: 'Re-authentication failed. Incorrect administrator password.' });
+    }
+
+    // 3. Default Password Strength Validation
+    if (!isStrongPassword(defaultPassword)) {
+      await logAdminAudit(adminId, adminEmail, 'BULK_IMPORT', ip, userAgent, 'failed', 'Default password does not meet complexity requirements.');
+      return res.status(400).json({ 
+        error: 'Default password must be at least 10 characters long, containing at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.' 
+      });
+    }
+
+    // 4. Read File Content
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const lines = fileContent.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
     
     if (lines.length <= 1) {
+      await logAdminAudit(adminId, adminEmail, 'BULK_IMPORT', ip, userAgent, 'failed', 'CSV file is empty or only contains headers.');
       return res.status(400).json({ error: 'CSV file is empty or only contains headers.' });
     }
 
+    // 5. Header Validation (Case Insensitive)
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const nameIdx = headers.indexOf('name');
-    const emailIdx = headers.indexOf('email');
-    const phoneIdx = headers.indexOf('phone');
-    const stateIdx = headers.indexOf('state');
+    const nameIdx = headers.findIndex(h => h === 'name');
+    const emailIdx = headers.findIndex(h => h === 'email');
+    const phoneIdx = headers.findIndex(h => ['phone', 'phone no.', 'phone_no', 'phone number', 'phoneno'].includes(h));
+    const stateIdx = headers.findIndex(h => h === 'state');
 
     if (nameIdx === -1 || emailIdx === -1 || phoneIdx === -1 || stateIdx === -1) {
-      return res.status(400).json({ error: 'Invalid CSV format. Missing required headers: name, email, phone, state.' });
+      await logAdminAudit(adminId, adminEmail, 'BULK_IMPORT', ip, userAgent, 'failed', 'Missing required CSV headers.');
+      return res.status(400).json({ 
+        error: 'Invalid CSV format. Must contain headers: "Name", "Email", "Phone No." (or "Phone"), and "State" (case-insensitive).' 
+      });
     }
 
-    const bcrypt = require('bcryptjs');
-    const crypto = require('crypto');
+    const validationErrors = [];
+    const parsedRows = [];
+    const seenEmails = new Set();
+    const seenPhones = new Set();
 
+    // 6. Dry-Run Validation Loop
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
       const cells = [];
@@ -2430,8 +2645,7 @@ app.post('/api/admin/users/bulk', authenticateToken, isAdmin, csvUpload.single('
       cells.push(currentCell.trim());
 
       if (cells.length < headers.length) {
-        reports.failed++;
-        reports.errors.push(`Row ${i + 1}: Incomplete row data.`);
+        validationErrors.push(`Row ${i + 1}: Incomplete row data (expected ${headers.length} columns, found ${cells.length}).`);
         continue;
       }
 
@@ -2440,56 +2654,142 @@ app.post('/api/admin/users/bulk', authenticateToken, isAdmin, csvUpload.single('
       const phone = cells[phoneIdx];
       const state = cells[stateIdx];
 
-      if (!name || !email || !phone || !state) {
-        reports.failed++;
-        reports.errors.push(`Row ${i + 1}: Missing required cell fields.`);
-        continue;
+      // Sanitization & Check Empty
+      if (!name || name.trim().length === 0) {
+        validationErrors.push(`Row ${i + 1}: Name cannot be empty.`);
+      } else if (name.length < 2 || name.length > 255) {
+        validationErrors.push(`Row ${i + 1}: Name must be between 2 and 255 characters.`);
+      } else if (/[<>{}]/.test(name)) {
+        validationErrors.push(`Row ${i + 1}: Name contains invalid/unsafe HTML characters.`);
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        reports.failed++;
-        reports.errors.push(`Row ${i + 1}: Invalid email address "${email}".`);
-        continue;
+      if (!email || email.trim().length === 0) {
+        validationErrors.push(`Row ${i + 1}: Email cannot be empty.`);
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          validationErrors.push(`Row ${i + 1}: Invalid email address format ("${email}").`);
+        } else if (email.length > 255) {
+          validationErrors.push(`Row ${i + 1}: Email address exceeds maximum length of 255 characters.`);
+        }
       }
 
+      if (!phone || phone.trim().length === 0) {
+        validationErrors.push(`Row ${i + 1}: Phone number cannot be empty.`);
+      } else {
+        const phoneRegex = /^\+?\d{10,15}$/;
+        if (!phoneRegex.test(phone)) {
+          validationErrors.push(`Row ${i + 1}: Invalid phone number format ("${phone}"). Must be numeric and 10 to 15 digits.`);
+        }
+      }
+
+      if (!state || state.trim().length === 0) {
+        validationErrors.push(`Row ${i + 1}: State cannot be empty.`);
+      } else {
+        const stateNormalized = state.trim().toLowerCase();
+        const isValidState = VALID_INDIAN_STATES.some(s => s.toLowerCase() === stateNormalized);
+        if (!isValidState) {
+          validationErrors.push(`Row ${i + 1}: State name "${state}" is not a recognized Indian state or Union Territory.`);
+        }
+      }
+
+      if (validationErrors.length > 0) continue; // Skip database uniqueness checks for already malformed rows
+
+      // Uniqueness check inside the CSV itself
+      if (seenEmails.has(email.toLowerCase())) {
+        validationErrors.push(`Row ${i + 1}: Duplicate email "${email}" found inside this CSV file.`);
+      } else {
+        seenEmails.add(email.toLowerCase());
+      }
+
+      if (seenPhones.has(phone)) {
+        validationErrors.push(`Row ${i + 1}: Duplicate phone number "${phone}" found inside this CSV file.`);
+      } else {
+        seenPhones.add(phone);
+      }
+
+      if (validationErrors.length > 0) continue;
+
+      // Database duplicate checking
       try {
-        const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
-        if (existing.length > 0) {
-          reports.failed++;
-          reports.errors.push(`Row ${i + 1}: Email "${email}" already registered.`);
-          continue;
+        const [existingEmail] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+        if (existingEmail.length > 0) {
+          validationErrors.push(`Row ${i + 1}: Email "${email}" is already registered on the system.`);
         }
 
+        const [existingPhone] = await db.query('SELECT id FROM users WHERE phone = ?', [phone]);
+        if (existingPhone.length > 0) {
+          validationErrors.push(`Row ${i + 1}: Phone number "${phone}" is already registered on the system.`);
+        }
+      } catch (dbErr) {
+        validationErrors.push(`Row ${i + 1}: Database verification failure.`);
+      }
+
+      parsedRows.push({ name, email, phone, state });
+    }
+
+    // 7. If validation errors exist, abort immediately with NO database modifications
+    if (validationErrors.length > 0) {
+      await logAdminAudit(adminId, adminEmail, 'BULK_IMPORT', ip, userAgent, 'failed', `Validation failed: ${validationErrors.length} errors found.`);
+      return res.status(400).json({ 
+        error: 'CSV validation failed. No changes were saved.', 
+        errors: validationErrors 
+      });
+    }
+
+    // 8. Execute Database Transaction for Atomic Updates
+    const activePool = await db.getPool();
+    const conn = await activePool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      for (const row of parsedRows) {
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
         const userId = crypto.randomUUID();
-        await db.query(
-          'INSERT INTO users (id, name, email, password, role, state, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [userId, name, email, hashedPassword, 'user', state, phone]
+        await conn.query(
+          'INSERT INTO users (id, name, email, password, role, state, phone, is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [userId, row.name, row.email, hashedPassword, 'user', row.state, row.phone, 0]
         );
+      }
 
-        reports.success++;
+      await conn.commit();
+      await logAdminAudit(adminId, adminEmail, 'BULK_IMPORT', ip, userAgent, 'success', `Successfully imported ${parsedRows.length} users.`);
+      res.json({ 
+        message: `Successfully imported all ${parsedRows.length} users from the CSV file!`,
+        importedCount: parsedRows.length
+      });
+    } catch (transactionErr) {
+      await conn.rollback();
+      throw transactionErr;
+    } finally {
+      conn.release();
+    }
+
+  } catch (error) {
+    console.error('CSV Import System Error:', error);
+    await logAdminAudit(adminId, adminEmail, 'BULK_IMPORT', ip, userAgent, 'failed', `System error: ${error.message}`);
+    return res.status(500).json({ error: 'A system error occurred during CSV parsing or database execution.' });
+  } finally {
+    // 9. Strict file cleanup
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
       } catch (err) {
-        console.error(`Error importing row ${i + 1}:`, err);
-        reports.failed++;
-        reports.errors.push(`Row ${i + 1}: Database insertion failure.`);
+        console.error('Failed to unlink uploaded CSV file:', err);
       }
     }
-  } catch (error) {
-    console.error('CSV Parsing Error:', error);
-    return res.status(500).json({ error: 'Failed to parse CSV file.' });
-  } finally {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
   }
+});
 
-  res.json({
-    message: `CSV parsing completed.`,
-    successCount: reports.success,
-    failedCount: reports.failed,
-    errors: reports.errors
-  });
+// GET /api/admin/audit-logs — fetch admin audit logs (admin only)
+app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const [logs] = await db.query('SELECT * FROM admin_audit_logs ORDER BY created_at DESC LIMIT 100');
+    res.json(logs);
+  } catch (err) {
+    console.error('Error fetching admin audit logs:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 // =============================================
@@ -2684,6 +2984,41 @@ app.delete('/api/settings/account', authenticateToken, async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
     const valid = await bcrypt.compare(password, rows[0].password);
     if (!valid) return res.status(401).json({ error: 'Incorrect password' });
+
+    // 1. Gather all files to delete from Supabase
+    const supabaseFiles = [];
+    
+    // Get user avatar
+    const [userRows] = await db.query('SELECT image_path FROM users WHERE id = ?', [req.user.id]);
+    if (userRows.length > 0 && userRows[0].image_path) {
+      supabaseFiles.push(userRows[0].image_path);
+    }
+    
+    // Get harvester images
+    const [harvesterRows] = await db.query('SELECT image_path FROM harvesters WHERE user_id = ?', [req.user.id]);
+    harvesterRows.forEach(h => {
+      if (h.image_path) {
+        supabaseFiles.push(...parseImagePaths(h.image_path));
+      }
+    });
+    
+    // Get operator verification files & operator profile pictures
+    const [operatorRows] = await db.query(
+      'SELECT image_path, selfie_image_path, license_front_path, license_back_path FROM operators WHERE user_id = ?',
+      [req.user.id]
+    );
+    operatorRows.forEach(op => {
+      if (op.image_path) supabaseFiles.push(op.image_path);
+      if (op.selfie_image_path) supabaseFiles.push(op.selfie_image_path);
+      if (op.license_front_path) supabaseFiles.push(op.license_front_path);
+      if (op.license_back_path) supabaseFiles.push(op.license_back_path);
+    });
+
+    // Perform Supabase Storage Cleanup
+    if (supabaseFiles.length > 0) {
+      await deleteFromSupabase(supabaseFiles);
+    }
+
     const activePool = await db.getPool();
     const conn = await activePool.getConnection();
     try {
@@ -3228,17 +3563,31 @@ app.delete('/api/admin/blogs/:id', authenticateToken, isAdmin, async (req, res) 
       return res.status(404).json({ error: 'Blog not found' });
     }
 
-    // Delete associated comments and likes first
-    await db.query('DELETE FROM blog_likes WHERE blog_id = ?', [blogId]);
-    await db.query('DELETE FROM blog_comments WHERE blog_id = ?', [blogId]);
+    // Clean up blog cover image from Supabase storage
+    if (existing[0].image_url) {
+      await deleteFromSupabase(existing[0].image_url);
+    }
 
-    // Delete the blog
-    await db.query('DELETE FROM blogs WHERE id = ?', [blogId]);
-
-    res.json({
-      success: true,
-      message: 'Blog deleted successfully'
-    });
+    const activePool = await db.getPool();
+    const conn = await activePool.getConnection();
+    try {
+      await conn.beginTransaction();
+      // Delete associated comments and likes first
+      await conn.query('DELETE FROM blog_likes WHERE blog_id = ?', [blogId]);
+      await conn.query('DELETE FROM blog_comments WHERE blog_id = ?', [blogId]);
+      // Delete the blog
+      await conn.query('DELETE FROM blogs WHERE id = ?', [blogId]);
+      await conn.commit();
+      res.json({
+        success: true,
+        message: 'Blog deleted successfully'
+      });
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
   } catch (error) {
     logger.error('Error deleting blog: ' + error.stack);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -3254,14 +3603,36 @@ app.delete('/api/admin/operators/:id', authenticateToken, isAdmin, async (req, r
       return res.status(404).json({ error: 'Operator listing not found' });
     }
 
-    // Delete operator ratings
-    await db.query("DELETE FROM ratings WHERE target_type = 'operator' AND target_id = ?", [operatorId]);
+    // Gather and delete files from Supabase
+    const supabaseFiles = [];
+    const op = existing[0];
+    if (op.image_path) supabaseFiles.push(op.image_path);
+    if (op.selfie_image_path) supabaseFiles.push(op.selfie_image_path);
+    if (op.license_front_path) supabaseFiles.push(op.license_front_path);
+    if (op.license_back_path) supabaseFiles.push(op.license_back_path);
     
-    // Delete operator consent logs
-    await db.query('DELETE FROM operator_consent_logs WHERE operator_id = ?', [operatorId]);
+    if (supabaseFiles.length > 0) {
+      await deleteFromSupabase(supabaseFiles);
+    }
 
-    await db.query('DELETE FROM operators WHERE id = ?', [operatorId]);
-    res.json({ success: true, message: 'Operator profile deleted successfully by administrator.' });
+    const activePool = await db.getPool();
+    const conn = await activePool.getConnection();
+    try {
+      await conn.beginTransaction();
+      // Delete operator ratings
+      await conn.query("DELETE FROM ratings WHERE target_type = 'operator' AND target_id = ?", [operatorId]);
+      // Delete operator consent logs
+      await conn.query('DELETE FROM operator_consent_logs WHERE operator_id = ?', [operatorId]);
+      // Delete the operator row
+      await conn.query('DELETE FROM operators WHERE id = ?', [operatorId]);
+      await conn.commit();
+      res.json({ success: true, message: 'Operator profile deleted successfully by administrator.' });
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
   } catch (err) {
     console.error('Error deleting operator:', err);
     res.status(500).json({ error: 'Internal Server Error' });
