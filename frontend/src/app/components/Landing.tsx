@@ -1184,7 +1184,7 @@ export function Landing() {
 
             <div
 
-              className="absolute inset-0 z-0 bg-gradient-to-b md:bg-gradient-to-r from-white/93 via-white/88 to-white/68 md:to-transparent"
+              className="absolute inset-0 z-0 bg-gradient-to-b md:bg-gradient-to-r from-white/88 via-white/70 to-white/55 md:to-transparent"
 
             />
 
