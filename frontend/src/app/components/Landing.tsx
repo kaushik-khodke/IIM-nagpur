@@ -392,9 +392,34 @@ function ServicingEnquirySection() {
 }
 
 
+function hasWebGL() {
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+  } catch (e) {
+    return false;
+  }
+}
+
 export function Landing() {
 
   const { t } = useTranslation(["pages", "common", "dashboard"]);
+
+  const [isMobilePWA, setIsMobilePWA] = useState(false);
+  const [webglSupported, setWebglSupported] = useState(true);
+
+  useEffect(() => {
+    setWebglSupported(hasWebGL());
+    const checkPWA = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                          new URLSearchParams(window.location.search).get('utm_source') === 'pwa' ||
+                          (window.navigator as any).standalone === true;
+      setIsMobilePWA(isStandalone && window.innerWidth < 1024);
+    };
+    checkPWA();
+    window.addEventListener('resize', checkPWA);
+    return () => window.removeEventListener('resize', checkPWA);
+  }, []);
 
   const [operators, setOperators] = useState<any[]>([]);
 
@@ -966,11 +991,11 @@ export function Landing() {
 
 
 
-            <div ref={hero3DRef} className="absolute inset-y-0 right-0 md:translate-x-12 w-full md:w-1/2 z-0 opacity-80">
-
-              {isHero3DInView ? <Tractor3DCanvas /> : <div className="w-full h-full bg-transparent" />}
-
-            </div>
+            {!isMobilePWA && webglSupported && (
+              <div ref={hero3DRef} className="absolute inset-y-0 right-0 md:translate-x-12 w-full md:w-1/2 z-0 opacity-80">
+                {isHero3DInView ? <Tractor3DCanvas /> : <div className="w-full h-full bg-transparent" />}
+              </div>
+            )}
 
 
 
@@ -1305,361 +1330,359 @@ export function Landing() {
         {/* ---- SERVICING ENQUIRY SECTION ---- */}
         <ServicingEnquirySection />
 
-        {/* ---- FEATURES ---- */}
+        {!isMobilePWA && (
+          <section id="features" className="py-20 bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA]">
 
-        <section id="features" className="py-20 bg-gradient-to-br from-[#F4F6FA] to-[#F4F6FA]">
+            <div className="w-full mx-auto px-4 sm:px-6">
 
-          <div className="w-full mx-auto px-4 sm:px-6">
+              <div className="text-center mb-14">
 
-            <div className="text-center mb-14">
+                <h2
 
-              <h2
+                  className="text-4xl text-[#1A1A1A] mb-3"
 
-                className="text-4xl text-[#1A1A1A] mb-3"
-
-                style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
-
-              >
-
-                {t("landing.features", { ns: "pages" })}
-
-              </h2>
-
-              <p className="text-[#57585A] max-w-xl mx-auto">
-
-                {t("landing.featuresSub", { ns: "pages", defaultValue: "Built for the realities of Indian agricultural workflow — field-tested, farmer-approved." })}
-
-              </p>
-
-            </div>
-
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-12 max-w-6xl mx-auto">
-
-              {features.map((feature, index) => {
-
-                const Icon = feature.icon;
-
-                return (
-
-                  <motion.div
-
-                    key={index}
-
-                    initial={{ opacity: 0, y: 24 }}
-
-                    whileInView={{ opacity: 1, y: 0 }}
-
-                    whileHover={{ y: -6, scale: 1.01 }}
-
-                    viewport={{ once: true, amount: 0.1 }}
-
-                    transition={{ type: "spring", stiffness: 180, damping: 18, delay: index * 0.05 }}
-
-                    className={cn(
-
-                      "group relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/80 backdrop-blur-md p-8 shadow-[0_18px_50px_rgba(15,23,42,0.02)] transition-all duration-300 hover:shadow-[0_22px_60px_rgba(23,34,99,0.06)] hover:border-[#172263]/20 flex flex-col justify-between min-h-[240px]",
-
-                      feature.colSpan
-
-                    )}
-
-                  >
-
-                    {/* Background Video */}
-
-                    <div className="absolute inset-0 z-0 overflow-hidden rounded-[2rem] pointer-events-none bg-slate-50">
-
-                      <VideoBackground src={feature.videoUrl} />
-
-                      {/* Gradient Overlay for Text Readability */}
-
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent z-10" />
-
-                    </div>
-
-
-
-                    {/* Content */}
-
-                    <div className="relative z-20 flex flex-col h-full justify-between">
-
-                      <div>
-
-                        <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-100/90 text-slate-900 shadow-xs group-hover:bg-[#172263] group-hover:text-white transition-all duration-300">
-
-                          <Icon size={24} className="transition-transform duration-300 group-hover:scale-105" />
-
-                        </div>
-
-                        <h3 className="mt-6 text-xl font-bold text-slate-950 font-sora group-hover:text-[#172263] transition-colors duration-300" style={{ fontFamily: "'Sora', sans-serif" }}>
-
-                          {feature.title}
-
-                        </h3>
-
-                        <p className="mt-3 text-sm leading-relaxed text-slate-600 max-w-xl">{feature.desc}</p>
-
-                      </div>
-
-                    </div>
-
-                  </motion.div>
-
-                );
-
-              })}
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-
-        {/* ---- HOW IT WORKS ---- */}
-
-        <section id="how-it-works" className="py-20 w-full mx-auto px-4 sm:px-6 min-h-[calc(100vh-64px)] flex flex-col justify-center">
-
-          {/* Header */}
-
-          <div className="text-center mb-10">
-
-            <h2 className="text-4xl text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
-
-              {t("landing.howItWorks", { ns: "pages", defaultValue: "How It Works" })}
-
-            </h2>
-
-            <p className="text-[#57585A] max-w-xl mx-auto mb-8">
-
-              {t("landing.howItWorksSub", { ns: "pages", defaultValue: "A tailored journey for every person on the platform. Choose your role below." })}
-
-            </p>
-
-
-
-            {/* Persona Toggle */}
-
-            <div className="inline-flex items-center bg-[#F4F6FA] border border-[#E2E8F0] rounded-2xl p-1.5 gap-1">
-
-              {([
-
-                ['farmer', t("landing.persona.farmerTab", { ns: "pages", defaultValue: "🌾 I am a Farmer" })],
-
-                ['operator', t("landing.persona.operatorTab", { ns: "pages", defaultValue: "🚜 I am an Operator" })]
-
-              ] as const).map(([key, label]) => (
-
-                <button
-
-                  key={key}
-
-                  onClick={() => { setActivePersona(key); setExpandedStep(null); }}
-
-                  className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activePersona === key
-
-                    ? 'bg-[#172263] text-white shadow-md scale-[1.02]'
-
-                    : 'text-[#57585A] hover:text-[#172263] hover:bg-white'
-
-                    }`}
+                  style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
 
                 >
 
-                  {label}
+                  {t("landing.features", { ns: "pages" })}
 
-                </button>
+                </h2>
 
-              ))}
+                <p className="text-[#57585A] max-w-xl mx-auto">
+
+                  {t("landing.featuresSub", { ns: "pages", defaultValue: "Built for the realities of Indian agricultural workflow — field-tested, farmer-approved." })}
+
+                </p>
+
+              </div>
+
+              <div className="grid gap-6 grid-cols-1 md:grid-cols-12 max-w-6xl mx-auto">
+
+                {features.map((feature, index) => {
+
+                  const Icon = feature.icon;
+
+                  return (
+
+                    <motion.div
+
+                      key={index}
+
+                      initial={{ opacity: 0, y: 24 }}
+
+                      whileInView={{ opacity: 1, y: 0 }}
+
+                      whileHover={{ y: -6, scale: 1.01 }}
+
+                      viewport={{ once: true, amount: 0.1 }}
+
+                      transition={{ type: "spring", stiffness: 180, damping: 18, delay: index * 0.05 }}
+
+                      className={cn(
+
+                        "group relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/80 backdrop-blur-md p-8 shadow-[0_18px_50px_rgba(15,23,42,0.02)] transition-all duration-300 hover:shadow-[0_22px_60px_rgba(23,34,99,0.06)] hover:border-[#172263]/20 flex flex-col justify-between min-h-[240px]",
+
+                        feature.colSpan
+
+                      )}
+
+                    >
+
+                      {/* Background Video */}
+
+                      <div className="absolute inset-0 z-0 overflow-hidden rounded-[2rem] pointer-events-none bg-slate-50">
+
+                        <VideoBackground src={feature.videoUrl} />
+
+                        {/* Gradient Overlay for Text Readability */}
+
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent z-10" />
+
+                      </div>
+
+                      {/* Content */}
+
+                      <div className="relative z-20 flex flex-col h-full justify-between">
+
+                        <div>
+
+                          <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-100/90 text-slate-900 shadow-xs group-hover:bg-[#172263] group-hover:text-white transition-all duration-300">
+
+                            <Icon size={24} className="transition-transform duration-300 group-hover:scale-105" />
+
+                          </div>
+
+                          <h3 className="mt-6 text-xl font-bold text-slate-950 font-sora group-hover:text-[#172263] transition-colors duration-300" style={{ fontFamily: "'Sora', sans-serif" }}>
+
+                            {feature.title}
+
+                          </h3>
+
+                          <p className="mt-3 text-sm leading-relaxed text-slate-600 max-w-xl">{feature.desc}</p>
+
+                        </div>
+
+                      </div>
+
+                    </motion.div>
+
+                  );
+
+                })}
+
+              </div>
 
             </div>
 
-          </div>
+          </section>
+        )}
 
 
 
-          {/* Steps Grid */}
+        {!isMobilePWA && (
+          <section id="how-it-works" className="py-20 w-full mx-auto px-4 sm:px-6 min-h-[calc(100vh-64px)] flex flex-col justify-center">
 
-          <motion.div
+            {/* Header */}
 
-            key={activePersona}
+            <div className="text-center mb-10">
 
-            initial={{ opacity: 0, y: 20 }}
+              <h2 className="text-4xl text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}>
 
-            animate={{ opacity: 1, y: 0 }}
+                {t("landing.howItWorks", { ns: "pages", defaultValue: "How It Works" })}
 
-            transition={{ duration: 0.4 }}
+              </h2>
 
-            className="grid md:grid-cols-4 gap-5 relative"
+              <p className="text-[#57585A] max-w-xl mx-auto mb-8">
 
-          >
+                {t("landing.howItWorksSub", { ns: "pages", defaultValue: "A tailored journey for every person on the platform. Choose your role below." })}
 
-            {personaSteps[activePersona].map((step, i) => (
-
-              <motion.div
-
-                key={i}
-
-                initial={{ opacity: 0, y: 30 }}
-
-                animate={{ opacity: 1, y: 0 }}
-
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-
-                className="relative z-10 group h-full"
-
-              >
-
-                <div className="w-full h-full flex flex-col text-left rounded-2xl border border-[#E2E8F0] bg-white group-hover:border-[#172263]/50 group-hover:shadow-[0_8px_32px_rgba(23,34,99,0.13)] transition-all duration-300 overflow-hidden relative">
-
-                  {/* Background Video */}
-
-                  <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl pointer-events-none bg-slate-50">
-
-                    <VideoBackground
-
-                      src={step.videoUrl}
-
-                      className={
-
-                        activePersona === 'farmer' && step.num === '04'
-
-                          ? 'absolute max-w-none'
-
-                          : step.num === '04'
-
-                            ? 'scale-[2] origin-center object-center'
-
-                            : ''
-
-                      }
-
-                      style={
-
-                        activePersona === 'farmer' && step.num === '04'
-
-                          ? {
-
-                            width: '200%',
-
-                            height: '200%',
-
-                            left: '-50%',
-
-                            top: '-50%',
-
-                            transform: 'none'
-
-                          }
-
-                          : undefined
-
-                      }
-
-                    />
-
-                    {/* Semi-translucent White Overlay for Text Readability */}
-
-                    <div className="absolute inset-0 bg-white/48 group-hover:bg-white/50 transition-colors duration-30 z-10" />
-
-                  </div>
+              </p>
 
 
 
-                  {/* Always-visible top content */}
+              {/* Persona Toggle */}
 
-                  <div className="p-5 flex-1 flex flex-col relative z-20">
+              <div className="inline-flex items-center bg-[#F4F6FA] border border-[#E2E8F0] rounded-2xl p-1.5 gap-1">
 
-                    <div className="flex justify-center mb-4">
+                {([
 
-                      <div className={`w-16 h-16 bg-gradient-to-br ${step.color} rounded-2xl flex flex-col items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110 shrink-0`}>
+                  ['farmer', t("landing.persona.farmerTab", { ns: "pages", defaultValue: "🌾 I am a Farmer" })],
 
-                        <span className="text-white/70 text-[10px] font-bold mb-0.5">{step.num}</span>
+                  ['operator', t("landing.persona.operatorTab", { ns: "pages", defaultValue: "🚜 I am an Operator" })]
 
-                        <span className="text-white">{step.icon}</span>
+                ] as const).map(([key, label]) => (
+
+                  <button
+
+                    key={key}
+
+                    onClick={() => { setActivePersona(key); setExpandedStep(null); }}
+
+                    className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activePersona === key
+
+                      ? 'bg-[#172263] text-white shadow-md scale-[1.02]'
+
+                      : 'text-[#57585A] hover:text-[#172263] hover:bg-white'
+
+                      }`}
+
+                  >
+
+                    {label}
+
+                  </button>
+
+                ))}
+
+              </div>
+
+            </div>
+
+
+
+            {/* Steps Grid */}
+
+            <motion.div
+
+              key={activePersona}
+
+              initial={{ opacity: 0, y: 20 }}
+
+              animate={{ opacity: 1, y: 0 }}
+
+              transition={{ duration: 0.4 }}
+
+              className="grid md:grid-cols-4 gap-5 relative"
+
+            >
+
+              {personaSteps[activePersona].map((step, i) => (
+
+                <motion.div
+
+                  key={i}
+
+                  initial={{ opacity: 0, y: 30 }}
+
+                  animate={{ opacity: 1, y: 0 }}
+
+                  transition={{ duration: 0.4, delay: i * 0.1 }}
+
+                  className="relative z-10 group h-full"
+
+                >
+
+                  <div className="w-full h-full flex flex-col text-left rounded-2xl border border-[#E2E8F0] bg-white group-hover:border-[#172263]/50 group-hover:shadow-[0_8px_32px_rgba(23,34,99,0.13)] transition-all duration-300 overflow-hidden relative">
+
+                    {/* Background Video */}
+
+                    <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl pointer-events-none bg-slate-50">
+
+                      <VideoBackground
+
+                        src={step.videoUrl}
+
+                        className={
+
+                          activePersona === 'farmer' && step.num === '04'
+
+                            ? 'absolute max-w-none'
+
+                            : step.num === '04'
+
+                              ? 'scale-[2] origin-center object-center'
+
+                              : ''
+
+                        }
+
+                        style={
+
+                          activePersona === 'farmer' && step.num === '04'
+
+                            ? {
+
+                              width: '200%',
+
+                              height: '200%',
+
+                              left: '-50%',
+
+                              top: '-50%',
+
+                              transform: 'none'
+
+                            }
+
+                            : undefined
+
+                        }
+
+                      />
+
+                      {/* Semi-translucent White Overlay for Text Readability */}
+
+                      <div className="absolute inset-0 bg-white/48 group-hover:bg-white/50 transition-colors duration-30 z-10" />
+
+                    </div>
+
+
+
+                    {/* Always-visible top content */}
+
+                    <div className="p-5 flex-1 flex flex-col relative z-20">
+
+                      <div className="flex justify-center mb-4">
+
+                        <div className={`w-16 h-16 bg-gradient-to-br ${step.color} rounded-2xl flex flex-col items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110 shrink-0`}>
+
+                          <span className="text-white/70 text-[10px] font-bold mb-0.5">{step.num}</span>
+
+                          <span className="text-white">{step.icon}</span>
+
+                        </div>
+
+                      </div>
+
+                      <h3 className="text-[#1A1A1A] text-base text-center mb-1.5 group-hover:text-[#172263] transition-colors duration-300 shrink-0" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
+
+                        {step.title}
+
+                      </h3>
+
+                      <p className="text-[#57585A] text-sm leading-relaxed text-center flex-1">{step.desc}</p>
+
+
+
+                      {/* Hover hint */}
+
+                      <div className="flex items-center justify-center gap-1 mt-auto pt-3 text-xs font-semibold text-zinc-300 group-hover:opacity-0 transition-opacity duration-200 shrink-0">
+
+                        {t("landing.hoverToLearnMore", { ns: "pages", defaultValue: "Hover to learn more ↓" })}
 
                       </div>
 
                     </div>
 
-                    <h3 className="text-[#1A1A1A] text-base text-center mb-1.5 group-hover:text-[#172263] transition-colors duration-300 shrink-0" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>
-
-                      {step.title}
-
-                    </h3>
-
-                    <p className="text-[#57585A] text-sm leading-relaxed text-center flex-1">{step.desc}</p>
 
 
+                    {/* Hover-reveal detail panel */}
 
-                    {/* Hover hint */}
+                    <div className="max-h-0 group-hover:max-h-48 overflow-hidden transition-all duration-500 ease-in-out shrink-0 relative z-20">
 
-                    <div className="flex items-center justify-center gap-1 mt-auto pt-3 text-xs font-semibold text-zinc-300 group-hover:opacity-0 transition-opacity duration-200 shrink-0">
+                      <div className={`bg-gradient-to-br ${step.color} mx-3 mb-3 rounded-xl p-4`}>
 
-                      {t("landing.hoverToLearnMore", { ns: "pages", defaultValue: "Hover to learn more ↓" })}
+                        <p className="text-white text-sm leading-relaxed">{step.detail}</p>
+
+                      </div>
 
                     </div>
 
                   </div>
 
+                </motion.div>
 
+              ))}
 
-                  {/* Hover-reveal detail panel */}
-
-                  <div className="max-h-0 group-hover:max-h-48 overflow-hidden transition-all duration-500 ease-in-out shrink-0 relative z-20">
-
-                    <div className={`bg-gradient-to-br ${step.color} mx-3 mb-3 rounded-xl p-4`}>
-
-                      <p className="text-white text-sm leading-relaxed">{step.detail}</p>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </motion.div>
-
-            ))}
-
-          </motion.div>
+            </motion.div>
 
 
 
-          {/* CTA below steps */}
+            {/* CTA below steps */}
 
-          <motion.div
+            <motion.div
 
-            className="text-center mt-12"
+              className="text-center mt-12"
 
-            initial={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
 
-            whileInView={{ opacity: 1 }}
+              whileInView={{ opacity: 1 }}
 
-            viewport={{ once: true }}
+              viewport={{ once: true }}
 
-            transition={{ delay: 0.5 }}
-
-          >
-
-            <p className="text-sm text-zinc-500 mb-4">{t("landing.readyToGetStarted", { ns: "pages", defaultValue: "Ready to get started?" })}</p>
-
-            <button
-
-              onClick={() => { setChooserMode("register"); setChooserOpen(true); }}
-
-              className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#172263] text-white rounded-xl font-semibold hover:bg-[#11194A] transition-all shadow-[0_4px_14px_rgba(23,34,99,0.3)] hover:shadow-[0_6px_20px_rgba(23,34,99,0.4)] hover:-translate-y-0.5"
+              transition={{ delay: 0.5 }}
 
             >
 
-              {t("landing.joinFree", { ns: "pages", defaultValue: "Join Free — It Takes 2 Minutes" })} <ArrowRight size={16} />
+              <p className="text-sm text-zinc-500 mb-4">{t("landing.readyToGetStarted", { ns: "pages", defaultValue: "Ready to get started?" })}</p>
 
-            </button>
+              <button
 
-          </motion.div>
+                onClick={() => { setChooserMode("register"); setChooserOpen(true); }}
 
-        </section>
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#172263] text-white rounded-xl font-semibold hover:bg-[#11194A] transition-all shadow-[0_4px_14px_rgba(23,34,99,0.3)] hover:shadow-[0_6px_20px_rgba(23,34,99,0.4)] hover:-translate-y-0.5"
+
+              >
+
+                {t("landing.joinFree", { ns: "pages", defaultValue: "Join Free — It Takes 2 Minutes" })} <ArrowRight size={16} />
+
+              </button>
+
+            </motion.div>
+
+          </section>
+        )}
 
 
 

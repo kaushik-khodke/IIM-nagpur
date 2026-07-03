@@ -1,0 +1,43 @@
+{
+  "name": "Tractor Seva",
+  "short_name": "Tractor Seva",
+  "description": "India's Multi-Brand Harvesting Hub for Farm Machinery",
+  "start_url": "/?utm_source=pwa",
+  "display": "standalone",
+  "background_color": "#172263",
+  "theme_color": "#172263",
+  "orientation": "portrait-primary",
+  "categories": ["shopping", "business"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

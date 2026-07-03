@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Generate PNG Icons</title>
+</head>
+<body>
+  <h1>Generating PWA Icons...</h1>
+  <div id="status">Starting...</div>
+
+  <script>
+    async function run() {
+      const statusDiv = document.getElementById('status');
+      
+      try {
+        // Fetch the icon.svg we just created
+        const res = await fetch('/icons/icon.svg');
+        if (!res.ok) throw new Error('Failed to fetch icon.svg');
+        const svgText = await res.text();
+        
+        // Setup SVGs as image sources
+        const blob = new Blob([svgText], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        
+        // Define sizes to generate
+        const tasks = [
+          { name: 'icon-192x192.png', size: 192, padding: 0 },
+          { name: 'icon-512x512.png', size: 512, padding: 0 },
+          { name: 'icon-192x192-maskable.png', size: 192, padding: 25 }, // maskable has padding
+          { name: 'icon-512x512-maskable.png', size: 512, padding: 65 }
+        ];
+        
+        for (const task of tasks) {
+          statusDiv.innerText = `Generating ${task.name}...`;
+          
+          const img = new Image();
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = url;
+          });
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = task.size;
+          canvas.height = task.size;
+          const ctx = canvas.getContext('2d');
+          
+          // Fill background for non-transparent PWA icons
+          ctx.fillStyle = '#172263';
+          ctx.fillRect(0, 0, task.size, task.size);
+          
+          if (task.padding > 0) {
+            // Draw with padding for maskable
+            const innerSize = task.size - (task.padding * 2);
+            ctx.drawImage(img, task.padding, task.padding, innerSize, innerSize);
+          } else {
+            ctx.drawImage(img, 0, 0, task.size, task.size);
+          }
+          
+          const pngBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+          
+          const uploadRes = await fetch('/dev-save-icon', {
+            method: 'POST',
+            headers: {
+              'x-filename': task.name,
+              'content-type': 'image/png'
+            },
+            body: pngBlob
+          });
+          
+          if (!uploadRes.ok) {
+            throw new Error(`Failed to upload ${task.name}: ${await uploadRes.text()}`);
+          }
+        }
+        
+        statusDiv.innerText = 'All icons generated and saved successfully!';
+        console.log('DONE');
+      } catch (err) {
+        statusDiv.innerText = `Error: ${err.message}`;
+        console.error(err);
+      }
+    }
+    
+    run();
+  </script>
+</body>
+</html>

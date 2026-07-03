@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E2B7A" />
+      <stop offset="100%" stop-color="#0E153F" />
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF3B3F" />
+      <stop offset="100%" stop-color="#C81418" />
+    </linearGradient>
+    <linearGradient id="wheelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4A4A4A" />
+      <stop offset="100%" stop-color="#1A1A1A" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded box -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <g transform="translate(10, 10) scale(0.96)">
+    <!-- Cabin (White and Glass) -->
+    <path d="M220 160 L290 160 L320 250 L200 250 Z" fill="#FFFFFF" stroke="#0E153F" stroke-width="6" stroke-linejoin="round" />
+    <path d="M225 170 L285 170 L305 230 L210 230 Z" fill="#E2E8F0" opacity="0.8" />
+    <!-- Cabin support posts -->
+    <line x1="200" y1="250" x2="220" y2="160" stroke="#1A1A1A" stroke-width="8" stroke-linecap="round" />
+    <line x1="320" y1="250" x2="290" y2="160" stroke="#1A1A1A" stroke-width="8" stroke-linecap="round" />
+
+    <!-- Tractor Hood / Engine Compartment (Red) -->
+    <path d="M315 250 H430 L420 320 H315 Z" fill="url(#redGrad)" stroke="#C81418" stroke-width="2" stroke-linejoin="round" />
+    <!-- Grill and Headlight -->
+    <path d="M430 250 L425 285 L420 320 H410 L415 250 Z" fill="#2D3748" />
+    <circle cx="420" cy="270" r="10" fill="#FEE903" />
+
+    <!-- Mudguard (Red) -->
+    <path d="M110 300 C110 230 210 230 210 300 H235 C235 210 85 210 85 300 Z" fill="url(#redGrad)" />
+
+    <!-- Exhaust Pipe -->
+    <line x1="340" y1="250" x2="340" y2="110" stroke="#718096" stroke-width="10" stroke-linecap="round" />
+    <path d="M340 110 L355 100" stroke="#718096" stroke-width="8" stroke-linecap="round" />
+
+    <!-- Steering Wheel -->
+    <line x1="230" y1="250" x2="245" y2="220" stroke="#1A1A1A" stroke-width="6" />
+    <ellipse cx="245" cy="220" rx="15" ry="5" fill="none" stroke="#1A1A1A" stroke-width="5" transform="rotate(-15 245 220)" />
+
+    <!-- Chassis / Connector (Grey) -->
+    <rect x="210" y="300" width="130" height="30" fill="#4A5568" rx="5" />
+
+    <!-- Back Wheel (Big) -->
+    <circle cx="160" cy="320" r="75" fill="url(#wheelGrad)" stroke="#FFFFFF" stroke-width="5" />
+    <circle cx="160" cy="320" r="45" fill="#718096" />
+    <circle cx="160" cy="320" r="25" fill="#E2E8F0" />
+    <!-- Tire treads (Back) -->
+    <path d="M160 245 L160 255 M160 385 L160 395 M85 320 L95 320 M225 320 L235 320" stroke="#E2E8F0" stroke-width="6" stroke-linecap="round" />
+    <path d="M107 267 L114 274 M206 366 L213 373 M107 373 L114 366 M206 267 L213 274" stroke="#E2E8F0" stroke-width="6" stroke-linecap="round" />
+
+    <!-- Front Wheel (Small) -->
+    <circle cx="380" cy="340" r="50" fill="url(#wheelGrad)" stroke="#FFFFFF" stroke-width="4" />
+    <circle cx="380" cy="340" r="28" fill="#718096" />
+    <circle cx="380" cy="340" r="14" fill="#E2E8F0" />
+    <!-- Tire treads (Front) -->
+    <path d="M380 290 L380 297 M380 383 L380 390 M330 340 L337 340 M423 340 L430 340" stroke="#E2E8F0" stroke-width="4" stroke-linecap="round" />
+  </g>
+</svg>

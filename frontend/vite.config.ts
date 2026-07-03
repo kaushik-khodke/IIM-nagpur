@@ -66,7 +66,14 @@ function uploadAssetServer() {
   return {
     name: 'upload-asset-server',
     configureServer(server) {
-      server.middlewares.use('/dev-save-video', (req, res, next) => {
+      server.middlewares.use((req, res, next) => {
+        const urlPath = req.url?.split('?')[0];
+        const isSaveVideo = urlPath === '/dev-save-video';
+        const isSaveIcon = urlPath === '/dev-save-icon';
+        if (!isSaveVideo && !isSaveIcon) {
+          next();
+          return;
+        }
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'x-filename, content-type');
@@ -86,7 +93,8 @@ function uploadAssetServer() {
           }
 
           log(`Vite upload endpoint receiving file: ${filename}`);
-          const targetDir = path.resolve(__dirname, 'public', 'videos');
+          const subfolder = isSaveVideo ? 'videos' : 'icons';
+          const targetDir = path.resolve(__dirname, 'public', subfolder);
           if (!fs.existsSync(targetDir)) {
             fs.mkdirSync(targetDir, { recursive: true });
           }
@@ -110,7 +118,6 @@ function uploadAssetServer() {
           });
           return;
         }
-        next();
       });
     }
   };

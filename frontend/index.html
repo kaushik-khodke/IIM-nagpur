@@ -4,10 +4,19 @@
     <head>
       
       <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Review and Enhance UI</title>
-      <meta name="description" content="Delivers error-free, professional-quality code with an impressive, interactive UI powered by three.js, enhancing user experience and reliability." />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+      <title>Tractor Seva</title>
+      <meta name="description" content="India's Multi-Brand Harvesting Hub for Farm Machinery" />
       <meta name="robots" content="noindex, nofollow" />
+      
+      <!-- PWA Meta Tags -->
+      <link rel="manifest" href="/manifest.json" />
+      <meta name="theme-color" content="#172263" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      <meta name="apple-mobile-web-app-title" content="Tractor Seva" />
+      <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+
       <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
       
     </head>
@@ -15,6 +24,20 @@
     <body>
       
       <div id="root"></div>
+      
+      <script>
+        // Global PWA installation event listener
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          window.deferredPrompt = e;
+          window.dispatchEvent(new CustomEvent('pwa-installable'));
+        });
+        window.addEventListener('appinstalled', () => {
+          window.deferredPrompt = null;
+          window.dispatchEvent(new CustomEvent('pwa-installed'));
+        });
+      </script>
+
       <script type="module" src="/src/main.tsx"></script>
       
     </body>
