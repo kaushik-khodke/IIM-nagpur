@@ -489,6 +489,22 @@ export function Landing() {
 
         a: t("landing.faq.q6.answer", { ns: "pages", defaultValue: "Absolutely! Tractor Seva has complete multilingual localization support. You can switch between English, Marathi, and other regional languages using the language toggle in the navigation bar." })
 
+      },
+
+      {
+
+        q: t("landing.faq.q7.question", { ns: "pages", defaultValue: "Can I book a harvester for a single day, or is there a minimum booking period?" }),
+
+        a: t("landing.faq.q7.answer", { ns: "pages", defaultValue: "Tractor Seva does not enforce a minimum booking period. You can search for and request bookings for any duration. However, individual harvester owners may set their own minimum service periods (e.g., 2-3 days) during peak harvest seasons to cover transportation and setup costs. We recommend discussing this directly with the owner." })
+
+      },
+
+      {
+
+        q: t("landing.faq.q8.question", { ns: "pages", defaultValue: "Are there any service charges or commission fees taken by Tractor Seva?" }),
+
+        a: t("landing.faq.q8.answer", { ns: "pages", defaultValue: "No, Tractor Seva is a completely free, peer-to-peer platform. We do not charge any booking fees, service fees, or commission cuts from farmers, harvester owners, or operators. All financial transactions and rate negotiations happen directly between you and the service provider." })
+
       }
 
     ];
