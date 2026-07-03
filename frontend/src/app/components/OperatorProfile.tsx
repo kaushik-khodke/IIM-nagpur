@@ -208,6 +208,18 @@ export function OperatorProfile() {
     }
   };
 
+  const getCleanPhoneNumber = (phoneStr: string) => {
+    if (!phoneStr) return "";
+    const cleaned = phoneStr.replace(/\D/g, "");
+    if (cleaned.length === 12 && cleaned.startsWith("91")) {
+      return cleaned.slice(2);
+    }
+    if (cleaned.length === 11 && cleaned.startsWith("0")) {
+      return cleaned.slice(1);
+    }
+    return cleaned.slice(-10);
+  };
+
   if (loading) return <LoadingSpinner />;
   if (!operator) return <EmptyState title={t("operatorProfile.emptyTitle", { defaultValue: "Operator profile not found" })} />;
 
@@ -221,16 +233,16 @@ export function OperatorProfile() {
         </Link>
       </div>
       <div className="relative mt-2">
-        <div className="h-48 bg-gradient-to-r from-[#172263] via-[#D97706] to-[#15803D] rounded-b-3xl overflow-hidden">
+        <div className="h-48 bg-gradient-to-r from-[#11194A] via-[#172263] to-[#2E3F96] rounded-b-3xl overflow-hidden relative">
           <WheatWatermark className="right-10 top-0 opacity-[0.06]" />
         </div>
-        <div className="w-full mx-auto px-4 sm:px-6 -mt-16 pb-24">
+        <div className="w-full mx-auto px-4 sm:px-6 -mt-16 pb-24 relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#172263] to-[#D97706] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden shrink-0">
+            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#172263] to-[#2E3F96] flex items-center justify-center ring-4 ring-white shadow-lg overflow-hidden shrink-0">
               {operator.image_path || operator.ownerProfilePic ? (
                 <img src={operator.image_path || operator.ownerProfilePic} alt={operator.name} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-white text-3xl font-bold">{operator.name.charAt(0)}</span>
+                <span className="text-white text-4xl font-bold">{operator.name.charAt(0)}</span>
               )}
             </div>
             <div className="pb-2">
@@ -308,7 +320,7 @@ export function OperatorProfile() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                  {/* Left side: average display */}
+                  {/* Left display */}
                   <div className="md:col-span-4 flex flex-col items-center justify-center p-5 bg-slate-50 rounded-2xl text-center border border-[#E2E8F0]">
                     {ratingsData.averageRating !== null ? (
                       <>
@@ -332,7 +344,7 @@ export function OperatorProfile() {
                     )}
                   </div>
 
-                  {/* Right side: Submit Review form (if not owner) */}
+                  {/* Submit Review Form */}
                   <div className="md:col-span-8 flex flex-col">
                     {currentUser && (operator.user_id === currentUser.id) ? (
                       <div className="h-full flex items-center justify-center p-4 border border-dashed border-[#E2E8F0] rounded-2xl bg-slate-50/50">
@@ -341,8 +353,6 @@ export function OperatorProfile() {
                     ) : currentUser ? (
                       <form onSubmit={handleRatingSubmit} className="space-y-3">
                         <h4 className="text-xs font-bold text-[#1A1A1A] font-sora">{t("operatorProfile.submitYourRating", { defaultValue: "Submit Your Rating" })}</h4>
-
-                        {/* Interactive Stars */}
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] text-[#57585A] font-semibold">{t("operatorProfile.yourScore", { defaultValue: "Your Score:" })}</span>
                           <div className="flex gap-1">
@@ -361,8 +371,6 @@ export function OperatorProfile() {
                             ))}
                           </div>
                         </div>
-
-                        {/* Review Input */}
                         <div className="space-y-1">
                           <textarea
                             value={userReview}
@@ -371,7 +379,6 @@ export function OperatorProfile() {
                             className="w-full p-2.5 border border-[#E2E8F0] rounded-xl text-[11px] focus:outline-none focus:border-[#172263] min-h-[70px]"
                           />
                         </div>
-
                         <button
                           type="submit"
                           disabled={submittingRating}
@@ -429,27 +436,27 @@ export function OperatorProfile() {
               </div>
             </div>
 
-            {/* Contact card */}
-            <div>
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)]">
+            {/* Symmetrical Contact card */}
+            <div className="w-full lg:w-1/3">
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_2px_16px_rgba(232,114,12,0.08)] sticky top-6">
                 <h3 className="text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("operatorProfile.contactOperator", { defaultValue: "Contact Operator" })}</h3>
                 {isPreview ? (
                   <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-4 font-semibold flex items-center gap-1">
                     🔒 Login to view contact info
                   </p>
                 ) : (
-                  <>
-                    <p className="text-sm text-[#57585A] mb-2 flex items-center gap-2">
-                      <Phone size={14} /> +91-{operator.phone || 'XXXXXXXXXX'}
+                  <div className="space-y-2 mb-6">
+                    <p className="text-sm text-[#57585A] flex items-center gap-2">
+                      <Phone size={14} className="text-[#172263]" /> +91-{operator.phone || 'XXXXXXXXXX'}
                     </p>
                     {operator.whatsapp && (
-                      <p className="text-sm text-[#57585A] mb-4 flex items-center gap-2">
+                      <p className="text-sm text-[#57585A] flex items-center gap-2">
                         <MessageCircle size={14} className="text-green-600" /> +91-{operator.whatsapp}
                       </p>
                     )}
-                  </>
+                  </div>
                 )}
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2.5">
                   {isPreview ? (
                     <>
                       <button
@@ -458,7 +465,7 @@ export function OperatorProfile() {
                             detail: { redirectPath: `/operators/${id}` }
                           }));
                         }}
-                        className="w-full py-2.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-200 hover:text-slate-600"
+                        className="w-full py-3 bg-slate-50 text-slate-400 border border-slate-200 rounded-xl text-sm transition-all flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-100 hover:text-slate-600 active:scale-[0.98]"
                       >
                         <MessageSquare size={16} /> {t("operatorProfile.whatsapp", { defaultValue: "WhatsApp" })}
                       </button>
@@ -468,9 +475,9 @@ export function OperatorProfile() {
                             detail: { redirectPath: `/operators/${id}` }
                           }));
                         }}
-                        className="w-full py-2.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-200 hover:text-slate-600"
+                        className="w-full py-3 bg-slate-50 text-slate-400 border border-slate-200 rounded-xl text-sm transition-all flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-100 hover:text-slate-600 active:scale-[0.98]"
                       >
-                        {t("operatorProfile.sendMessage", { defaultValue: "Send Message" })}
+                        <Send size={16} /> {t("operatorProfile.sendMessage", { defaultValue: "Send Message" })}
                       </button>
                       <button
                         onClick={() => {
@@ -478,7 +485,7 @@ export function OperatorProfile() {
                             detail: { redirectPath: `/operators/${id}` }
                           }));
                         }}
-                        className="w-full py-2.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-200 hover:text-slate-600"
+                        className="w-full py-3 bg-slate-50 text-slate-400 border border-slate-200 rounded-xl text-sm transition-all flex items-center justify-center gap-2 font-medium cursor-pointer hover:bg-slate-100 hover:text-slate-600 active:scale-[0.98]"
                       >
                         <Star size={16} fill="currentColor" /> {t("operatorProfile.rateOperator", { defaultValue: "Rate Operator" })}
                       </button>
@@ -486,10 +493,10 @@ export function OperatorProfile() {
                   ) : (
                     <>
                       <a
-                        href={`https://wa.me/91${operator.whatsapp || operator.phone}`}
+                        href={`https://wa.me/91${getCleanPhoneNumber(operator.whatsapp || operator.phone)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                        className="w-full py-3 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-medium"
                       >
                         <MessageSquare size={16} /> {t("operatorProfile.whatsapp", { defaultValue: "WhatsApp" })}
                       </a>
@@ -503,9 +510,9 @@ export function OperatorProfile() {
                               navigate(`/messages?userId=${operator.user_id}`);
                             }
                           }}
-                          className="w-full py-2.5 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] transition-colors cursor-pointer"
+                          className="w-full py-3 bg-[#172263] text-white rounded-xl text-sm hover:bg-[#11194A] hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-medium cursor-pointer"
                         >
-                          {t("operatorProfile.sendMessage", { defaultValue: "Send Message" })}
+                          <Send size={16} /> {t("operatorProfile.sendMessage", { defaultValue: "Send Message" })}
                         </button>
                       )}
                       {currentUser && (operator.user_id !== currentUser.id) && (
@@ -513,7 +520,7 @@ export function OperatorProfile() {
                           onClick={() => {
                             document.getElementById("ratings-section")?.scrollIntoView({ behavior: "smooth" });
                           }}
-                          className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm transition-colors flex items-center justify-center gap-2 font-semibold cursor-pointer"
+                          className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold cursor-pointer"
                         >
                           <Star size={16} fill="currentColor" /> {t("operatorProfile.rateOperator", { defaultValue: "Rate Operator" })}
                         </button>
@@ -543,7 +550,7 @@ export function OperatorProfile() {
           </button>
         ) : (
           <a
-            href={`tel:+91${operator.phone}`}
+            href={`tel:+91${getCleanPhoneNumber(operator.phone)}`}
             className="w-full py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-colors flex items-center justify-center font-semibold"
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
@@ -554,4 +561,3 @@ export function OperatorProfile() {
     </div>
   );
 }
-
