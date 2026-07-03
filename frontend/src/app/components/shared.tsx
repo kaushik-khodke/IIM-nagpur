@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ import {
   Users,
   Search,
   Smartphone,
+  ArrowLeft,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -916,6 +918,70 @@ export function LanguageSwitcher() {
   );
 }
 
+// ---- Mobile Detection & UI Helpers ----
+export function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                          (window.navigator as any).standalone === true;
+      const isSmallScreen = window.innerWidth < 768;
+      setIsMobile(isStandalone || isSmallScreen);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
+export function BottomSheet({
+  isOpen,
+  onClose,
+  title,
+  children
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black z-[100]"
+          />
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 220 }}
+            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[101] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] max-h-[85vh] overflow-y-auto shadow-2xl text-left"
+          >
+            <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto mb-4" />
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold font-sora text-slate-800">{title}</h3>
+              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <X size={18} className="text-slate-500" />
+              </button>
+            </div>
+            <div className="mt-1">{children}</div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ---- Navbar ----
 export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) {
   const { t } = useTranslation(["common", "dashboard", "pages"]);
@@ -1208,6 +1274,169 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
         { to: "/profile", label: t("sidebar.profile", { ns: "dashboard" }) },
         { to: "/requests", label: t("sidebar.requests", { ns: "dashboard" }) },
       ];
+
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    const showBackButton = !["/dashboard", "/harvesters", "/operators", "/requests", "/profile", "/notifications"].includes(location.pathname);
+    const hideBottomNav = ["/", "/login", "/register", "/enquiry"].includes(location.pathname);
+
+    // Get current tab based on path
+    const path = location.pathname;
+    const isHome = path === "/dashboard";
+    const isSearch = path === "/harvesters" || path === "/operators";
+    const isBookings = path === "/requests" || path.startsWith("/requests/");
+    const isNotifs = path === "/notifications";
+    const isProfile = path === "/profile" || path === "/settings" || path.startsWith("/profile/");
+
+    // Mobile Title mapping
+    const getMobileTitle = () => {
+      if (path === "/dashboard") return "Tractor Seva";
+      if (path === "/harvesters") return t("exploreHarvesters.title", { defaultValue: "Browse Harvesters" });
+      if (path === "/operators") return t("exploreOperators.title", { defaultValue: "Browse Operators" });
+      if (path === "/requests") return t("sidebar.requests", { ns: "dashboard", defaultValue: "Bookings" });
+      if (path === "/notifications") return "Notifications";
+      if (path === "/profile") return t("sidebar.profile", { ns: "dashboard", defaultValue: "Profile" });
+      if (path === "/settings") return t("sidebar.settings", { ns: "dashboard", defaultValue: "Settings" });
+      if (path === "/messages") return t("sidebar.messages", { ns: "dashboard", defaultValue: "Messages" });
+      if (path.startsWith("/harvesters/") && path.endsWith("/edit")) return "Edit Harvester";
+      if (path.startsWith("/harvesters/")) return "Harvester Details";
+      if (path.startsWith("/operators/")) return "Operator Profile";
+      if (path === "/add-harvester") return "Add Harvester";
+      if (path === "/add-operator") return "Add Operator";
+      if (path.startsWith("/blogs/")) return "Blog Post";
+      if (path === "/blogs") return "Blogs";
+      return "Tractor Seva";
+    };
+
+    const mobileTitle = getMobileTitle();
+
+    return (
+      <>
+        {/* Mobile top app bar */}
+        <header className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 pt-[env(safe-area-inset-top)] shrink-0">
+          <div className="h-14 px-4 flex items-center justify-between">
+            <div className="flex items-center w-1/4">
+              {showBackButton ? (
+                <button
+                  onClick={() => navigate(-1)}
+                  className="p-1.5 -ml-1 text-[#57585A] active:bg-slate-100 rounded-full transition-colors focus:outline-none cursor-pointer"
+                >
+                  <ArrowLeft size={20} className="stroke-[2.5px]" />
+                </button>
+              ) : (
+                <Link to="/dashboard">
+                  <img src={tractorSevaLogo} alt="Tractor Seva" className="h-7 w-auto" />
+                </Link>
+              )}
+            </div>
+            
+            <div className="w-2/4 text-center">
+              <h2 className="text-sm font-extrabold text-[#1A1A1A] font-sora truncate">{mobileTitle}</h2>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 w-1/4">
+              {isAuthenticated ? (
+                <>
+                  <Link to="/messages" className="p-1.5 text-[#57585A] active:bg-slate-100 rounded-full relative cursor-pointer">
+                    <MessageSquare size={19} className="stroke-[2px]" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    )}
+                  </Link>
+                  <Link to="/profile" className="w-7 h-7 rounded-full overflow-hidden border border-slate-200 cursor-pointer">
+                    <Avatar className="w-full h-full">
+                      {userImage ? <AvatarImage src={userImage} alt={userName} /> : null}
+                      <AvatarFallback className="bg-gradient-to-br from-[#172263] to-[#D97706] text-white text-[10px]">
+                        {userName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Link>
+                </>
+              ) : (
+                <Link to="/login" className="text-xs font-bold text-[#172263] px-2.5 py-1.5 bg-blue-50 rounded-lg cursor-pointer">
+                  Login
+                </Link>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Mobile bottom navigation bar */}
+        {!hideBottomNav && (
+          <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E2E8F0] pb-[env(safe-area-inset-bottom)] h-16 flex items-center justify-around shadow-[0_-2px_10px_rgba(0,0,0,0.03)] shrink-0">
+            <Link
+              to="/dashboard"
+              className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors cursor-pointer ${
+                isHome ? "text-[#172263]" : "text-[#57585A]"
+              }`}
+            >
+              <Home size={20} className={isHome ? "stroke-[2.5px]" : "stroke-[1.8px]"} />
+              <span className="text-[9px] font-black uppercase tracking-wider scale-90">Home</span>
+            </Link>
+
+            <Link
+              to="/harvesters"
+              className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors cursor-pointer ${
+                isSearch ? "text-[#172263]" : "text-[#57585A]"
+              }`}
+            >
+              <Search size={20} className={isSearch ? "stroke-[2.5px]" : "stroke-[1.8px]"} />
+              <span className="text-[9px] font-black uppercase tracking-wider scale-90">Search</span>
+            </Link>
+
+            <Link
+              to="/requests"
+              className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors cursor-pointer ${
+                isBookings ? "text-[#172263]" : "text-[#57585A]"
+              }`}
+            >
+              <FileText size={20} className={isBookings ? "stroke-[2.5px]" : "stroke-[1.8px]"} />
+              <span className="text-[9px] font-black uppercase tracking-wider scale-90">Bookings</span>
+            </Link>
+
+            <Link
+              to="/notifications"
+              className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors relative cursor-pointer ${
+                isNotifs ? "text-[#172263]" : "text-[#57585A]"
+              }`}
+            >
+              <div className="relative">
+                <Bell size={20} className={isNotifs ? "stroke-[2.5px]" : "stroke-[1.8px]"} />
+                {notifUnreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-black rounded-full h-4 min-w-4 px-1 flex items-center justify-center animate-pulse">
+                    {notifUnreadCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider scale-90">Alerts</span>
+            </Link>
+
+            <Link
+              to="/profile"
+              className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors cursor-pointer ${
+                isProfile ? "text-[#172263]" : "text-[#57585A]"
+              }`}
+            >
+              <User size={20} className={isProfile ? "stroke-[2.5px]" : "stroke-[1.8px]"} />
+              <span className="text-[9px] font-black uppercase tracking-wider scale-90">Profile</span>
+            </Link>
+          </nav>
+        )}
+
+        {/* Modals */}
+        <AuthChooserDialog
+          isOpen={chooserOpen}
+          onClose={() => setChooserOpen(false)}
+          initialMode={chooserMode}
+        />
+        <AuthRequiredDialog
+          isOpen={authRequiredOpen}
+          onClose={() => setAuthRequiredOpen(false)}
+          targetPath={pendingPath}
+        />
+      </>
+    );
+  }
 
   return (
     <nav className="sticky top-0 z-50 bg-[#ffffff]/95 backdrop-blur-sm border-b border-[#E2E8F0]">

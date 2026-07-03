@@ -32,6 +32,7 @@ import {
   WheatWatermark,
   AuthChooserDialog,
   getFirstImage,
+  useIsMobile,
 } from "./shared";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -690,6 +691,208 @@ export function Dashboard() {
       navigate(`/messages?userId=${ownerId}`);
     }
   };
+
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    const harvestersList = directoryItems.filter((item: any) => item.type === "harvester");
+    const operatorsList = directoryItems.filter((item: any) => item.type === "operator");
+
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] pb-24 text-left font-sans">
+        <Navbar variant="auth" />
+
+        {isPreview && (
+          <div className="mx-4 mt-4 bg-amber-50 border border-amber-200/60 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+            <span className="text-[11px] font-bold text-amber-800 leading-normal">
+              {t("previewModeMessage", { defaultValue: "Viewing in Guest Mode." })}
+            </span>
+            <button
+              onClick={() => setChooserOpen(true)}
+              className="px-2.5 py-1.5 bg-[#172263] text-white hover:bg-[#11194A] transition-colors rounded-xl text-[10px] font-black uppercase cursor-pointer"
+            >
+              Login / Sign Up
+            </button>
+          </div>
+        )}
+
+        <div className="px-4 pt-5">
+          {/* Welcome User header */}
+          <div className="flex items-center justify-between mb-5 bg-white border border-slate-200/60 rounded-3xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#172263] via-[#E82326] to-amber-500 p-[1.5px] overflow-hidden">
+                <Avatar className="w-full h-full bg-white rounded-full">
+                  {currentUser?.imagePath ? <AvatarImage src={currentUser.imagePath} /> : null}
+                  <AvatarFallback className="bg-slate-50 text-[#172263] font-bold text-sm">
+                    {(currentUser?.name || userName).charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-[#57585A] uppercase tracking-wider block">Welcome back,</span>
+                <span className="text-sm font-black text-slate-800 font-sora block">{currentUser?.name || userName}</span>
+              </div>
+            </div>
+            <span className="text-[9px] font-extrabold bg-[#172263]/10 text-[#172263] px-2 py-0.5 rounded-full uppercase tracking-wider">
+              {currentUser?.role || "User"}
+            </span>
+          </div>
+
+          {/* Quick Category Swiper actions */}
+          <div className="mb-6">
+            <h3 className="text-xs font-black text-[#57585A] uppercase tracking-wider mb-3">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                to="/harvesters"
+                className="bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-blue-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <div className="p-2.5 bg-blue-600 text-white rounded-xl mb-2.5">
+                  <Tractor size={20} />
+                </div>
+                <span className="text-xs font-extrabold text-blue-900 font-sora">Find Machinery</span>
+              </Link>
+              <Link
+                to="/operators"
+                className="bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <div className="p-2.5 bg-emerald-600 text-white rounded-xl mb-2.5">
+                  <Users size={20} />
+                </div>
+                <span className="text-xs font-extrabold text-emerald-900 font-sora">Hire Operators</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Stats section */}
+          {token && (
+            <div className="mb-6">
+              <h3 className="text-xs font-black text-[#57585A] uppercase tracking-wider mb-3">Stats & Insights</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div onClick={() => navigate('/profile')} className="bg-white border border-slate-200/60 rounded-2xl p-3 flex flex-col justify-between h-28 shadow-xs cursor-pointer active:scale-[0.98] transition-all">
+                  <span className="text-[9px] font-bold text-[#57585A] uppercase block">Listings</span>
+                  <div className="text-2xl font-black text-[#172263] font-sora my-1">
+                    {myHarvestersCount + myOperatorsCount}
+                  </div>
+                  <span className="text-[9px] text-[#57585A] font-semibold leading-none">Tap to manage</span>
+                </div>
+                <div className="bg-white border border-slate-200/60 rounded-2xl p-3 flex flex-col justify-between h-28 shadow-xs">
+                  <span className="text-[9px] font-bold text-[#57585A] uppercase block">Local Network</span>
+                  <div className="text-2xl font-black text-[#172263] font-sora my-1">
+                    {localHarvestersCount + localOperatorsCount}
+                  </div>
+                  <span className="text-[9px] text-[#57585A] font-semibold leading-none">{userState} Network</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Harvester Listings Slider */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xs font-black text-[#57585A] uppercase tracking-wider">Nearby Machinery</h3>
+              <Link to="/harvesters" className="text-xs font-bold text-[#172263] flex items-center gap-0.5">
+                View All <ArrowRight size={12} />
+              </Link>
+            </div>
+            {dirLoading ? (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+                <DashboardSkeletonCard />
+                <DashboardSkeletonCard />
+              </div>
+            ) : harvestersList.length === 0 ? (
+              <div className="bg-white border border-slate-100 rounded-2xl p-6 text-center text-xs text-[#57585A] shadow-xs">
+                No harvesters nearby. Tap View All to search broader area.
+              </div>
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 snap-x snap-mandatory">
+                {harvestersList.map((item) => (
+                  <div key={item.id} className="snap-start shrink-0">
+                    <DashboardListingCard item={item} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Operator Listings Slider */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xs font-black text-[#57585A] uppercase tracking-wider">Available Operators</h3>
+              <Link to="/operators" className="text-xs font-bold text-[#172263] flex items-center gap-0.5">
+                View All <ArrowRight size={12} />
+              </Link>
+            </div>
+            {dirLoading ? (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+                <DashboardSkeletonCard />
+                <DashboardSkeletonCard />
+              </div>
+            ) : operatorsList.length === 0 ? (
+              <div className="bg-white border border-slate-100 rounded-2xl p-6 text-center text-xs text-[#57585A] shadow-xs">
+                No operators available near you.
+              </div>
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 snap-x snap-mandatory">
+                {operatorsList.map((item) => (
+                  <div key={item.id} className="snap-start shrink-0">
+                    <DashboardListingCard item={item} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Requirements Board */}
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xs font-black text-[#57585A] uppercase tracking-wider">Active Local Jobs</h3>
+              <Link to="/requests" className="text-xs font-bold text-[#172263] flex items-center gap-0.5">
+                View Jobs <ArrowRight size={12} />
+              </Link>
+            </div>
+            {loading ? (
+              <div className="space-y-3">
+                <div className="h-20 bg-slate-100 rounded-2xl animate-pulse" />
+                <div className="h-20 bg-slate-100 rounded-2xl animate-pulse" />
+              </div>
+            ) : recentRequests.length === 0 ? (
+              <div className="bg-white border border-slate-100 rounded-2xl p-6 text-center text-xs text-[#57585A] shadow-xs">
+                No local job requirements posted yet.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentRequests.slice(0, 3).map((req) => (
+                  <div
+                    key={req.id}
+                    onClick={() => navigate(`/requests/${req.id}`)}
+                    className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-xs flex justify-between items-center active:scale-[0.99] transition-all cursor-pointer"
+                  >
+                    <div className="min-w-0 flex-1 pr-3">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                          req.type.toLowerCase().includes('harvester') ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'
+                        }`}>
+                          {req.type.toLowerCase().includes('harvester') ? 'Machinery Needed' : 'Operator Job'}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-semibold">{req.duration}</span>
+                      </div>
+                      <h4 className="text-xs font-black text-slate-800 line-clamp-1 font-sora">
+                        {req.machineType || "General Operator Required"}
+                      </h4>
+                      <p className="text-[10px] text-[#57585A] font-semibold flex items-center gap-0.5 mt-1 leading-none">
+                        <MapPin size={10} className="text-rose-500" />
+                        <span>{req.location}, {req.state}</span>
+                      </p>
+                    </div>
+                    <ChevronRight size={16} className="text-slate-400 shrink-0" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] overflow-x-hidden">

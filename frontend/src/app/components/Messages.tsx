@@ -42,6 +42,7 @@ import {
   Loader2,
   Star,
   Send,
+
   Menu,
   Sparkles,
   HelpCircle,
@@ -61,6 +62,7 @@ import {
   TractorIllustration,
   WheatWatermark,
   AuthChooserDialog,
+  useIsMobile,
 } from "./shared";
 import { toast } from "sonner";
 import districtsData from "./districts.json";
@@ -71,7 +73,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { INDIAN_STATES, MACHINE_TYPES, COMPANIES, HARVESTER_MODELS, HARVESTER_COMPANIES, renderMarkdown } from "./pagesShared";
 
-// ===========================
 // MESSAGES
 // ===========================
 export function Messages() {
@@ -246,6 +247,157 @@ export function Messages() {
     }
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
+
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col text-left font-sans h-full">
+        {/* Render Navbar only if no active conversation on mobile to show bottom tabs */}
+        {!active && <Navbar variant="auth" />}
+
+        {active ? (
+          /* Full-screen Chat Window */
+          <div className="flex flex-col h-screen pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] bg-[#efeae2]">
+            {/* Chat header */}
+            <div className="h-14 px-4 bg-white border-b border-slate-200 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setActive(null);
+                    setSearchParams({});
+                  }}
+                  className="p-1 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+                >
+                  <ArrowLeft size={20} className="text-slate-600 stroke-[2.5px]" />
+                </button>
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 shrink-0">
+                  {active.imagePath ? (
+                    <img src={active.imagePath} alt={active.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-[#172263] text-white flex items-center justify-center font-bold text-xs">
+                      {active.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-slate-800 font-sora block leading-snug">{active.name}</h3>
+                  <span className="text-[9px] font-extrabold text-zinc-400 uppercase tracking-wider block leading-none">{active.role || "User"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Messages Feed */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {chat.length === 0 ? (
+                <div className="text-center py-10">
+                  <span className="text-[10px] font-bold bg-white/70 border border-slate-100 px-3 py-1 rounded-full text-slate-500 shadow-xs uppercase tracking-wider">
+                    Say Hello! 👋
+                  </span>
+                </div>
+              ) : (
+                chat.map((msg, idx) => {
+                  const isMe = currentUser && msg.sender_id === currentUser.id;
+                  return (
+                    <div
+                      key={msg.id || idx}
+                      className={`flex ${isMe ? "justify-end" : "justify-start"} snap-end`}
+                    >
+                      <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-xs shadow-xs leading-relaxed ${
+                        isMe ? "bg-[#172263] text-white rounded-tr-none" : "bg-white text-slate-800 rounded-tl-none border border-slate-100"
+                      }`}>
+                        <p>{msg.content}</p>
+                        <span className={`text-[8px] font-bold block text-right mt-1 ${isMe ? "text-blue-200" : "text-zinc-400"}`}>
+                          {new Date(msg.created_at || msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input bar */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSend(e);
+              }}
+              className="p-3 bg-white border-t border-slate-200 flex gap-2 items-center shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.02)]"
+            >
+              <input
+                type="text"
+                required
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-xs focus:outline-none focus:border-[#172263] font-semibold"
+              />
+              <button
+                type="submit"
+                className="w-10 h-10 bg-[#172263] text-white rounded-full flex items-center justify-center active:scale-95 transition-all cursor-pointer shadow-md shrink-0"
+              >
+                <Send size={15} />
+              </button>
+            </form>
+          </div>
+        ) : (
+          /* Chat partners list */
+          <div className="px-4 pt-4 flex-1 pb-24">
+            <h1 className="text-xl font-extrabold font-sora text-slate-800 mb-4">Messages 💬</h1>
+            {chatPartners.length === 0 ? (
+              <div className="bg-white rounded-3xl p-8 border border-slate-200/60 text-center shadow-xs mt-4">
+                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#172263]/40">
+                  <MessageSquare size={28} />
+                </div>
+                <h3 className="text-base font-bold text-slate-800 mb-1">No Messages Yet</h3>
+                <p className="text-xs text-[#57585A] leading-relaxed max-w-xs mx-auto">
+                  Start direct chats with harvester operators and owners by browsing their details and hitting Book/Hire!
+                </p>
+              </div>
+            ) : (
+              <div className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-xs divide-y divide-slate-100">
+                {chatPartners.map((partner) => {
+                  const isSelected = active && active.id === partner.id;
+                  return (
+                    <div
+                      key={partner.id}
+                      onClick={() => {
+                        setActive(partner);
+                        setSearchParams({ userId: partner.id });
+                      }}
+                      className="p-4 flex gap-3.5 items-center active:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-150 shrink-0">
+                        {partner.imagePath ? (
+                          <img src={partner.imagePath} alt={partner.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-[#172263] text-white flex items-center justify-center font-bold text-sm">
+                            {partner.name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline mb-0.5">
+                          <h4 className="text-xs font-black text-slate-800 font-sora truncate">{partner.name}</h4>
+                          <span className="text-[8px] font-bold text-zinc-400">
+                            {partner.lastMessageTime ? formatTime(partner.lastMessageTime) : ""}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#57585A] font-semibold truncate">
+                          {partner.lastMessage || "Click to start chatting"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#fcfbf9]">

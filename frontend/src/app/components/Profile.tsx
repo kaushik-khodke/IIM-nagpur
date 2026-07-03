@@ -42,6 +42,7 @@ import {
   Loader2,
   Star,
   Send,
+
   Menu,
   Sparkles,
   HelpCircle,
@@ -61,6 +62,7 @@ import {
   TractorIllustration,
   WheatWatermark,
   AuthChooserDialog,
+  useIsMobile,
 } from "./shared";
 import { toast } from "sonner";
 import districtsData from "./districts.json";
@@ -71,7 +73,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { INDIAN_STATES, MACHINE_TYPES, COMPANIES, HARVESTER_MODELS, HARVESTER_COMPANIES, renderMarkdown, getStatusBadge, getUserVerificationStatusBadge } from "./pagesShared";
 
-// ===========================
 // PROFILE
 // ===========================
 export function Profile() {
@@ -147,6 +148,129 @@ export function Profile() {
 
   if (loading) return <LoadingSpinner />;
   if (!user) return <EmptyState title={t("profile.notFound", { defaultValue: "Profile not found" })} />;
+
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] pb-24 text-left font-sans">
+        <Navbar variant="auth" />
+
+        <div className="px-4 pt-6">
+          {/* Native card for User details */}
+          <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs flex items-center gap-4 mb-5">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#172263] bg-slate-50 shrink-0 flex items-center justify-center font-bold text-[#172263] text-xl">
+              {user.imagePath || operatorProfile?.image_path ? (
+                <img src={user.imagePath || operatorProfile.image_path} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                user.name?.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base font-extrabold text-slate-800 font-sora truncate">{user.name}</h2>
+              <p className="text-xs text-zinc-400 font-semibold truncate">{user.email || "kaushikkhodke29@gmail.com"}</p>
+              <span className="text-[9px] font-black uppercase tracking-wider bg-[#172263]/10 text-[#172263] px-2 py-0.5 rounded-md mt-1.5 inline-block">
+                {user.role}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Actions Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <button
+              onClick={() => navigate("/profile/edit")}
+              className="py-3 bg-white border border-slate-200/60 rounded-2xl text-xs font-bold text-[#172263] active:bg-slate-50 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Pencil size={14} /> Edit Profile
+            </button>
+            <button
+              onClick={() => navigate("/settings")}
+              className="py-3 bg-white border border-slate-200/60 rounded-2xl text-xs font-bold text-slate-700 active:bg-slate-50 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Settings size={14} /> Settings
+            </button>
+          </div>
+
+          {/* Menu Cell Lists (iOS Style Group) */}
+          <div className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-xs divide-y divide-slate-100 mb-6">
+            <div
+              onClick={() => navigate("/add-harvester")}
+              className="p-4 flex justify-between items-center active:bg-slate-50 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <span className="p-2 bg-blue-50 text-[#172263] rounded-xl"><Plus size={16} /></span>
+                <span className="text-xs font-bold text-slate-800">Add Harvester Machine</span>
+              </div>
+              <ChevronRight size={16} className="text-zinc-300" />
+            </div>
+
+            <div
+              onClick={() => navigate("/add-operator")}
+              className="p-4 flex justify-between items-center active:bg-slate-50 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <span className="p-2 bg-emerald-50 text-emerald-700 rounded-xl"><UserPlus size={16} /></span>
+                <span className="text-xs font-bold text-slate-800">List as Operator</span>
+              </div>
+              <ChevronRight size={16} className="text-zinc-300" />
+            </div>
+          </div>
+
+          {/* Listings and Details Group */}
+          <div className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-xs divide-y divide-slate-100 mb-6">
+            <div className="p-4 bg-slate-50 border-b border-slate-100">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">My Listings ({harvesters.length})</h3>
+            </div>
+            {harvesters.length === 0 ? (
+              <div className="p-6 text-center text-xs text-[#57585A]">
+                You haven't listed any harvesters yet.
+              </div>
+            ) : (
+              harvesters.map((h) => (
+                <div
+                  key={h.id}
+                  onClick={() => navigate(`/harvesters`)}
+                  className="p-4 flex justify-between items-center active:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-100 shrink-0 bg-slate-100">
+                      {h.imagePath ? (
+                        <img src={h.imagePath.split(',')[0]} alt={h.machineName} className="w-full h-full object-cover" />
+                      ) : (
+                        <Tractor className="w-full h-full p-2.5 text-zinc-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-slate-800 truncate">{h.machineName}</h4>
+                      <p className="text-[10px] text-zinc-400 font-semibold">{h.location}, {h.state}</p>
+                    </div>
+                  </div>
+                  <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                    h.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                  }`}>
+                    {h.status}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Danger Zone Group */}
+          <div className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-xs divide-y divide-slate-100">
+            <div
+              onClick={logout}
+              className="p-4 flex justify-between items-center active:bg-rose-50/50 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <span className="p-2 bg-rose-50 text-rose-600 rounded-xl"><LogOut size={16} /></span>
+                <span className="text-xs font-extrabold text-rose-600">Sign Out</span>
+              </div>
+              <ChevronRight size={16} className="text-rose-300" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#ffffff] text-[#1A1A1A]">

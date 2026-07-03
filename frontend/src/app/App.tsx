@@ -12,6 +12,7 @@ const Settings = lazy(() => import("./components/Settings").then(m => ({ default
 const ActivityPage = lazy(() => import("./components/ActivityPage").then(m => ({ default: m.ActivityPage })));
 const EnquiryPage = lazy(() => import("./components/Enquiry").then(m => ({ default: m.EnquiryPage })));
 const AskQuestion = lazy(() => import("./components/AskQuestion").then(m => ({ default: m.AskQuestion })));
+const NotificationsPage = lazy(() => import("./components/NotificationsPage").then(m => ({ default: m.NotificationsPage })));
 
 // Lazy-loaded components from individual page files
 const ExploreHarvesters = lazy(() => import("./components/ExploreHarvesters").then(m => ({ default: m.ExploreHarvesters })));
@@ -310,6 +311,14 @@ export default function App() {
             element={
               <ProtectedPage>
                 <ActivityPage />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedPage>
+                <NotificationsPage />
               </ProtectedPage>
             }
           />

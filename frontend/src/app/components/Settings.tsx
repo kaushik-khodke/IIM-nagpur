@@ -26,7 +26,7 @@ import {
   UserCheck,
   ShieldCheck,
 } from "lucide-react";
-import { Navbar } from "./shared";
+import { BottomSheet, Navbar, useIsMobile } from "./shared";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface UserSettings {
@@ -688,6 +688,88 @@ export function Settings() {
     verification: renderVerification(),
     support: renderSupport(),
   };
+
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] pb-24 text-left font-sans">
+        <Navbar variant="auth" />
+
+        <div className="px-4 pt-4">
+          <div className="flex items-center gap-2 mb-4">
+            <button onClick={() => navigate(-1)} className="p-1 text-slate-600 cursor-pointer">
+              <ArrowLeft size={20} className="stroke-[2.5px]" />
+            </button>
+            <h1 className="text-lg font-black text-slate-800 font-sora">Settings</h1>
+          </div>
+
+          <div className="space-y-4">
+            {navItems.map(item => (
+              <div key={item.id} className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-xs">
+                <button
+                  onClick={() => setMobileOpen(mobileOpen === item.id ? null : item.id)}
+                  className={`w-full flex items-center justify-between px-4 py-4 text-xs font-bold transition-all cursor-pointer ${
+                    mobileOpen === item.id ? "bg-[#172263] text-white" : "text-slate-700 active:bg-slate-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">{item.icon}{item.label}</div>
+                  {mobileOpen === item.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+                {mobileOpen === item.id && (
+                  <div className="p-4 border-t border-slate-100 bg-slate-50/30 text-xs">
+                    {sectionContent[item.id]}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Delete Account Modal for mobile ── */}
+        {showDeleteModal && (
+          <BottomSheet
+            isOpen={showDeleteModal}
+            onClose={() => { setShowDeleteModal(false); setDeletePassword(""); setDeleteConfirmText(""); }}
+            title="Delete Account"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-rose-600">
+                <AlertTriangle size={18} />
+                <h3 className="text-xs font-black uppercase tracking-wider">Warning</h3>
+              </div>
+              <p className="text-xs text-[#57585A] leading-relaxed">
+                All your data — including harvesters, operator profiles, messages, and requests — will be permanently deleted. This action is irreversible.
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#57585A] mb-1">Enter your password</label>
+                  <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)}
+                    placeholder="Your current password"
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-[#172263] font-semibold" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#57585A] mb-1">Type DELETE to confirm</label>
+                  <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-[#172263] font-semibold" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button onClick={() => { setShowDeleteModal(false); setDeletePassword(""); setDeleteConfirmText(""); }}
+                  className="py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-[#57585A] cursor-pointer">
+                  Cancel
+                </button>
+                <button onClick={deleteAccount} disabled={saving === "delete" || deleteConfirmText !== "DELETE" || !deletePassword}
+                  className="py-2.5 bg-rose-600 text-white rounded-xl text-xs font-bold cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5">
+                  <Trash2 size={13} /> {saving === "delete" ? "Deleting..." : "Delete Forever"}
+                </button>
+              </div>
+            </div>
+          </BottomSheet>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#1A1A1A]">

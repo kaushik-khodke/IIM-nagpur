@@ -42,6 +42,7 @@ import {
   Loader2,
   Star,
   Send,
+
   Menu,
   Sparkles,
   HelpCircle,
@@ -61,6 +62,8 @@ import {
   TractorIllustration,
   WheatWatermark,
   AuthChooserDialog,
+  useIsMobile,
+  BottomSheet,
 } from "./shared";
 import { toast } from "sonner";
 import districtsData from "./districts.json";
@@ -71,8 +74,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { INDIAN_STATES, MACHINE_TYPES, COMPANIES, HARVESTER_MODELS, HARVESTER_COMPANIES, renderMarkdown } from "./pagesShared";
 
-// ===========================
-// REQUEST DETAIL
 // ===========================
 export function RequestDetail() {
   const { t } = useTranslation(["pages", "static"]);
@@ -149,6 +150,105 @@ export function RequestDetail() {
   if (!req) return <EmptyState title={t("requestDetail.emptyTitle", { defaultValue: "Requirement not found" })} />;
 
   const isOwner = currentUser && req.userId === currentUser.id;
+
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] pb-24 text-left font-sans">
+        <Navbar variant="auth" />
+
+        <div className="px-4 pt-4">
+          <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-xs flex flex-col gap-4">
+            {/* Status & Type Badges */}
+            <div className="flex gap-2 items-center">
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
+                req.type === "operator" ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"
+              }`}>
+                {req.type === "operator" ? "Operator Needed" : "Machinery Needed"}
+              </span>
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${
+                req.status === "Open" || req.status === "Pending" ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-500"
+              }`}>
+                {req.status}
+              </span>
+              {isOwner && (
+                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700">
+                  My Listing
+                </span>
+              )}
+            </div>
+
+            {/* Title / Description */}
+            <div>
+              <h2 className="text-base font-extrabold text-slate-800 font-sora mb-2">{req.machineType}</h2>
+              <p className="text-xs text-[#57585A] leading-relaxed bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                {req.description}
+              </p>
+            </div>
+
+            {/* Info Cell list */}
+            <div className="space-y-2 border-t border-slate-100 pt-4">
+              {[
+                { label: "Location", value: req.location + (req.state ? `, ${req.state}` : "") },
+                { label: "Duration Required", value: req.duration },
+                { label: "Required Start Date", value: new Date(req.startDate).toLocaleDateString([], { dateStyle: 'long' }) },
+                { label: "Posted By", value: req.userName },
+              ].map((item) => (
+                <div key={item.label} className="flex justify-between items-center py-1.5 text-xs">
+                  <span className="text-zinc-400 font-semibold">{item.label}</span>
+                  <span className="font-extrabold text-slate-800 font-sora">{item.value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Actions button */}
+            <div className="border-t border-slate-100 pt-4 mt-2 flex flex-col gap-2">
+              {isOwner ? (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full py-3 bg-red-50 text-red-600 border border-red-100 rounded-xl text-xs font-black uppercase tracking-wider active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  Delete Requirement
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate(`/messages?userId=${req.userId}`)}
+                  className="w-full py-3 bg-[#172263] text-white rounded-xl text-xs font-black uppercase tracking-wider active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <MessageSquare size={16} /> Contact Poster
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Delete Confirm dialog for mobile */}
+        <BottomSheet
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          title="Delete Post"
+        >
+          <div className="space-y-4">
+            <p className="text-xs text-[#57585A]">Are you sure you want to permanently delete this job requirement post? This cannot be undone.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-[#57585A] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </BottomSheet>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
@@ -262,4 +362,4 @@ export function RequestDetail() {
     </div>
   );
 }
-
+
