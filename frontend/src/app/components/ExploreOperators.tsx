@@ -42,6 +42,7 @@ import {
   Loader2,
   Star,
   Send,
+
   Menu,
   Sparkles,
   HelpCircle,
@@ -61,6 +62,8 @@ import {
   TractorIllustration,
   WheatWatermark,
   AuthChooserDialog,
+  ProfileCard,
+  DirectorySkeletonCard,
 } from "./shared";
 import { toast } from "sonner";
 import districtsData from "./districts.json";
@@ -252,24 +255,36 @@ export function ExploreOperators() {
         </div>
 
         {loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 w-full">
+            {Array(8).fill(0).map((_, i) => <DirectorySkeletonCard key={i} />)}
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState title={t("operators.emptyTitle", { defaultValue: "No operators found" })} description={t("operators.emptyDescription", { defaultValue: "Try adjusting your filters." })} />
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((op) => (
-              <OperatorCard
-                key={op.id}
-                {...op}
-                isOwner={currentUser && op.user_id === currentUser.id}
-              />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 w-full">
+            {filtered.map((op) => {
+              const mappedItem = {
+                ...op,
+                id: op.id,
+                name: op.name,
+                subtitle: op.name,
+                image: op.image_path,
+                ownerImage: op.image_path,
+                type: "operator",
+                ownerId: op.user_id,
+              };
+              return (
+                <ProfileCard
+                  key={op.id}
+                  item={mappedItem}
+                  currentUserId={currentUser?.id || null}
+                  t={t}
+                />
+              );
+            })}
           </div>
         )}
       </div>
     </div>
   );
 }
-

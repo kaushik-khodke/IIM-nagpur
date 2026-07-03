@@ -34,6 +34,8 @@ import {
   Globe,
   ShieldCheck,
   Star,
+  Users,
+  Search,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -107,6 +109,224 @@ export function SkeletonCard() {
         <div className="h-3 bg-gray-100 rounded w-2/3" />
         <div className="h-8 bg-blue-100 rounded-xl mt-4" />
       </div>
+    </div>
+  );
+}
+
+// ---- Directory Skeleton Card ----
+export function DirectorySkeletonCard() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-3 flex flex-col gap-1.5 animate-pulse">
+      <div className="w-full h-26 bg-slate-100 rounded-xl" />
+      <div className="flex-1 flex flex-col gap-1.5">
+        <div className="space-y-1">
+          <div className="h-4 bg-slate-100 rounded w-3/4" />
+          <div className="h-3 bg-slate-100 rounded w-1/2" />
+        </div>
+        <div className="h-10 bg-slate-50 border border-slate-100 rounded-xl p-2 flex gap-3 my-1">
+          <div className="h-full bg-slate-200/60 rounded w-1/2" />
+          <div className="h-full bg-slate-200/60 rounded w-1/2" />
+        </div>
+        <div className="flex justify-between items-center pt-0.5 mt-auto">
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded-full bg-slate-100" />
+            <div className="h-3 bg-slate-100 rounded w-16" />
+          </div>
+          <div className="h-3 bg-slate-100 rounded w-12" />
+        </div>
+      </div>
+      <div className="h-7 bg-slate-100 rounded-lg w-full mt-1" />
+    </div>
+  );
+}
+
+// ---- Profile Card ----
+export function ProfileCard({ item, currentUserId, t }: { item: any; currentUserId: string | null; t: any }) {
+  return (
+    <div
+      className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_3px_15px_rgba(0,0,0,0.02)] hover:shadow-[0_10px_30px_rgba(23,34,99,0.07)] transition-all duration-300 flex flex-col overflow-hidden group hover:-translate-y-1"
+    >
+      <div className="p-3 flex flex-col gap-2 flex-1">
+        <div className="relative w-full h-26 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
+          {item.image ? (
+            <img
+              src={item.image}
+              alt={item.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                e.currentTarget.src = "";
+                e.currentTarget.className = "hidden";
+              }}
+            />
+          ) : null}
+          {!item.image && (
+            <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
+              {item.type === "harvester" ? (
+                <Tractor className="w-8 h-8 text-[#172263]/20" />
+              ) : (
+                <Users className="w-8 h-8 text-[#15803D]/20" />
+              )}
+            </div>
+          )}
+
+          <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm tracking-wide ${item.type === "harvester"
+              ? "bg-blue-100/95 text-blue-800 border border-blue-200/50"
+              : "bg-green-100/95 text-green-800 border border-green-200/50"
+            }`}>
+            {item.type === "harvester" ? t("landing.directory.harvester", { ns: "pages" }) : t("landing.directory.operator", { ns: "pages" })}
+          </span>
+        </div>
+
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <h4
+                  className="text-lg text-slate-800 font-bold font-sora line-clamp-1 group-hover:text-[#172263] transition-colors"
+                  style={{ fontFamily: "'Sora', sans-serif" }}
+                >
+                  <DynamicText>{item.name}</DynamicText>
+                </h4>
+                <p className="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
+                  <MapPin size={13} className="text-amber-500 shrink-0" />
+                  <span className="line-clamp-1">
+                    <DynamicText>{item.location}</DynamicText>, <DynamicText>{item.state}</DynamicText>
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 py-1 border-y border-slate-100/80 my-1">
+              {item.type === "harvester" ? (
+                <>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {t("landing.directory.company", { ns: "pages" })}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">
+                      <DynamicText>{item.company}</DynamicText>
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {t("landing.directory.model", { ns: "pages" })}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">
+                      <DynamicText>{item.model}</DynamicText>
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {t("landing.directory.year", { ns: "pages" })}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-700">{item.year || "N/A"}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {t("landing.directory.experience", { ns: "pages" })}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-700">
+                      {t("exploreOperators.experienceYears", { ns: "pages", count: parseInt(item.experience) || item.experience })}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                      {t("landing.directory.availability", { ns: "pages" })}
+                    </span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold mt-0.5 ${item.availability === "Available"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-amber-100 text-amber-800"
+                      }`}>
+                      {item.availability || "Available"}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
+                      {t("landing.directory.expertise", { ns: "pages" })}
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {Array.isArray(item.machineExpertise) && item.machineExpertise.length > 0 ? (
+                        item.machineExpertise.slice(0, 2).map((exp: string, idx: number) => (
+                          <span key={idx} className="bg-slate-50 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-medium border border-slate-200/60 line-clamp-1">
+                            <DynamicText>{exp}</DynamicText>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[10px] text-slate-500">General Operator</span>
+                      )}
+                      {Array.isArray(item.machineExpertise) && item.machineExpertise.length > 2 && (
+                        <span className="text-[10px] text-slate-400 font-medium self-center">
+                          +{item.machineExpertise.length - 2}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 pt-0 mt-auto">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 overflow-hidden shrink-0 border border-slate-200">
+                {item.ownerImage ? (
+                  <img src={item.ownerImage} alt={item.subtitle} className="w-full h-full object-cover" />
+                ) : (
+                  item.subtitle?.charAt(0)
+                )}
+              </span>
+              <div className="min-w-0">
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block leading-none">
+                  {item.type === "harvester" ? t("landing.directory.owner", { ns: "pages" }) : t("landing.directory.operator", { ns: "pages" })}
+                </span>
+                <span className="text-xs font-semibold text-slate-700 line-clamp-1 mt-0.5">{item.subtitle}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end shrink-0">
+              <div className="flex items-center gap-0.5 text-amber-500">
+                <Star size={13} fill="currentColor" className="stroke-amber-500" />
+                <span className="text-xs font-bold text-slate-800">{item.avgRating || "0.0"}</span>
+                <span className="text-[10px] text-slate-400">({item.ratingCount || 0})</span>
+              </div>
+              <div className="flex gap-0.5 mt-0.5">
+                {Array(5).fill(0).map((_, i) => (
+                  <Star
+                    key={i}
+                    size={9}
+                    fill={i < Math.round(parseFloat(item.avgRating || "0")) ? "currentColor" : "none"}
+                    className="stroke-amber-500"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {currentUserId && item.ownerId === currentUserId ? (
+        <Link
+          to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
+          className="w-full py-2 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 bg-slate-100 hover:bg-slate-200 text-[#172263]"
+        >
+          <Search size={16} />
+          {t("landing.directory.viewDetails", { ns: "pages", defaultValue: "View Details" })}
+        </Link>
+      ) : (
+        <Link
+          to={item.type === "harvester" ? `/harvesters/${item.id}` : `/operators/${item.id}`}
+          className={`w-full py-2 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-t border-slate-100 ${item.type === "harvester"
+              ? "bg-[#172263] hover:bg-[#11194A] text-white"
+              : "bg-amber-500 hover:bg-amber-600 text-white"
+            }`}
+        >
+          <MessageSquare size={16} />
+          {item.type === "harvester" ? t("landing.directory.bookNow", { ns: "pages" }) : t("landing.directory.hireNow", { ns: "pages" })}
+        </Link>
+      )}
     </div>
   );
 }

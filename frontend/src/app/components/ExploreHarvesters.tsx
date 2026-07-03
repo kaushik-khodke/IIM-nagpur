@@ -61,6 +61,9 @@ import {
   TractorIllustration,
   WheatWatermark,
   AuthChooserDialog,
+  ProfileCard,
+  DirectorySkeletonCard,
+  getFirstImage,
 } from "./shared";
 import { toast } from "sonner";
 import districtsData from "./districts.json";
@@ -304,8 +307,8 @@ export function ExploreHarvesters() {
         </div>
 
         {loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 w-full">
+            {Array(8).fill(0).map((_, i) => <DirectorySkeletonCard key={i} />)}
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState
@@ -315,14 +318,27 @@ export function ExploreHarvesters() {
             onAction={() => navigate("/add-harvester")}
           />
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((h) => (
-              <HarvesterCard
-                key={h.id}
-                {...h}
-                isOwner={currentUser && h.ownerName === currentUser.name}
-              />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 w-full">
+            {filtered.map((h) => {
+              const mappedItem = {
+                ...h,
+                id: h.id,
+                name: h.machineName,
+                subtitle: h.ownerName,
+                image: getFirstImage(h.imagePath),
+                ownerImage: h.ownerProfilePic,
+                type: "harvester",
+                ownerId: h.userId,
+              };
+              return (
+                <ProfileCard
+                  key={h.id}
+                  item={mappedItem}
+                  currentUserId={currentUser?.id || null}
+                  t={t}
+                />
+              );
+            })}
           </div>
         )}
       </div>
