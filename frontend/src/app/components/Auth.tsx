@@ -10,7 +10,7 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
-import { TractorIllustration, WheatWatermark, useIsMobile } from "./shared";
+import { TractorIllustration, WheatWatermark } from "./shared";
 import { toast } from "sonner";
 import tractorSevaLogo from "@/assets/tractor-seva-logo.png";
 
@@ -334,63 +334,6 @@ export function AuthPage() {
   };
 
   const isSignUp = mode === "register";
-
-  const isMobile = useIsMobile();
-  if (isMobile) {
-    return (
-      <div
-        className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center bg-no-repeat p-4 relative font-sans text-left"
-        style={{ backgroundImage: "url('/login-bg.png')" }}
-      >
-        <style dangerouslySetInnerHTML={{__html: `
-          .mobile-auth-inputs input,
-          .mobile-auth-inputs select,
-          .mobile-auth-inputs textarea {
-            font-size: 16px !important;
-            padding-top: 12px !important;
-            padding-bottom: 12px !important;
-          }
-          .mobile-auth-inputs button[type="submit"] {
-            padding-top: 14px !important;
-            padding-bottom: 14px !important;
-            font-size: 14px !important;
-          }
-        `}} />
-        <div className="absolute inset-0 bg-[#0A0F26]/40 backdrop-blur-[5px] pointer-events-none z-0" />
-        
-        {/* Floating Back Button */}
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="fixed top-6 left-4 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-white/90 border border-white/20 shadow-md text-[#57585A] backdrop-blur-md cursor-pointer"
-        >
-          <ArrowLeft size={20} />
-        </button>
-
-        {/* Content Card */}
-        <div className="relative bg-white rounded-3xl shadow-xl border border-slate-100 w-full max-w-md p-6 z-10">
-          <div className="flex flex-col items-center mb-6">
-            <img src={tractorSevaLogo} alt="Tractor Seva" className="h-10 w-auto object-contain mb-3" />
-            <h1 className="text-xl font-extrabold text-[#16237A] font-sora">
-              {isSignUp ? "Create Account 👋" : "Welcome Back 👋"}
-            </h1>
-            <p className="text-zinc-400 text-xs mt-1">
-              {isSignUp ? "Fill in details to get started" : "Login to access your dashboard"}
-            </p>
-          </div>
-
-          {/* Form wrapper */}
-          <div className="mobile-auth-inputs">
-            {isSignUp ? (
-              <RegisterForm onSwitchToLogin={switchToLogin} />
-            ) : (
-              <LoginForm onSwitchToRegister={switchToRegister} />
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
