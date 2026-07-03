@@ -1,11 +1,11 @@
-import { defineConfig } from 'vite'
+  import { defineConfig } from 'vite'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import fs from 'fs'
 import { execSync } from 'child_process'
 
-function log(msg) {
+function log(msg: string) {
   try {
     const logFile = 'C:\\Users\\ASUS\\.gemini\\antigravity-ide\\brain\\3fef9d02-e986-4415-bee0-48265cb9be52/scratch/vite_log.txt'
     fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`)
@@ -53,9 +53,10 @@ function downloadBackgroundVideos() {
       } else {
         log(`Curl download failed for ${video.name}: File is empty or does not exist`)
       }
-    } catch (err) {
+    } catch (err: any) {
       log(`Error downloading ${video.name} via curl: ${err.message}`)
     }
+    
   })
 }
 
@@ -65,7 +66,7 @@ downloadBackgroundVideos();
 function uploadAssetServer() {
   return {
     name: 'upload-asset-server',
-    configureServer(server) {
+    configureServer(server: { middlewares: { use: (arg0: (req: any, res: any, next: any) => void) => void } }) {
       server.middlewares.use((req, res, next) => {
         const urlPath = req.url?.split('?')[0];
         const isSaveVideo = urlPath === '/dev-save-video';
@@ -111,7 +112,7 @@ function uploadAssetServer() {
             });
           });
 
-          req.on('error', (err) => {
+          req.on('error', (err: { message: any }) => {
             log(`Vite upload endpoint error: ${err.message}`);
             res.statusCode = 500;
             res.end(`Error saving file: ${err.message}`);
@@ -126,7 +127,7 @@ function uploadAssetServer() {
 function figmaAssetResolver() {
   return {
     name: 'figma-asset-resolver',
-    resolveId(id) {
+    resolveId(id: string) {
       if (id.startsWith('figma:asset/')) {
         const filename = id.replace('figma:asset/', '')
         return path.resolve(__dirname, 'src/assets', filename)
@@ -148,6 +149,8 @@ export default defineConfig({
     alias: {
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
+      'react': path.resolve(__dirname, './node_modules/react'),
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
     },
   },
   server: {

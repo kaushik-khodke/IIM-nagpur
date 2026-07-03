@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster, toast } from "sonner";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { ProtectedRoute } from "./components/shared";
+import i18n from "../i18n/config";
 
 // Lazy-loaded page components
 const Landing = lazy(() => import("./components/Landing").then(m => ({ default: m.Landing })));
@@ -122,7 +123,6 @@ export default function App() {
               setNestedKey(bundles[lang][namespace], key_path, value);
             });
 
-            const i18n = (await import("../i18n/config")).default;
             Object.keys(bundles).forEach(lang => {
               Object.keys(bundles[lang]).forEach(ns => {
                 i18n.addResourceBundle(lang, ns, bundles[lang][ns], true, true);
