@@ -136,6 +136,91 @@ export function AdminPortal() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState("");
 
+  // Bulk User Import States
+  const [bulkDefaultPassword, setBulkDefaultPassword] = useState("");
+  const [bulkAdminPassword, setBulkAdminPassword] = useState("");
+  const [bulkFile, setBulkFile] = useState<File | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkErrors, setBulkErrors] = useState<string[]>([]);
+  const [bulkSuccessMsg, setBulkSuccessMsg] = useState("");
+  const [bulkAuditLogs, setBulkAuditLogs] = useState<any[]>([]);
+  const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
+
+  const fetchAuditLogs = async () => {
+    setLoadingAuditLogs(true);
+    try {
+      const res = await fetch("/api/admin/audit-logs", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBulkAuditLogs(data);
+      }
+    } catch (err) {
+      console.error("Error fetching admin audit logs:", err);
+    } finally {
+      setLoadingAuditLogs(false);
+    }
+  };
+
+  const handleBulkImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkFile) {
+      setBulkErrors(["Please select a CSV file to upload."]);
+      return;
+    }
+    if (!bulkDefaultPassword) {
+      setBulkErrors(["Please enter a default password for the imported users."]);
+      return;
+    }
+    if (!bulkAdminPassword) {
+      setBulkErrors(["Please enter your current administrator password to authorize this action."]);
+      return;
+    }
+
+    setBulkLoading(true);
+    setBulkErrors([]);
+    setBulkSuccessMsg("");
+
+    const formData = new FormData();
+    formData.append("file", bulkFile);
+    formData.append("defaultPassword", bulkDefaultPassword);
+    formData.append("adminPassword", bulkAdminPassword);
+
+    try {
+      const res = await fetch("/api/admin/users/bulk", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.errors && Array.isArray(data.errors)) {
+          setBulkErrors(data.errors);
+        } else {
+          setBulkErrors([data.error || "An error occurred during bulk import."]);
+        }
+      } else {
+        setBulkSuccessMsg(data.message || "Users imported successfully!");
+        setBulkFile(null);
+        setBulkDefaultPassword("");
+        setBulkAdminPassword("");
+        // Reload user directory & logs history
+        fetchAllUsers();
+        fetchAuditLogs();
+      }
+    } catch (err: any) {
+      setBulkErrors(["Network or system error occurred. Please try again."]);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+
+
   // Moderator listings
   const [harvesters, setHarvesters] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
@@ -499,6 +584,8 @@ export function AdminPortal() {
       fetchAdminOverrides();
       fetchLanguagesList();
       fetchAvailableLanguages();
+    } else if (activeTab === "bulk-import") {
+      fetchAuditLogs();
     }
   }, [activeTab]);
 
@@ -1530,6 +1617,7 @@ export function AdminPortal() {
               {[
                 { id: "dashboard", label: t("admin.nav.dashboard", { defaultValue: "Dashboard" }), icon: <LayoutGrid size={18} /> },
                 { id: "directory", label: t("admin.nav.directory", { defaultValue: "User Directory" }), icon: <User size={18} /> },
+                { id: "bulk-import", label: "Bulk User Import", icon: <UserPlus size={18} /> },
                 { id: "harvesters", label: t("admin.nav.machines", { defaultValue: "Machines" }), icon: <Tractor size={18} /> },
                 { id: "operators", label: t("admin.nav.operators", { defaultValue: "Operators" }), icon: <UserCheck size={18} /> },
                 { id: "verifications", label: "ID Verifications", icon: <ShieldCheck size={18} /> },
@@ -2243,7 +2331,231 @@ export function AdminPortal() {
             </div>
           )}
 
+          {/* ================================== */}
+          {/* TAB: BULK USER IMPORT & LOGS      */}
+          {/* ================================== */}
+          {activeTab === "bulk-import" && (
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              {/* Importer Section */}
+              <div className="xl:col-span-1 bg-white border border-[#E2E8F0] rounded-3xl p-6 shadow-sm space-y-4 h-fit">
+                <div className="border-b border-[#E2E8F0] pb-4">
+                  <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Bulk Import Users</h3>
+                  <p className="text-xs text-[#57585A] mt-1 leading-normal">
+                    Add multiple users atomically to the platform via a CSV file.
+                  </p>
+                </div>
 
+                <form onSubmit={handleBulkImportSubmit} className="space-y-4">
+                  {/* Default Password */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#1A1A1A] block">Default User Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={bulkDefaultPassword}
+                      onChange={(e) => setBulkDefaultPassword(e.target.value)}
+                      placeholder="e.g. TempPass123!"
+                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-[#172263]"
+                    />
+                    <span className="text-[10px] text-zinc-500 block leading-normal">
+                      Min 10 characters: 1 uppercase, 1 lowercase, 1 number, 1 symbol.
+                    </span>
+                  </div>
+
+                  {/* Admin Password for Re-Authentication */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-red-600 block">Confirm Your Admin Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={bulkAdminPassword}
+                      onChange={(e) => setBulkAdminPassword(e.target.value)}
+                      placeholder="Confirm admin password"
+                      className="w-full px-3 py-2 bg-white border border-red-200 rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600"
+                    />
+                    <span className="text-[10px] text-red-500 block leading-normal font-semibold">
+                      Security authorization check before processing import.
+                    </span>
+                  </div>
+
+                  {/* File Drag and Drop */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#1A1A1A] block">Select CSV File</label>
+                    <div 
+                      className={cn(
+                        "border-2 border-dashed rounded-2xl p-6 text-center transition cursor-pointer flex flex-col items-center justify-center min-h-[110px]",
+                        bulkFile ? "border-[#172263] bg-blue-50/20" : "border-[#E2E8F0] hover:border-[#172263]"
+                      )}
+                      onClick={() => document.getElementById("bulk-file-input")?.click()}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                          const file = e.dataTransfer.files[0];
+                          if (file.name.endsWith(".csv")) {
+                            setBulkFile(file);
+                            setBulkErrors([]);
+                          } else {
+                            setBulkErrors(["Invalid file type. Only CSV files are accepted."]);
+                          }
+                        }
+                      }}
+                    >
+                      <input
+                        id="bulk-file-input"
+                        type="file"
+                        accept=".csv"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setBulkFile(e.target.files[0]);
+                            setBulkErrors([]);
+                          }
+                        }}
+                      />
+                      <Upload size={24} className={bulkFile ? "text-[#172263]" : "text-zinc-400"} />
+                      {bulkFile ? (
+                        <div className="mt-2 text-xs">
+                          <p className="font-bold text-[#172263]">{bulkFile.name}</p>
+                          <p className="text-zinc-500 font-medium">({(bulkFile.size / 1024).toFixed(1)} KB)</p>
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-xs text-zinc-500 font-semibold">
+                          <p className="text-[#172263]">Click to browse files</p>
+                          <p>or drag & drop CSV here</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* CSV Template Reference */}
+                  <div className="bg-[#fcfbf9] border border-[#E2E8F0] rounded-xl p-3 text-[10px] text-[#57585A] leading-normal font-semibold">
+                    <p className="font-bold text-[#1A1A1A] mb-1 uppercase tracking-wider">CSV Header Format:</p>
+                    <code className="block bg-zinc-150 p-1.5 rounded font-mono text-[9px] text-[#172263] break-all">
+                      Name, Email, Phone No., State
+                    </code>
+                  </div>
+
+                  {/* Errors */}
+                  {bulkErrors.length > 0 && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl space-y-1">
+                      <p className="text-xs font-bold text-red-700 flex items-center gap-1">
+                        <XCircle size={13} /> Import Failed
+                      </p>
+                      <ul className="text-[10px] text-red-600 font-semibold list-disc pl-4 max-h-[120px] overflow-y-auto space-y-0.5">
+                        {bulkErrors.map((err, idx) => (
+                          <li key={idx} className="leading-snug">{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Success */}
+                  {bulkSuccessMsg && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
+                      <p className="text-xs font-bold text-green-700 flex items-center gap-1">
+                        <CheckCircle2 size={13} /> Success
+                      </p>
+                      <p className="text-[10px] text-green-600 font-bold mt-0.5 leading-snug">{bulkSuccessMsg}</p>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={bulkLoading}
+                    className="w-full py-2.5 bg-[#172263] text-white hover:bg-[#11194A] disabled:opacity-50 text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {bulkLoading ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" /> Processing Import...
+                      </>
+                    ) : (
+                      <>
+                        Import Users
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              {/* Logs Section */}
+              <div className="xl:col-span-2 bg-white border border-[#E2E8F0] rounded-3xl p-6 shadow-sm flex flex-col h-[650px]">
+                <div className="border-b border-[#E2E8F0] pb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-[#1A1A1A] font-sora">Bulk Import Logs</h3>
+                    <p className="text-xs text-[#57585A] mt-1 leading-normal">
+                      Security audit logs of all user import events.
+                    </p>
+                  </div>
+                  <button
+                    onClick={fetchAuditLogs}
+                    disabled={loadingAuditLogs}
+                    className="p-1.5 hover:bg-zinc-100 rounded-lg text-[#172263] transition flex items-center justify-center cursor-pointer"
+                    title="Refresh Logs"
+                  >
+                    <RotateCw size={16} className={loadingAuditLogs ? "animate-spin" : ""} />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto mt-4 pr-1 scrollbar-thin">
+                  {loadingAuditLogs && bulkAuditLogs.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="w-8 h-8 text-[#172263] animate-spin" />
+                    </div>
+                  ) : bulkAuditLogs.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left text-[#57585A]">
+                        <thead className="uppercase bg-[#fcfbf9] text-[#57585A] border-b border-[#E2E8F0] font-bold">
+                          <tr>
+                            <th className="px-4 py-2.5">Time</th>
+                            <th className="px-4 py-2.5">Admin Email</th>
+                            <th className="px-4 py-2.5">IP</th>
+                            <th className="px-4 py-2.5 text-center">Status</th>
+                            <th className="px-4 py-2.5">Details</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E2E8F0]/50 font-medium">
+                          {bulkAuditLogs.map((log) => (
+                            <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-4 py-3 text-[#1A1A1A] whitespace-nowrap">
+                                {new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                              </td>
+                              <td className="px-4 py-3 truncate max-w-[120px]" title={log.admin_email}>
+                                {log.admin_email}
+                              </td>
+                              <td className="px-4 py-3 font-mono text-[10px] whitespace-nowrap">{log.ip_address}</td>
+                              <td className="px-4 py-3 text-center whitespace-nowrap">
+                                <span className={cn(
+                                  "inline-block px-2 py-0.5 rounded-full text-[9px] font-bold shadow-xs",
+                                  log.status === "success" 
+                                    ? "bg-green-150 text-green-700 border border-green-200"
+                                    : "bg-red-150 text-red-700 border border-red-200"
+                                )}>
+                                  {log.status.toUpperCase()}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-zinc-600 break-words max-w-[200px]">
+                                {log.details}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-zinc-400 space-y-2">
+                      <FileText size={40} className="text-zinc-300" />
+                      <p className="text-xs font-semibold">No bulk import audit logs found.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ================================== */}
           {/* TAB: MACHINES MODERATION           */}
