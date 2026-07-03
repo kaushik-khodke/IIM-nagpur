@@ -28,6 +28,10 @@ const Messages = lazy(() => import("./components/Messages").then(m => ({ default
 const EditProfile = lazy(() => import("./components/EditProfile").then(m => ({ default: m.EditProfile })));
 const AdminPortal = lazy(() => import("./components/AdminPortal").then(m => ({ default: m.AdminPortal })));
 const EditHarvester = lazy(() => import("./components/EditHarvester").then(m => ({ default: m.EditHarvester })));
+const TermsAndCondition = lazy(() => import("./components/TermsAndCondition").then(m => ({ default: m.TermsAndCondition })));
+const PrivacyPolicy = lazy(() => import("./components/PrivacyPolicy").then(m => ({ default: m.PrivacyPolicy })));
+const ServiceAgreement = lazy(() => import("./components/ServiceAgreement").then(m => ({ default: m.ServiceAgreement })));
+const CancellationPolicy = lazy(() => import("./components/CancellationPolicy").then(m => ({ default: m.CancellationPolicy })));
 
 function ProtectedPage({ children }: { children: React.ReactNode }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
@@ -175,6 +179,10 @@ export default function App() {
           <Route path="/blogs/:id" element={<BlogDetail />} />
           <Route path="/enquiry" element={<EnquiryPage />} />
           <Route path="/ask-question" element={<AskQuestion />} />
+          <Route path="/terms-and-condition" element={<TermsAndCondition />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/service-agreement" element={<ServiceAgreement />} />
+          <Route path="/cancellation-policy" element={<CancellationPolicy />} />
 
           {/* Protected */}
           <Route

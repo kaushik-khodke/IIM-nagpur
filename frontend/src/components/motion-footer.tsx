@@ -151,24 +151,24 @@ export function CinematicFooter() {
             </h4>
             <ul className="space-y-1.5 text-sm text-white/70">
               <li>
-                <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                <Link to="/terms-and-condition" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
                   {t("footer.termsAndCondition", { defaultValue: "Terms and Condition" })}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                <Link to="/privacy-policy" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
                   {t("footer.privacyPolicy", { defaultValue: "Privacy Policy" })}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                <Link to="/service-agreement" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
                   {t("footer.serviceAgreement", { defaultValue: "Service Agreement" })}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
+                <Link to="/cancellation-policy" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
                   {t("footer.cancellationPolicy", { defaultValue: "Cancellation and Rescheduling Policy" })}
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
