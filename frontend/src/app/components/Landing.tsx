@@ -1036,63 +1036,53 @@ export function Landing() {
                   {t("landing.subtitle", { ns: "pages" })}
                 </p>
 
-                {/* Reorganized Buttons Container */}
-                <div className="flex flex-col gap-4 mb-8">
-                  {/* Row 1 */}
+                {/* Buttons Container */}
+                <div className="flex flex-col gap-3 mb-8">
+
+                  {/* Row 1: Dashboard + Harvester */}
                   <div className="flex flex-wrap items-center gap-4">
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center gap-2 px-6 py-3.5 bg-[#172263] text-white rounded-2xl hover:bg-[#11194A] hover:shadow-lg transition-all duration-200 cursor-pointer text-sm font-semibold"
+                    >
+                      {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={16} />
+                    </Link>
                     {localStorage.getItem("tractorsewa_token") ? (
-                      <>
-                        <Link
-                          to="/dashboard"
-                          className="flex items-center gap-2 px-6 py-3.5 bg-[#172263] text-white rounded-2xl hover:bg-[#11194A] hover:shadow-lg transition-all duration-200 cursor-pointer text-sm font-semibold"
-                        >
-                          {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={16} />
-                        </Link>
-                        <Link
-                          to="/harvesters"
-                          className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
-                        >
-                          <Tractor size={16} className="text-[#172263]" /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
-                        </Link>
-                        <Link
-                          to="/operators"
-                          className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
-                        >
-                          <User size={16} className="text-[#172263]" /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
-                        </Link>
-                      </>
+                      <Link
+                        to="/harvesters"
+                        className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
+                      >
+                        <Tractor size={16} className="text-[#172263]" /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
+                      </Link>
                     ) : (
-                      <>
-                        <Link
-                          to="/dashboard"
-                          className="flex items-center gap-2 px-6 py-3.5 bg-[#172263] text-white rounded-2xl hover:bg-[#11194A] hover:shadow-lg transition-all duration-200 cursor-pointer text-sm font-semibold"
-                        >
-                          {t("landing.goToDashboard", { ns: "pages", defaultValue: "Go to Dashboard" })} <ArrowRight size={16} />
-                        </Link>
-                        <Link
-                          to="/harvesters"
-                          onClick={() => {
-                            localStorage.setItem("tractorsewa_preview_mode", "true");
-                          }}
-                          className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
-                        >
-                          <Tractor size={16} className="text-[#172263]" /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
-                        </Link>
-                        <Link
-                          to="/operators"
-                          onClick={() => {
-                            localStorage.setItem("tractorsewa_preview_mode", "true");
-                          }}
-                          className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
-                        >
-                          <User size={16} className="text-[#172263]" /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
-                        </Link>
-                      </>
+                      <Link
+                        to="/harvesters"
+                        onClick={() => { localStorage.setItem("tractorsewa_preview_mode", "true"); }}
+                        className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
+                      >
+                        <Tractor size={16} className="text-[#172263]" /> {t("landing.imHarvester", { ns: "pages", defaultValue: "I'm a Harvester" })}
+                      </Link>
                     )}
                   </div>
 
-                  {/* Row 2 */}
-                  <div className="flex">
+                  {/* Row 2: Operator + Submit Enquiry */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    {localStorage.getItem("tractorsewa_token") ? (
+                      <Link
+                        to="/operators"
+                        className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
+                      >
+                        <User size={16} className="text-[#172263]" /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/operators"
+                        onClick={() => { localStorage.setItem("tractorsewa_preview_mode", "true"); }}
+                        className="flex items-center gap-2 px-6 py-3.5 border border-[#172263] text-[#172263] bg-white hover:bg-slate-50 transition-all rounded-2xl text-sm font-semibold"
+                      >
+                        <User size={16} className="text-[#172263]" /> {t("landing.imOperator", { ns: "pages", defaultValue: "I'm an Operator" })}
+                      </Link>
+                    )}
                     <Link
                       to="/enquiry"
                       className="flex items-center gap-2 px-6 py-3.5 bg-[#172263] text-white rounded-2xl hover:bg-[#11194A] hover:shadow-lg transition-all duration-200 cursor-pointer text-sm font-semibold"
@@ -1103,7 +1093,7 @@ export function Landing() {
                 </div>
 
                 {/* Row 3 - Checkmarks list below enquiry button */}
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-[#57585A]">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-[#57585A] mt-8">
                   {[
                     t("landing.freeToJoin", { ns: "pages", defaultValue: "Free to Join" }),
                     t("landing.verifiedProfiles", { ns: "pages", defaultValue: "Verified Profiles" }),
