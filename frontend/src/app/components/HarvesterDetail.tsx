@@ -72,7 +72,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { INDIAN_STATES, MACHINE_TYPES, COMPANIES, HARVESTER_MODELS, HARVESTER_COMPANIES, renderMarkdown, getAllImages } from "./pagesShared";
 
 export function HarvesterDetail() {
-  const { t } = useTranslation(["pages", "common", "static", "dashboard"]);
+  const { t, i18n } = useTranslation(["pages", "common", "static", "dashboard"]);
   const { id } = useParams();
   const [harvester, setHarvester] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -452,7 +452,7 @@ export function HarvesterDetail() {
               <h3 className="text-xl text-[#1A1A1A] mb-4" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("harvesterDetail.aboutThisMachine", { defaultValue: "About This Machine" })}</h3>
               <div className="w-12 h-1 bg-[#172263] rounded-full mb-6" />
               <p className="text-[#57585A] text-base leading-relaxed whitespace-pre-line">
-                {harvester.description || t("harvesterDetail.aboutDescription", { company: t("companies." + harvester.company, { ns: "static", defaultValue: harvester.company }), model: harvester.model, defaultValue: `This ${harvester.company} ${harvester.model} is well-maintained and suitable for harvesting wheat, rice, and other Rabi/Kharif crops. Available for seasonal hire with experienced operator on request.` })}
+                {harvester.descriptionTranslations?.[i18n.language] || harvester.description || t("harvesterDetail.aboutDescription", { company: t("companies." + harvester.company, { ns: "static", defaultValue: harvester.company }), model: harvester.model, defaultValue: `This ${harvester.company} ${harvester.model} is well-maintained and suitable for harvesting wheat, rice, and other Rabi/Kharif crops. Available for seasonal hire with experienced operator on request.` })}
               </p>
             </div>
 

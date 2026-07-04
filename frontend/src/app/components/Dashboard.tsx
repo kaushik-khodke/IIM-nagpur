@@ -32,6 +32,7 @@ import {
   WheatWatermark,
   AuthChooserDialog,
   getFirstImage,
+  DynamicText,
 } from "./shared";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -61,6 +62,7 @@ function DashboardSkeletonCard() {
 }
 
 function DashboardListingCard({ item }: { item: any }) {
+  const { t } = useTranslation(["dashboard", "static", "pages"]);
   const navigate = useNavigate();
   const token = localStorage.getItem("tractorsewa_token");
   const currentUser = JSON.parse(localStorage.getItem("tractorsewa_user") || "{}");
@@ -115,7 +117,9 @@ function DashboardListingCard({ item }: { item: any }) {
               ? "bg-blue-50 text-blue-700 border-blue-100"
               : "bg-emerald-50 text-emerald-700 border-emerald-100"
           }`}>
-            {item.type === "harvester" ? "Harvester" : "Operator"}
+            {item.type === "harvester" 
+              ? t("landing.directory.harvester", { ns: "pages", defaultValue: "Harvester" })
+              : t("landing.directory.operator", { ns: "pages", defaultValue: "Operator" })}
           </span>
         </div>
 
@@ -127,11 +131,15 @@ function DashboardListingCard({ item }: { item: any }) {
                   className="text-sm text-slate-800 font-bold font-sora line-clamp-1 group-hover:text-[#172263] transition-colors"
                   style={{ fontFamily: "'Sora', sans-serif" }}
                 >
-                  {item.name}
+                  <DynamicText>{item.name}</DynamicText>
                 </h4>
                 <p className="text-slate-500 text-[10px] flex items-center gap-1 mt-0.5 font-semibold">
                   <MapPin size={11} className="text-amber-500 shrink-0" />
-                  <span className="line-clamp-1">{formatLocation(item.location, item.state)}</span>
+                  <span className="line-clamp-1">
+                    <DynamicText>{item.location}</DynamicText>
+                    {item.location && item.state ? ", " : ""}
+                    {item.state ? t("states." + item.state, { ns: "static", defaultValue: item.state }) : ""}
+                  </span>
                 </p>
               </div>
             </div>
@@ -140,45 +148,51 @@ function DashboardListingCard({ item }: { item: any }) {
               {item.type === "harvester" ? (
                 <>
                   <div>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Company</span>
-                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">{item.company}</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">{t("landing.directory.company", { ns: "pages", defaultValue: "Company" })}</span>
+                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">
+                      <DynamicText>{item.company}</DynamicText>
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Model</span>
-                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">{item.model}</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">{t("landing.directory.model", { ns: "pages", defaultValue: "Model" })}</span>
+                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">
+                      <DynamicText>{item.model}</DynamicText>
+                    </span>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Year</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">{t("landing.directory.year", { ns: "pages", defaultValue: "Year" })}</span>
                     <span className="text-xs font-semibold text-slate-700">{item.year || "N/A"}</span>
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Experience</span>
-                    <span className="text-xs font-semibold text-slate-700">{item.experience} Yrs</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">{t("landing.directory.experience", { ns: "pages", defaultValue: "Experience" })}</span>
+                    <span className="text-xs font-semibold text-slate-700">{item.experience} {t("landing.directory.yrs", { ns: "pages", defaultValue: "Yrs" })}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Availability</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">{t("landing.directory.availability", { ns: "pages", defaultValue: "Availability" })}</span>
                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black ${
                       item.availability === "Available"
                         ? "bg-green-50 text-green-700 border border-green-100"
                         : "bg-amber-50 text-amber-700 border border-amber-100"
                     }`}>
-                      {item.availability || "Available"}
+                      {item.availability === "Available" 
+                        ? t("dashboard.available", { defaultValue: "Available" }) 
+                        : t("dashboard.busy", { defaultValue: "Busy" })}
                     </span>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Expertise</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">{t("landing.directory.expertise", { ns: "pages", defaultValue: "Expertise" })}</span>
                     <div className="flex flex-wrap gap-1 max-h-[36px] overflow-hidden">
                       {expertiseList.length > 0 ? (
                         expertiseList.map((exp: string, idx: number) => (
                           <span key={idx} className="bg-slate-50 text-slate-600 px-1 py-0.5 rounded text-[8px] font-bold border border-slate-100 truncate max-w-[70px]">
-                            {exp}
+                            <DynamicText>{exp}</DynamicText>
                           </span>
                         ))
                       ) : (
-                        <span className="text-[9px] text-slate-400 font-semibold">General Operator</span>
+                        <span className="text-[9px] text-slate-400 font-semibold">{t("dashboard.generalOperator", { defaultValue: "General Operator" })}</span>
                       )}
                     </div>
                   </div>
@@ -198,9 +212,13 @@ function DashboardListingCard({ item }: { item: any }) {
               </span>
               <div className="min-w-0 leading-none">
                 <span className="text-[7px] text-slate-400 font-black uppercase tracking-wider block">
-                  {item.type === "harvester" ? "Owner" : "Operator"}
+                  {item.type === "harvester" 
+                    ? t("landing.directory.owner", { ns: "pages", defaultValue: "Owner" }) 
+                    : t("landing.directory.operator", { ns: "pages", defaultValue: "Operator" })}
                 </span>
-                <span className="text-[10px] font-bold text-slate-700 line-clamp-1 mt-0.5">{item.subtitle}</span>
+                <span className="text-[10px] font-bold text-slate-700 line-clamp-1 mt-0.5">
+                  <DynamicText>{item.subtitle}</DynamicText>
+                </span>
               </div>
             </div>
 
@@ -222,7 +240,7 @@ function DashboardListingCard({ item }: { item: any }) {
           className="w-full py-2.5 text-[10px] font-black transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer border-t border-slate-100 bg-slate-50 hover:bg-slate-100 text-[#172263]"
         >
           <LayoutGrid size={12} />
-          View Details
+          {t("dashboard.viewDetails", { defaultValue: "View Details" })}
         </button>
       ) : (
         <button
@@ -234,7 +252,9 @@ function DashboardListingCard({ item }: { item: any }) {
           }`}
         >
           <MessageSquare size={12} />
-          {item.type === "harvester" ? "Book Now" : "Hire Now"}
+          {item.type === "harvester" 
+            ? t("landing.directory.bookNow", { ns: "pages", defaultValue: "Book Now" }) 
+            : t("landing.directory.hireNow", { ns: "pages", defaultValue: "Hire Now" })}
         </button>
       )}
     </div>
@@ -719,7 +739,7 @@ export function Dashboard() {
               <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-52 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-2">MY LISTINGS & PROFILE</span>
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-2">{t("dashboard.myListingsAndProfile", { defaultValue: "MY LISTINGS & PROFILE" })}</span>
                     <User size={16} className="text-[#172263]" />
                   </div>
                   
@@ -727,22 +747,26 @@ export function Dashboard() {
                     <div className="text-base font-extrabold text-[#172263] font-sora truncate">{currentUser?.name || userName}</div>
                     <div className="text-[10px] text-[#57585A] font-semibold truncate">{currentUser?.email}</div>
                     <div className="text-[9px] bg-slate-100 text-[#172263] px-2 py-0.5 rounded-md inline-block uppercase font-bold tracking-wider">
-                      Role: {currentUser?.role || "user"}
+                      {t("dashboard.role", { role: currentUser?.role || "user", defaultValue: `Role: ${currentUser?.role || "user"}` })}
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mt-1 border-t border-[#F1F5F9] pt-2">
                   <div>
-                    <span className="text-[8px] uppercase tracking-wider font-bold text-gray-400 block">Harvesters</span>
-                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora block">{myHarvestersCount} Total</span>
+                    <span className="text-[8px] uppercase tracking-wider font-bold text-gray-400 block">{t("dashboard.harvestersLabel", { defaultValue: "Harvesters" })}</span>
+                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora block">{myHarvestersCount} {t("dashboard.total", { defaultValue: "Total" })}</span>
                     <span className="text-[8px] text-zinc-500 block font-bold leading-normal">
-                      ({myHarvsApproved} App, {myHarvsPending} Pen, {myHarvsRejected} Rej)
+                      ({myHarvsApproved} {t("dashboard.app", { defaultValue: "App" })}, {myHarvsPending} {t("dashboard.pen", { defaultValue: "Pen" })}, {myHarvsRejected} {t("dashboard.rej", { defaultValue: "Rej" })})
                     </span>
                   </div>
                   <div>
-                    <span className="text-[8px] uppercase tracking-wider font-bold text-gray-400 block">Operator Profile</span>
-                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora block">{myOperatorsCount > 0 ? "Created" : "Not Created"}</span>
+                    <span className="text-[8px] uppercase tracking-wider font-bold text-gray-400 block">{t("dashboard.operatorProfileLabel", { defaultValue: "Operator Profile" })}</span>
+                    <span className="text-xs font-extrabold text-[#1A1A1A] font-sora block">
+                      {myOperatorsCount > 0 
+                        ? t("dashboard.created", { defaultValue: "Created" }) 
+                        : t("dashboard.notCreated", { defaultValue: "Not Created" })}
+                    </span>
                     {myOperatorsCount > 0 && myOperatorProfile && (
                       <span className={`text-[8px] font-bold block leading-normal ${
                         myOperatorProfile.verification_status === "Approved" ? "text-emerald-600" :
@@ -756,9 +780,12 @@ export function Dashboard() {
                 
                 <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
                   <span>
-                    Operator Status: {myOperatorsCount > 0 && myOperatorProfile ? (myOperatorProfile.verification_status || "Pending") : "N/A"}
+                    {t("dashboard.operatorStatus", { 
+                      status: myOperatorsCount > 0 && myOperatorProfile ? (myOperatorProfile.verification_status || "Pending") : "N/A", 
+                      defaultValue: `Operator Status: ${myOperatorsCount > 0 && myOperatorProfile ? (myOperatorProfile.verification_status || "Pending") : "N/A"}` 
+                    })}
                   </span>
-                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/profile')}>Manage</span>
+                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/profile')}>{t("dashboard.manage", { defaultValue: "Manage" })}</span>
                 </div>
               </div>
 
@@ -766,7 +793,7 @@ export function Dashboard() {
               <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-52 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">MY LOCATION NETWORK</span>
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">{t("dashboard.myLocationNetwork", { defaultValue: "MY LOCATION NETWORK" })}</span>
                     <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-100 text-[9px] font-black text-blue-700 uppercase">
                       <MapPin size={9} fill="currentColor" /> {userState}
                     </div>
@@ -776,7 +803,7 @@ export function Dashboard() {
                     <span className="text-3xl font-black text-[#172263] font-sora">
                       {localHarvestersCount + localOperatorsCount}
                     </span>
-                    <span className="text-xs text-[#57585A] font-bold">Total listings</span>
+                    <span className="text-xs text-[#57585A] font-bold">{t("dashboard.totalListings", { defaultValue: "Total listings" })}</span>
                   </div>
                 </div>
 
@@ -784,7 +811,7 @@ export function Dashboard() {
                 <div className="h-10 mt-1 flex items-end justify-between gap-3">
                   <div className="flex-1 flex flex-col justify-end h-full">
                     <div className="flex justify-between text-[8px] font-bold text-gray-500 mb-1">
-                      <span>Harvesters</span>
+                      <span>{t("dashboard.harvestersLabel", { defaultValue: "Harvesters" })}</span>
                       <span>{localHarvestersCount}</span>
                     </div>
                     <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -793,7 +820,7 @@ export function Dashboard() {
                   </div>
                   <div className="flex-1 flex flex-col justify-end h-full">
                     <div className="flex justify-between text-[8px] font-bold text-gray-500 mb-1">
-                      <span>Operators</span>
+                      <span>{t("dashboard.operatorsLabel", { defaultValue: "Operators" })}</span>
                       <span>{localOperatorsCount}</span>
                     </div>
                     <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -803,8 +830,8 @@ export function Dashboard() {
                 </div>
 
                 <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
-                  <span>Network: Connected</span>
-                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/harvesters')}>Browse Directory</span>
+                  <span>{t("dashboard.networkConnected", { defaultValue: "Network: Connected" })}</span>
+                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/harvesters')}>{t("dashboard.browseDirectory", { defaultValue: "Browse Directory" })}</span>
                 </div>
               </div>
 
@@ -812,9 +839,11 @@ export function Dashboard() {
               <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-52 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">MY RATING</span>
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">{t("myRating", { defaultValue: "MY RATING" })}</span>
                     <div className="text-xl font-extrabold text-[#172263] font-sora mt-1">
-                      {userScore !== null ? `${parseFloat(userScore).toFixed(1)} Rating` : "No Ratings Yet"}
+                      {userScore !== null 
+                        ? `${parseFloat(userScore).toFixed(1)} ${t("rating", { defaultValue: "Rating" })}` 
+                        : t("noScoreYet", { defaultValue: "No Ratings Yet" })}
                     </div>
                     <div className="flex items-center gap-0.5 mt-1">
                       {Array(5).fill(0).map((_, i) => (
@@ -865,8 +894,8 @@ export function Dashboard() {
 
                 <div className="text-left text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
                   {scoreCount > 0 
-                    ? `Based on ${scoreCount} ${scoreCount === 1 ? 'score given' : 'scores given'}` 
-                    : "Feedback received from farmers on the platform"}
+                    ? t("dashboard.basedOnScore", { count: scoreCount, defaultValue: `Based on ${scoreCount} ${scoreCount === 1 ? 'score given' : 'scores given'}` })
+                    : t("dashboard.feedbackReceived", { defaultValue: "Feedback received from farmers on the platform" })}
                 </div>
               </div>
 
@@ -874,30 +903,29 @@ export function Dashboard() {
               <div className="bg-white border border-[#E2E8F0] shadow-xs rounded-3xl p-5 flex flex-col justify-between h-52 relative overflow-hidden transition-all hover:shadow-md hover:border-[#172263]/30">
                 <div>
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">LATEST AGRI INSIGHTS</span>
+                    <span className="text-[10px] text-[#57585A] uppercase font-bold tracking-wider block mb-1">{t("dashboard.latestAgriInsights", { defaultValue: "LATEST AGRI INSIGHTS" })}</span>
                     <Sparkles size={16} className="text-[#D97706]" />
                   </div>
                   
                   <div className="leading-tight mt-2">
                     <div className="text-[10px] font-black bg-amber-50 text-[#D97706] border border-amber-100/50 px-2 py-0.5 rounded-md inline-block uppercase tracking-wider mb-1.5">
-                      {latestBlog?.category || "Agri News"}
+                      <DynamicText>{latestBlog?.category || t("dashboard.agriNews", { defaultValue: "Agri News" })}</DynamicText>
                     </div>
                     <div className="text-xs font-bold text-[#172263] line-clamp-2 h-8 font-sora leading-snug">
-                      {latestBlog?.title || "No blogs published yet"}
+                      <DynamicText>{latestBlog?.title || t("dashboard.noBlogsPublished", { defaultValue: "No blogs published yet" })}</DynamicText>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-[9px] text-[#57585A] font-bold border-t border-[#F1F5F9] pt-2">
-                  Published: {latestBlog?.date || "Recently"}
+                  {t("dashboard.published", { date: latestBlog?.date || t("dashboard.recently", { defaultValue: "Recently" }), defaultValue: `Published: ${latestBlog?.date || "Recently"}` })}
                 </div>
 
                 <div className="flex justify-between items-center text-[10px] text-[#57585A] font-semibold border-t border-[#F1F5F9] pt-2">
-                  <span>Read time: 3 mins</span>
-                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/blogs')}>Read Article</span>
+                  <span>{t("dashboard.readTime", { defaultValue: "Read time: 3 mins" })}</span>
+                  <span className="text-[#172263] hover:underline cursor-pointer font-bold" onClick={() => navigate('/blogs')}>{t("dashboard.readArticle", { defaultValue: "Read Article" })}</span>
                 </div>
               </div>
-
             </div>
           </>
         )}
@@ -908,10 +936,10 @@ export function Dashboard() {
           {/* LEFT COLUMN: Available Listings */}
           <div className="lg:col-span-12 space-y-6">
             <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3 mb-2">
-              <h2 className="text-lg font-extrabold text-[#1A1A1A] font-sora">Available Listings</h2>
+              <h2 className="text-lg font-extrabold text-[#1A1A1A] font-sora">{t("availableListings", { defaultValue: "Available Listings" })}</h2>
               {token && (
                 <Link to="/harvesters" className="text-xs font-bold text-[#172263] hover:underline">
-                  View All
+                  {t("landing.directory.exploreMore", { ns: "pages", defaultValue: "View All" })}
                 </Link>
               )}
             </div>
@@ -929,7 +957,7 @@ export function Dashboard() {
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search listings..."
+                    placeholder={t("filters.searchListings", { defaultValue: "Search listings..." })}
                     className="w-full pl-8 pr-3 py-1.5 border border-[#E2E8F0] bg-white rounded-xl text-xs text-[#1A1A1A] focus:outline-hidden focus:ring-1 focus:ring-[#172263]"
                   />
                 </div>
@@ -943,9 +971,9 @@ export function Dashboard() {
                   }}
                   className="px-2.5 py-1.5 border border-[#E2E8F0] bg-white rounded-xl text-xs font-bold text-[#57585A] cursor-pointer focus:outline-hidden"
                 >
-                  <option value="all">All Listings</option>
-                  <option value="harvester">Harvesters</option>
-                  <option value="operator">Operators</option>
+                  <option value="all">{t("filters.allListings", { defaultValue: "All Listings" })}</option>
+                  <option value="harvester">{t("filters.harvestersFilter", { defaultValue: "Harvesters" })}</option>
+                  <option value="operator">{t("filters.operatorsFilter", { defaultValue: "Operators" })}</option>
                 </select>
 
                 {/* State selector */}
@@ -958,7 +986,7 @@ export function Dashboard() {
                   }}
                   className="px-2.5 py-1.5 border border-[#E2E8F0] bg-white rounded-xl text-xs font-bold text-[#57585A] cursor-pointer focus:outline-hidden"
                 >
-                  <option value="">State</option>
+                  <option value="">{t("filters.statePlaceholder", { defaultValue: "State" })}</option>
                   {INDIAN_STATES.map((state) => (
                     <option key={state} value={state}>
                       {t("states." + state, { ns: "static", defaultValue: state })}
@@ -976,7 +1004,7 @@ export function Dashboard() {
                   disabled={!dirState}
                   className="px-2.5 py-1.5 border border-[#E2E8F0] bg-white rounded-xl text-xs font-bold text-[#57585A] cursor-pointer focus:outline-hidden disabled:opacity-50"
                 >
-                  <option value="">District</option>
+                  <option value="">{t("filters.districtPlaceholder", { defaultValue: "District" })}</option>
                   {dirState &&
                     districtsData.states
                       .find((s) => s.state === dirState)
@@ -996,10 +1024,10 @@ export function Dashboard() {
                   }}
                   className="px-2.5 py-1.5 border border-[#E2E8F0] bg-white rounded-xl text-xs font-bold text-[#57585A] cursor-pointer focus:outline-hidden"
                 >
-                  <option value="dateNewest">Newest</option>
-                  <option value="ratingHighest">Highest Rated</option>
-                  <option value="nameAsc">Name (A-Z)</option>
-                  <option value="nameDesc">Name (Z-A)</option>
+                  <option value="dateNewest">{t("filters.sortNewest", { defaultValue: "Newest" })}</option>
+                  <option value="ratingHighest">{t("filters.sortHighestRated", { defaultValue: "Highest Rated" })}</option>
+                  <option value="nameAsc">{t("filters.sortNameAsc", { defaultValue: "Name (A-Z)" })}</option>
+                  <option value="nameDesc">{t("filters.sortNameDesc", { defaultValue: "Name (Z-A)" })}</option>
                 </select>
 
               </div>
@@ -1007,7 +1035,7 @@ export function Dashboard() {
               {/* Active Filter Badges & Clear button */}
               {(dirSearch || dirCategory !== "all" || dirState || dirDistrict) && (
                 <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-[#E2E8F0]/60 items-center">
-                  <span className="text-[10px] text-gray-400 font-bold mr-1">Active filters:</span>
+                  <span className="text-[10px] text-gray-400 font-bold mr-1">{t("filters.activeFilters", { defaultValue: "Active filters:" })}</span>
                   {dirSearch && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold">
                       "{dirSearch}"
@@ -1016,7 +1044,7 @@ export function Dashboard() {
                   )}
                   {dirCategory !== "all" && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold">
-                      {dirCategory === "harvester" ? "Harvester" : "Operator"}
+                      {dirCategory === "harvester" ? t("landing.directory.harvester", { ns: "pages", defaultValue: "Harvester" }) : t("landing.directory.operator", { ns: "pages", defaultValue: "Operator" })}
                       <button onClick={() => setDirCategory("all")} className="hover:text-red-500 font-bold ml-0.5">×</button>
                     </span>
                   )}
@@ -1041,7 +1069,7 @@ export function Dashboard() {
                     }}
                     className="text-[10px] text-red-600 hover:text-red-700 font-bold ml-auto hover:underline cursor-pointer"
                   >
-                    Clear All
+                    {t("filters.clearAll", { defaultValue: "Clear All" })}
                   </button>
                 </div>
               )}
@@ -1066,7 +1094,7 @@ export function Dashboard() {
               </div>
             ) : directoryItems.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border border-[#E2E8F0] text-sm text-[#57585A]">
-                No listings found matching your criteria. Be the first to add one!
+                {t("filters.noListingsGlobal", { defaultValue: "No listings found matching your criteria. Be the first to add one!" })}
               </div>
             ) : (
               <div className="space-y-8 text-left">
@@ -1075,7 +1103,7 @@ export function Dashboard() {
                   <div className="space-y-4">
                     {harvestersList.length === 0 ? (
                       <div className="bg-slate-50/50 rounded-2xl p-8 text-center border border-slate-100 text-xs text-[#57585A] font-medium">
-                        No harvesters found matching your filters.
+                        {t("filters.noHarvesters", { defaultValue: "No harvesters found matching your filters." })}
                       </div>
                     ) : (
                       <>
@@ -1089,7 +1117,7 @@ export function Dashboard() {
                             onClick={() => navigate('/harvesters')}
                             className="inline-flex items-center gap-2 px-5 py-2 bg-white border border-slate-200 text-[#172263] hover:border-[#172263] hover:bg-slate-50 rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md cursor-pointer"
                           >
-                            View More Harvesters <ArrowRight size={12} />
+                            {t("filters.viewMoreHarvesters", { defaultValue: "View More Harvesters" })} <ArrowRight size={12} />
                           </button>
                         </div>
                       </>
@@ -1102,7 +1130,7 @@ export function Dashboard() {
                   <div className="space-y-4 pt-4">
                     {operatorsList.length === 0 ? (
                       <div className="bg-slate-50/50 rounded-2xl p-8 text-center border border-slate-100 text-xs text-[#57585A] font-medium">
-                        No operators found matching your filters.
+                        {t("filters.noOperators", { defaultValue: "No operators found matching your filters." })}
                       </div>
                     ) : (
                       <>
@@ -1116,7 +1144,7 @@ export function Dashboard() {
                             onClick={() => navigate('/operators')}
                             className="inline-flex items-center gap-2 px-5 py-2 bg-white border border-slate-200 text-[#15803D] hover:border-[#15803D] hover:bg-slate-50 rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md cursor-pointer"
                           >
-                            View More Operators <ArrowRight size={12} />
+                            {t("filters.viewMoreOperators", { defaultValue: "View More Operators" })} <ArrowRight size={12} />
                           </button>
                         </div>
                       </>

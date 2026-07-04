@@ -250,6 +250,20 @@ async function initializeDatabase() {
     }
 
     try {
+      await activePool.query('ALTER TABLE harvesters ADD COLUMN description_translations JSON DEFAULT NULL AFTER description');
+      console.log('Successfully added description_translations column to harvesters table.');
+    } catch (err) {
+      // Columns might already exist, safe to ignore
+    }
+
+    try {
+      await activePool.query('ALTER TABLE operators ADD COLUMN description_translations JSON DEFAULT NULL AFTER description');
+      console.log('Successfully added description_translations column to operators table.');
+    } catch (err) {
+      // Columns might already exist, safe to ignore
+    }
+
+    try {
       await activePool.query('ALTER TABLE users ADD COLUMN image_path VARCHAR(255) DEFAULT NULL AFTER bio');
       console.log('Successfully added image_path column to users table.');
     } catch (err) {
@@ -673,14 +687,10 @@ async function initializeDatabase() {
 
 async function seedTranslations(activePool) {
   try {
-    const [countRow] = await activePool.query('SELECT COUNT(*) as count FROM translation_overrides');
-    if (countRow[0].count > 0) {
-      console.log('translation_overrides table already seeded.');
-      return;
-    }
+    console.log('Synchronizing translation_overrides table from local JSON files...');
 
     console.log('Seeding translation_overrides table from local JSON files...');
-    const localesDir = path.resolve(__dirname, '../src/i18n/locales');
+    const localesDir = path.resolve(__dirname, '../frontend/src/locales');
     if (!fs.existsSync(localesDir)) {
       console.warn('Warning: Locales directory not found at', localesDir);
       return;
@@ -699,11 +709,26 @@ async function seedTranslations(activePool) {
         const fileContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
         const flatTranslations = flattenObject(fileContent);
-        for (const [key_path, value] of Object.entries(flatTranslations)) {
-          await activePool.query(
-            'INSERT IGNORE INTO translation_overrides (lang, namespace, key_path, value) VALUES (?, ?, ?, ?)',
-            [lang, namespace, key_path, value]
-          );
+        const entries = Object.entries(flatTranslations);
+        
+        // Batch insert to prevent connection hanging on large dictionaries
+        const batchSize = 500;
+        for (let i = 0; i < entries.length; i += batchSize) {
+          const chunk = entries.slice(i, i + batchSize);
+          const values = [];
+          const placeholders = [];
+          
+          for (const [key_path, value] of chunk) {
+            values.push(lang, namespace, key_path, value);
+            placeholders.push('(?, ?, ?, ?)');
+          }
+          
+          if (placeholders.length > 0) {
+            await activePool.query(
+              `INSERT IGNORE INTO translation_overrides (lang, namespace, key_path, value) VALUES ${placeholders.join(',')}`,
+              values
+            );
+          }
         }
       }
     }

@@ -79,7 +79,7 @@ export function CinematicFooter() {
               to="/enquiry"
               className="px-6 py-2.5 bg-white text-[#002855] font-extrabold rounded-lg hover:bg-[#E8720C] hover:text-white transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 text-center min-w-[130px] text-sm"
             >
-              {t("shared.inquiry", { defaultValue: "Inquiry" })}
+              {t("footer.inquiry", { defaultValue: "Inquiry" })}
             </Link>
           </div>
 
@@ -225,12 +225,12 @@ export function CinematicFooter() {
               </li>
               <li>
                 <a href="#" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
-                  {t("footer.buyPartsAndAccessories", { defaultValue: "Buy Parts & Accessories" })}
+                  {t("footer.buyParts", { defaultValue: "Buy Parts & Accessories" })}
                 </a>
               </li>
               <li>
                 <a href="https://tractorseva.com/" target="_blank" rel="noopener noreferrer" className="hover:text-[#E8720C] hover:translate-x-1 transition-all duration-300 block">
-                  {t("footer.tractorSevaLink", { defaultValue: "Tractor-seva" })}
+                  {t("footer.tractorSeva", { defaultValue: "Tractor-seva" })}
                 </a>
               </li>
             </ul>
@@ -248,10 +248,7 @@ export function CinematicFooter() {
                 <div className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white shrink-0 mt-0.5">
                   <MapPin className="w-4 h-4 text-white" />
                 </div>
-                <p className="text-xs md:text-sm text-white/80 leading-relaxed text-center md:text-left">
-                  Bedienung Solution Private Limited (Tractor Seva)<br />
-                  C/o- InFED Indian Institute of Management Nagpur Mihan (Non-Sez), Nagpur, Maharashtra, India - 441108
-                </p>
+                <div className="text-xs md:text-sm text-white/80 leading-relaxed text-center md:text-left" dangerouslySetInnerHTML={{ __html: t("footer.address", { defaultValue: "Bedienung Solution Private Limited (Tractor Seva)<br />C/o- InFED Indian Institute of Management Nagpur Mihan (Non-Sez), Nagpur, Maharashtra, India - 441108" }) }} />
               </div>
 
               {/* Email */}
@@ -284,7 +281,7 @@ export function CinematicFooter() {
           
           {/* Copyright Text */}
           <div className="text-xs text-white/60 font-semibold tracking-wide text-center md:text-left">
-            {t("footer.copyrightText", { defaultValue: "All rights reserved to Tractor seva" })}
+            {t("footer.allRightsReserved", { defaultValue: "All rights reserved to Tractor seva" })}
           </div>
 
           {/* Payment Gateways */}

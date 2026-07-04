@@ -355,7 +355,7 @@ export function AddHarvester() {
                       <X size={12} />
                     </button>
                     <span className="absolute bottom-1 left-1.5 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded font-semibold">
-                      {idx === 1 ? "Chassis No. Photo" : `Harvester Photo ${idx === 0 ? 1 : idx}`}
+                      {idx === 1 ? t("addHarvester.chassisNoPhoto") : `${t("addHarvester.harvesterPhotoN")} ${idx === 0 ? 1 : idx}`}
                     </span>
                   </div>
                 ))}
@@ -369,7 +369,7 @@ export function AddHarvester() {
                     >
                       <Camera size={24} className="text-[#172263]" />
                       <span className="text-[11px] font-bold">
-                        {photoPreviews.length === 1 ? "Take Chassis No. Photo" : "Take Harvester Photo"}
+                        {photoPreviews.length === 1 ? t("addHarvester.takeChassisPhoto") : t("addHarvester.takeHarvesterPhoto")}
                       </span>
                     </button>
                     
@@ -388,7 +388,7 @@ export function AddHarvester() {
                           e.target.value = "";
                         }}
                       />
-                      <span>Use Device Cam</span>
+                      <span>{t("addHarvester.useDeviceCam")}</span>
                     </label>
                   </div>
                 )}
@@ -415,7 +415,7 @@ export function AddHarvester() {
             </div>
 
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Harvester Model *</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.modelLabel")}</label>
               <select
                 value={model}
                 onChange={(e) => {
@@ -448,7 +448,7 @@ export function AddHarvester() {
 
           {(company === "Other" || model === "Other / Custom Model") && company !== "" && (
             <div>
-              <label className="text-sm text-[#57585A] block mb-1.5">Custom Model Name *</label>
+              <label className="text-sm text-[#57585A] block mb-1.5">{t("addHarvester.customModelLabel")}</label>
               <input
                 value={customModel}
                 onChange={(e) => setCustomModel(e.target.value)}
@@ -461,92 +461,92 @@ export function AddHarvester() {
 
           {/* Machine Plate Specifications Form Section */}
           <div className="border-t border-[#E2E8F0] pt-5 space-y-4">
-            <h3 className="text-base font-bold text-[#1A1A1A] font-sora">Machine Plate Specifications</h3>
+            <h3 className="text-base font-bold text-[#1A1A1A] font-sora">{t("addHarvester.machinePlateHeader")}</h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold text-[#57585A] block mb-1">Serial Number *</label>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">{t("addHarvester.serialNoLabel")}</label>
                 <input
                   type="text"
                   value={serialNo}
                   onChange={(e) => setSerialNo(e.target.value)}
-                  placeholder="Enter Serial Number"
+                  placeholder={t("addHarvester.enterSerialNo")}
                   required
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#57585A] block mb-1">Chassis Number *</label>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">{t("addHarvester.chassisNoLabel")}</label>
                 <input
                   type="text"
                   value={chassisNo}
                   onChange={(e) => setChassisNo(e.target.value)}
-                  placeholder="Enter Chassis Number"
+                  placeholder={t("addHarvester.enterChassisNo")}
                   required
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#57585A] block mb-1">Month / Year of Mfg *</label>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">{t("addHarvester.mfgMonthYearLabel")}</label>
                 <input
                   type="text"
                   value={mfgMonthYear}
                   onChange={(e) => setMfgMonthYear(e.target.value)}
-                  placeholder="e.g. 05 / 2024"
+                  placeholder={t("addHarvester.enterMfg")}
                   required
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Number *</label>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">{t("addHarvester.engineNoLabel")}</label>
                 <input
                   type="text"
                   value={engineNo}
                   onChange={(e) => setEngineNo(e.target.value)}
-                  placeholder="Enter Engine Number"
+                  placeholder={t("addHarvester.enterEngineNo")}
                   required
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Power</label>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">{t("addHarvester.enginePowerLabel")}</label>
                 <input
                   type="text"
                   value={enginePower}
                   onChange={(e) => setEnginePower(e.target.value)}
-                  placeholder="e.g. 73.5kw / 2600 / min"
+                  placeholder={t("addHarvester.enterEnginePower")}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Make</label>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">{t("addHarvester.engineMakeLabel")}</label>
                 <input
                   type="text"
                   value={engineMake}
                   onChange={(e) => setEngineMake(e.target.value)}
-                  placeholder="e.g. ZHEJIANG XINCHAI CO. LTD."
+                  placeholder={t("addHarvester.enterEngineMake")}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#57585A] block mb-1">Engine Model</label>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">{t("addHarvester.engineModelLabel")}</label>
                 <input
                   type="text"
                   value={engineModel}
                   onChange={(e) => setEngineModel(e.target.value)}
-                  placeholder="e.g. 4D35ZT"
+                  placeholder={t("addHarvester.enterEngineModel")}
                   className="w-full px-4 py-3 bg-[#ffffff] border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:border-[#172263]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#57585A] block mb-1">Service Hotline Number</label>
+                <label className="text-xs font-bold text-[#57585A] block mb-1">{t("addHarvester.serviceHotlineLabel")}</label>
                 <input
                   type="text"
                   value={serviceHotlineNo}
@@ -674,7 +674,7 @@ export function AddHarvester() {
       <CameraCaptureDialog
         open={cameraOpen}
         onOpenChange={setCameraOpen}
-        title={photoPreviews.length === 1 ? "Upload Chassis No. Photo" : "Take Harvester Photo"}
+        title={photoPreviews.length === 1 ? t("addHarvester.takeChassisPhoto") : t("addHarvester.takeHarvesterPhoto")}
         onCapture={(file) => {
           setPhotos(prev => [...prev, file]);
           setPhotoPreviews(prev => [...prev, URL.createObjectURL(file)]);

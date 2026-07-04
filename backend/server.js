@@ -12,6 +12,8 @@ const { body, validationResult } = require('express-validator');
 const winston = require('winston');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
+const { getTranslations } = require('./utils/translator');
+// Trigger seeding restart for new locale keys
 
 // Try loading .env from root directory first, then fallback to current directory
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -684,6 +686,7 @@ app.get('/api/operators', async (req, res) => {
       ...r,
       avgRating: parseFloat(r.avgRating || 0).toFixed(1),
       ratingCount: parseInt(r.ratingCount || 0),
+      descriptionTranslations: JSON.parse(r.description_translations || '{}'),
       machineExpertise: JSON.parse(r.machine_expertise || '[]'),
       verificationStatus: r.verification_status,
       verificationFeedback: r.verification_feedback,
@@ -718,6 +721,7 @@ app.get('/api/operators/:id', async (req, res) => {
       ...op,
       ownerName: op.ownerName,
       ownerProfilePic: op.ownerProfilePic,
+      descriptionTranslations: JSON.parse(op.description_translations || '{}'),
       machineExpertise: JSON.parse(op.machine_expertise || '[]'),
       verificationStatus: op.verification_status,
       verificationFeedback: op.verification_feedback,
@@ -755,9 +759,19 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
     const cleanAvailability = sanitizeInput(availability);
     const cleanDescription = sanitizeInput(description);
 
+    let descTranslationsStr = null;
+    if (cleanDescription) {
+      try {
+        const translations = await getTranslations(cleanDescription);
+        descTranslationsStr = JSON.stringify(translations);
+      } catch (err) {
+        console.error("Translation error:", err);
+      }
+    }
+
     await db.query(
-      `INSERT INTO operators (id, user_id, name, experience, location, state, machine_expertise, availability, description, phone, whatsapp, image_path, verification_status, is_profile_completed)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Unverified', 1)
+      `INSERT INTO operators (id, user_id, name, experience, location, state, machine_expertise, availability, description, description_translations, phone, whatsapp, image_path, verification_status, is_profile_completed)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Unverified', 1)
        ON DUPLICATE KEY UPDATE 
          name = VALUES(name),
          experience = VALUES(experience),
@@ -766,11 +780,12 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
          machine_expertise = VALUES(machine_expertise),
          availability = VALUES(availability),
          description = VALUES(description),
+         description_translations = VALUES(description_translations),
          phone = VALUES(phone),
          whatsapp = VALUES(whatsapp),
          image_path = VALUES(image_path),
          is_profile_completed = 1`,
-      [require('crypto').randomUUID(), req.user.id, cleanName, experience, cleanLocation, cleanState, expertiseStr, cleanAvailability || 'Available', cleanDescription || null, cleanedPhone, cleanedWhatsapp, imagePath || null]
+      [require('crypto').randomUUID(), req.user.id, cleanName, experience, cleanLocation, cleanState, expertiseStr, cleanAvailability || 'Available', cleanDescription || null, descTranslationsStr, cleanedPhone, cleanedWhatsapp, imagePath || null]
     );
 
     res.status(201).json({ message: 'Operator profile saved successfully' });
@@ -1039,6 +1054,7 @@ app.get('/api/harvesters', async (req, res) => {
       phone: r.phone,
       whatsapp: r.whatsapp,
       description: r.description,
+      descriptionTranslations: JSON.parse(r.description_translations || '{}'),
       imagePath: r.image_path,
       ownerName: r.ownerName,
       ownerProfilePic: r.ownerProfilePic,
@@ -1093,6 +1109,7 @@ app.get('/api/harvesters/:id', async (req, res) => {
       phone: r.phone,
       whatsapp: r.whatsapp,
       description: r.description,
+      descriptionTranslations: JSON.parse(r.description_translations || '{}'),
       imagePath: r.image_path,
       ownerName: r.ownerName,
       ownerProfilePic: r.ownerProfilePic,
@@ -1155,8 +1172,18 @@ app.post('/api/harvesters', authenticateToken, async (req, res) => {
     const cleanEngineModel = sanitizeInput(engineModel);
     const cleanServiceHotlineNo = sanitizeInput(serviceHotlineNo);
 
+    let descTranslationsStr = null;
+    if (cleanDescription) {
+      try {
+        const translations = await getTranslations(cleanDescription);
+        descTranslationsStr = JSON.stringify(translations);
+      } catch (err) {
+        console.error("Translation error:", err);
+      }
+    }
+
     await db.query(
-      'INSERT INTO harvesters (id, user_id, machine_name, company, model, year, location, state, phone, whatsapp, description, image_path, serial_no, chassis_no, mfg_month_year, engine_no, engine_power, engine_make, engine_model, service_hotline_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO harvesters (id, user_id, machine_name, company, model, year, location, state, phone, whatsapp, description, description_translations, image_path, serial_no, chassis_no, mfg_month_year, engine_no, engine_power, engine_make, engine_model, service_hotline_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         require('crypto').randomUUID(),
         req.user.id,
@@ -1169,6 +1196,7 @@ app.post('/api/harvesters', authenticateToken, async (req, res) => {
         cleanedPhone,
         cleanedWhatsapp,
         cleanDescription || null,
+        descTranslationsStr,
         imagePath || null,
         cleanSerialNo || null,
         cleanChassisNo || null,
@@ -1237,8 +1265,22 @@ app.put('/api/harvesters/:id', authenticateToken, async (req, res) => {
     const cleanEngineModel = sanitizeInput(engineModel);
     const cleanServiceHotlineNo = sanitizeInput(serviceHotlineNo);
 
+    let descTranslationsStr = harvester.description_translations;
+    
+    // Only translate if description changed
+    if (cleanDescription && cleanDescription !== harvester.description) {
+      try {
+        const translations = await getTranslations(cleanDescription);
+        descTranslationsStr = JSON.stringify(translations);
+      } catch (err) {
+        console.error("Translation error:", err);
+      }
+    } else if (!cleanDescription) {
+      descTranslationsStr = null;
+    }
+
     await db.query(
-      'UPDATE harvesters SET machine_name = ?, company = ?, model = ?, year = ?, location = ?, state = ?, phone = ?, whatsapp = ?, description = ?, image_path = ?, serial_no = ?, chassis_no = ?, mfg_month_year = ?, engine_no = ?, engine_power = ?, engine_make = ?, engine_model = ?, service_hotline_no = ?, verification_status = \'Pending\', verification_feedback = NULL WHERE id = ?',
+      'UPDATE harvesters SET machine_name = ?, company = ?, model = ?, year = ?, location = ?, state = ?, phone = ?, whatsapp = ?, description = ?, description_translations = ?, image_path = ?, serial_no = ?, chassis_no = ?, mfg_month_year = ?, engine_no = ?, engine_power = ?, engine_make = ?, engine_model = ?, service_hotline_no = ?, verification_status = \'Pending\', verification_feedback = NULL WHERE id = ?',
       [
         cleanMachineName,
         cleanCompany,
@@ -1249,6 +1291,7 @@ app.put('/api/harvesters/:id', authenticateToken, async (req, res) => {
         cleanedPhone,
         cleanedWhatsapp,
         cleanDescription || null,
+        descTranslationsStr,
         imagePath !== undefined ? imagePath : harvester.image_path,
         cleanSerialNo || null,
         cleanChassisNo || null,
@@ -3743,12 +3786,32 @@ app.delete('/api/admin/faqs/:id', authenticateToken, isAdmin, async (req, res) =
 });
 
 // Dynamic Translation Overrides Endpoints
-app.get('/api/translation-overrides', async (req, res) => {
+app.get('/api/translations/:lang/:ns', async (req, res) => {
+  const { lang, ns } = req.params;
   try {
-    const [rows] = await db.query('SELECT lang, namespace, key_path, value FROM translation_overrides');
-    res.json(rows);
+    const [rows] = await db.query('SELECT key_path, value FROM translation_overrides WHERE lang = ? AND namespace = ?', [lang, ns]);
+    
+    // If no overrides, return empty object (i18next will fallback to static or other languages if needed, but since we seeded all, it should return them)
+    if (rows.length === 0) {
+      // Return 404 so i18next knows it's not available and uses fallback
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    // Convert flat key_paths to nested object
+    const result = {};
+    rows.forEach(r => {
+      const parts = r.key_path.split('.');
+      let current = result;
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (!current[parts[i]]) current[parts[i]] = {};
+        current = current[parts[i]];
+      }
+      current[parts[parts.length - 1]] = r.value;
+    });
+
+    res.json(result);
   } catch (error) {
-    console.error('Error fetching translation overrides:', error);
+    console.error('Error fetching translations for', lang, ns, error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

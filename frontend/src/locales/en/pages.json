@@ -61,28 +61,81 @@
       }
     },
     "featureList": {
-      "f1": { "title": "Operator Search", "desc": "Find verified operators by location, experience & machine type." },
-      "f2": { "title": "Harvester Directory", "desc": "Browse machines from all major brands across India." },
-      "f3": { "title": "Direct Messaging", "desc": "Connect directly without middlemen or brokers." },
-      "f4": { "title": "Availability Tracking", "desc": "Real-time availability status for every operator." },
-      "f5": { "title": "Requirements Board", "desc": "Post your seasonal requirements and get applications." },
-      "f6": { "title": "Location Filters", "desc": "Pinpoint operators in your district, state or region." },
-      "f7": { "title": "Multilingual Support", "desc": "Access the platform in Hindi, Punjabi, Marathi, and other regional languages." }
+      "f1": {
+        "title": "Operator Search",
+        "desc": "Find verified operators by location, experience & machine type."
+      },
+      "f2": {
+        "title": "Harvester Directory",
+        "desc": "Browse machines from all major brands across India."
+      },
+      "f3": {
+        "title": "Direct Messaging",
+        "desc": "Connect directly without middlemen or brokers."
+      },
+      "f4": {
+        "title": "Availability Tracking",
+        "desc": "Real-time availability status for every operator."
+      },
+      "f5": {
+        "title": "Requirements Board",
+        "desc": "Post your seasonal requirements and get applications."
+      },
+      "f6": {
+        "title": "Location Filters",
+        "desc": "Pinpoint operators in your district, state or region."
+      },
+      "f7": {
+        "title": "Multilingual Support",
+        "desc": "Access the platform in Hindi, Punjabi, Marathi, and other regional languages."
+      }
     },
     "persona": {
       "farmerTab": "🌾 I am a Farmer",
       "operatorTab": "🚜 I am an Operator",
       "farmer": {
-        "s1": { "title": "Register as Farmer", "desc": "Create your free account in under 2 minutes.", "detail": "Sign up with your phone number, select your state and district. No paperwork, no fees — just a quick profile and you're in." },
-        "s2": { "title": "Post Your Requirement", "desc": "Tell us what crop, machine type, and dates you need.", "detail": "Select your crop type (paddy, wheat, soybean...), pick your harvest start date, and specify how many days you need a harvester. Done in seconds." },
-        "s3": { "title": "Browse & Filter Matches", "desc": "See verified operators and harvesters near you instantly.", "detail": "Filter by district, machine brand, availability, and experience. View full profiles with ratings, past harvests, and contact info before you connect." },
-        "s4": { "title": "Connect & Get Harvested", "desc": "WhatsApp or message directly. Agree on terms. Harvest!", "detail": "No middlemen. Contact the operator or owner directly via WhatsApp or the in-app message system. Agree on your rate, confirm dates, and your crop is harvested on time." }
+        "s1": {
+          "title": "Register as Farmer",
+          "desc": "Create your free account in under 2 minutes.",
+          "detail": "Sign up with your phone number, select your state and district. No paperwork, no fees — just a quick profile and you're in."
+        },
+        "s2": {
+          "title": "Post Your Requirement",
+          "desc": "Tell us what crop, machine type, and dates you need.",
+          "detail": "Select your crop type (paddy, wheat, soybean...), pick your harvest start date, and specify how many days you need a harvester. Done in seconds."
+        },
+        "s3": {
+          "title": "Browse & Filter Matches",
+          "desc": "See verified operators and harvesters near you instantly.",
+          "detail": "Filter by district, machine brand, availability, and experience. View full profiles with ratings, past harvests, and contact info before you connect."
+        },
+        "s4": {
+          "title": "Connect & Get Harvested",
+          "desc": "WhatsApp or message directly. Agree on terms. Harvest!",
+          "detail": "No middlemen. Contact the operator or owner directly via WhatsApp or the in-app message system. Agree on your rate, confirm dates, and your crop is harvested on time."
+        }
       },
       "operator": {
-        "s1": { "title": "Register as Operator", "desc": "Create your operator profile and showcase your skills.", "detail": "Register with your machine type, years of experience, and operating district. Add your photo and certifications to stand out to farmers looking for reliable operators." },
-        "s2": { "title": "List Your Availability", "desc": "Set your schedule and service areas so farmers find you.", "detail": "Mark which months you're available, which districts you travel to, and what machines you can operate. Update anytime — you're always in control." },
-        "s3": { "title": "Receive Requests", "desc": "Farmers will find and contact you directly.", "detail": "When a farmer posts a requirement matching your profile, they'll see you in search results. You'll get direct WhatsApp or in-app messages from interested farmers." },
-        "s4": { "title": "Work & Earn", "desc": "Confirm the job, head to the field, and earn fairly.", "detail": "Agree on your daily rate directly with the farmer — no commission cuts, no middlemen. More work, better pay, and a growing reputation on the platform." }
+        "s1": {
+          "title": "Register as Operator",
+          "desc": "Create your operator profile and showcase your skills.",
+          "detail": "Register with your machine type, years of experience, and operating district. Add your photo and certifications to stand out to farmers looking for reliable operators."
+        },
+        "s2": {
+          "title": "List Your Availability",
+          "desc": "Set your schedule and service areas so farmers find you.",
+          "detail": "Mark which months you're available, which districts you travel to, and what machines you can operate. Update anytime — you're always in control."
+        },
+        "s3": {
+          "title": "Receive Requests",
+          "desc": "Farmers will find and contact you directly.",
+          "detail": "When a farmer posts a requirement matching your profile, they'll see you in search results. You'll get direct WhatsApp or in-app messages from interested farmers."
+        },
+        "s4": {
+          "title": "Work & Earn",
+          "desc": "Confirm the job, head to the field, and earn fairly.",
+          "detail": "Agree on your daily rate directly with the farmer — no commission cuts, no middlemen. More work, better pay, and a growing reputation on the platform."
+        }
       }
     },
     "directory": {
@@ -118,7 +171,20 @@
       "year": "Year",
       "experience": "Experience",
       "availability": "Availability",
-      "expertise": "Expertise"
+      "expertise": "Expertise",
+      "topHarvesters": "Top Rated Harvesters",
+      "topOperators": "Top Rated Operators"
+    },
+    "service": {
+      "title": "Professional Harvester Servicing & Support",
+      "fieldAssistance": "On-Field Assistance",
+      "fieldAssistanceDesc": "Mechanics available to travel directly to your farm.",
+      "spareParts": "Genuine Spare Parts",
+      "sparePartsDesc": "Access high-quality parts from certified brands.",
+      "engineers": "Experienced Engineers",
+      "engineersDesc": "Specialists in John Deere, Claas, Mahindra, and other top machinery.",
+      "requestTitle": "Request Machine Service",
+      "bookButton": "Book Service Now"
     },
     "faq": {
       "title": "Frequently Asked Questions",
@@ -314,7 +380,30 @@
     "locationPlaceholder": "e.g. Nagpur Rural",
     "descriptionPlaceholder": "Describe condition, crops it can harvest, attachments included...",
     "dragDrop": "Drag and drop or click to upload",
-    "submitting": "Submitting..."
+    "submitting": "Submitting...",
+    "modelLabel": "Harvester Model *",
+    "customModelLabel": "Custom Model Name *",
+    "machinePlateHeader": "Machine Plate Specifications",
+    "serialNoLabel": "Serial Number *",
+    "chassisNoLabel": "Chassis Number *",
+    "mfgMonthYearLabel": "Month / Year of Mfg *",
+    "engineNoLabel": "Engine Number *",
+    "enginePowerLabel": "Engine Power",
+    "engineMakeLabel": "Engine Make",
+    "engineModelLabel": "Engine Model",
+    "serviceHotlineLabel": "Service Hotline Number",
+    "enterSerialNo": "Enter Serial Number",
+    "enterChassisNo": "Enter Chassis Number",
+    "enterMfg": "e.g. 05 / 2024",
+    "enterEngineNo": "Enter Engine Number",
+    "enterEnginePower": "e.g. 73.5kw / 2600 / min",
+    "enterEngineMake": "e.g. ZHEJIANG XINCHAI CO. LTD.",
+    "enterEngineModel": "e.g. 4D35ZT",
+    "takeChassisPhoto": "Take Chassis No. Photo",
+    "takeHarvesterPhoto": "Take Harvester Photo",
+    "useDeviceCam": "Use Device Cam",
+    "chassisNoPhoto": "Chassis No. Photo",
+    "harvesterPhotoN": "Harvester Photo"
   },
   "editHarvester": {
     "title": "Edit Harvester Listing",
@@ -618,12 +707,31 @@
     "termsOfService": "Terms of Service",
     "support": "Support",
     "copyright": "© 2025 Tractor Seva. Made for Indian Farmers 🇮🇳",
+    "importantLinksHeader": "Important Links",
+    "termsAndCondition": "Terms and Condition",
+    "serviceAgreement": "Service Agreement",
+    "cancellationPolicy": "Cancellation and Rescheduling Policy",
+    "quickLinksHeader": "Quick Links",
+    "ourOfferingsHeader": "Our Offerings",
+    "bookService": "Book Service",
+    "buyKits": "Buy Kits",
+    "buyParts": "Buy Parts & Accessories",
+    "tractorSeva": "Tractor-seva",
+    "contactUsHeader": "Contact Us",
+    "allRightsReserved": "All rights reserved to Tractor seva",
+    "haveQuestion": "Have a Question?",
+    "feelFreeToAsk": "Feel free to ask",
+    "sendInquiry": "Send Inquiry",
+    "forFranchise": "For Franchise",
     "marquee": {
       "connecting": "Connecting Farmers",
       "operators": "Verified Operators",
       "booking": "Seamless Booking",
       "service": "Nationwide Service",
       "growth": "Empowering Growth"
-    }
+    },
+    "followUs": "Follow Us",
+    "inquiry": "Inquiry",
+    "address": "Bedienung Solution Private Limited (Tractor Seva)<br />C/o- InFED Indian Institute of Management Nagpur Mihan (Non-Sez), Nagpur, Maharashtra, India - 441108"
   }
 }

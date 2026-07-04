@@ -50,15 +50,15 @@ import {
   Globe,
 } from "lucide-react";
 
-import enPages from "../../i18n/locales/en/pages.json";
-import hiPages from "../../i18n/locales/hi/pages.json";
-import mrPages from "../../i18n/locales/mr/pages.json";
-import enStatic from "../../i18n/locales/en/static.json";
-import hiStatic from "../../i18n/locales/hi/static.json";
-import mrStatic from "../../i18n/locales/mr/static.json";
-import enCommon from "../../i18n/locales/en/common.json";
-import hiCommon from "../../i18n/locales/hi/common.json";
-import mrCommon from "../../i18n/locales/mr/common.json";
+import enPages from "../../locales/en/pages.json";
+import hiPages from "../../locales/hi/pages.json";
+import mrPages from "../../locales/mr/pages.json";
+import enStatic from "../../locales/en/static.json";
+import hiStatic from "../../locales/hi/static.json";
+import mrStatic from "../../locales/mr/static.json";
+import enCommon from "../../locales/en/common.json";
+import hiCommon from "../../locales/hi/common.json";
+import mrCommon from "../../locales/mr/common.json";
 
 const defaultTranslations: Record<string, Record<string, any>> = {
   en: { pages: enPages, static: enStatic, common: enCommon },

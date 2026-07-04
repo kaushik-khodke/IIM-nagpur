@@ -75,7 +75,7 @@ import { INDIAN_STATES, MACHINE_TYPES, COMPANIES, HARVESTER_MODELS, HARVESTER_CO
 // OPERATOR PROFILE
 // ===========================
 export function OperatorProfile() {
-  const { t } = useTranslation(["pages", "static"]);
+  const { t, i18n } = useTranslation(["pages", "static"]);
   const { id } = useParams();
   const navigate = useNavigate();
   const [operator, setOperator] = useState<any>(null);
@@ -284,7 +284,7 @@ export function OperatorProfile() {
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
                 <h3 className="text-[#1A1A1A] mb-3" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600 }}>{t("operatorProfile.about", { defaultValue: "About" })}</h3>
                 <p className="text-[#57585A] text-sm leading-relaxed">
-                  {operator.description || t("operatorProfile.fallbackDesc", { defaultValue: "Experienced harvester operator with {{count}}+ years in agricultural machinery operation. Skilled in operating combine harvesters, rice harvesters, and wheat harvesters across multiple states in India.", count: operator.experience })}
+                  {operator.descriptionTranslations?.[i18n.language] || operator.description || t("operatorProfile.fallbackDesc", { defaultValue: "Experienced harvester operator with {{count}}+ years in agricultural machinery operation. Skilled in operating combine harvesters, rice harvesters, and wheat harvesters across multiple states in India.", count: operator.experience })}
                 </p>
               </div>
 

@@ -307,6 +307,7 @@ function VideoBackground({ src, className, style }: { src: string; className?: s
 
 
 function ServicingEnquirySection() {
+  const { t } = useTranslation(["pages", "common"]);
   const [bgImage, setBgImage] = useState('/enquiry_background/background.png');
 
   useEffect(() => {
@@ -332,7 +333,7 @@ function ServicingEnquirySection() {
         {/* Left Side Details */}
         <div className="lg:col-span-7 text-white space-y-4 text-left">
           <h2 className="text-3xl md:text-4xl font-extrabold leading-tight font-sora" style={{ fontFamily: "'Sora', sans-serif" }}>
-            Professional Harvester Servicing & Support
+            {t("landing.service.title", { ns: "pages", defaultValue: "Professional Harvester Servicing & Support" })}
           </h2>
 
           <div className="space-y-3 pt-0 max-w-md">
@@ -341,8 +342,8 @@ function ServicingEnquirySection() {
                 1
               </span>
               <div>
-                <h4 className="font-bold text-white text-base">On-Field Assistance</h4>
-                <p className="text-sm text-slate-300">Mechanics available to travel directly to your farm.</p>
+                <h4 className="font-bold text-white text-base">{t("landing.service.fieldAssistance", { ns: "pages", defaultValue: "On-Field Assistance" })}</h4>
+                <p className="text-sm text-slate-300">{t("landing.service.fieldAssistanceDesc", { ns: "pages", defaultValue: "Mechanics available to travel directly to your farm." })}</p>
               </div>
             </div>
 
@@ -351,8 +352,8 @@ function ServicingEnquirySection() {
                 2
               </span>
               <div>
-                <h4 className="font-bold text-white text-base">Genuine Spare Parts</h4>
-                <p className="text-sm text-slate-300">Access high-quality parts from certified brands.</p>
+                <h4 className="font-bold text-white text-base">{t("landing.service.spareParts", { ns: "pages", defaultValue: "Genuine Spare Parts" })}</h4>
+                <p className="text-sm text-slate-300">{t("landing.service.sparePartsDesc", { ns: "pages", defaultValue: "Access high-quality parts from certified brands." })}</p>
               </div>
             </div>
 
@@ -361,8 +362,8 @@ function ServicingEnquirySection() {
                 3
               </span>
               <div>
-                <h4 className="font-bold text-white text-base">Experienced Engineers</h4>
-                <p className="text-sm text-slate-300">Specialists in John Deere, Claas, Mahindra, and other top machinery.</p>
+                <h4 className="font-bold text-white text-base">{t("landing.service.engineers", { ns: "pages", defaultValue: "Experienced Engineers" })}</h4>
+                <p className="text-sm text-slate-300">{t("landing.service.engineersDesc", { ns: "pages", defaultValue: "Specialists in John Deere, Claas, Mahindra, and other top machinery." })}</p>
               </div>
             </div>
           </div>
@@ -373,7 +374,7 @@ function ServicingEnquirySection() {
           <div className="bg-white rounded-[1.5rem] shadow-2xl p-6 max-w-sm w-full flex flex-col items-center justify-center text-center gap-4 border border-slate-100 min-h-[320px]">
             <img src={tractorSevaLogo} alt="Tractor Seva Logo" className="h-10 w-auto object-contain" />
             <h3 className="text-2xl font-bold text-[#1A1A1A] font-sora leading-tight" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Request Machine Service
+              {t("landing.service.requestTitle", { ns: "pages", defaultValue: "Request Machine Service" })}
             </h3>
             <a
               href="https://tractorseva.com/franchise"
@@ -381,7 +382,7 @@ function ServicingEnquirySection() {
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#172263] hover:bg-[#11194A] text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-900/10 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all w-full cursor-pointer uppercase tracking-wider mt-2"
             >
-              Book Service Now <ArrowRight size={16} />
+              {t("landing.service.bookButton", { ns: "pages", defaultValue: "Book Service Now" })} <ArrowRight size={16} />
             </a>
           </div>
         </div>
@@ -468,7 +469,7 @@ export function Landing() {
 
     ];
 
-    return [...list].sort(() => Math.random() - 0.5);
+    return [...list].sort(() => Math.random() - 0.5).map(item => ({ ...item, isDynamic: false }));
 
   }, [t]);
 
@@ -482,7 +483,9 @@ export function Landing() {
 
       q: cf.question,
 
-      a: cf.answer
+      a: cf.answer,
+
+      isDynamic: true
 
     }));
 
@@ -1215,10 +1218,10 @@ export function Landing() {
                 className="text-4xl text-[#1A1A1A] mb-4"
                 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
               >
-                {t("landing.directory.title", { ns: "pages" })}
+                {t("landing.directory.title", { ns: "pages", defaultValue: "Find Harvesters & Operators Near You" })}
               </h2>
               <p className="text-[#57585A] max-w-xl mx-auto text-base">
-                {t("landing.directory.subtitle", { ns: "pages" })}
+                {t("landing.directory.subtitle", { ns: "pages", defaultValue: "Direct connect with verified equipment owners and professionals without middlemen." })}
               </p>
             </div>
 
@@ -1254,7 +1257,7 @@ export function Landing() {
                         to="/harvesters"
                         className="inline-flex items-center gap-2 px-6 py-2.5 bg-white border-2 border-slate-200 text-slate-700 hover:border-[#172263] hover:text-[#172263] rounded-xl text-sm font-bold transition-all shadow-xs hover:shadow-sm"
                       >
-                        {t("landing.directory.viewAllHarvesters", { ns: "pages", defaultValue: "View All Harvesters" })} <ArrowRight size={14} />
+                        {t("landing.directory.exploreMore", { ns: "pages", defaultValue: "View All Harvesters" })} <ArrowRight size={14} />
                       </Link>
                     </div>
                   </>
@@ -1292,7 +1295,7 @@ export function Landing() {
                         to="/operators"
                         className="inline-flex items-center gap-2 px-6 py-2.5 bg-white border-2 border-slate-200 text-slate-700 hover:border-[#172263] hover:text-[#172263] rounded-xl text-sm font-bold transition-all shadow-xs hover:shadow-sm"
                       >
-                        {t("landing.directory.viewAllOperators", { ns: "pages", defaultValue: "View All Operators" })} <ArrowRight size={14} />
+                        {t("landing.directory.exploreMore", { ns: "pages", defaultValue: "View All Operators" })} <ArrowRight size={14} />
                       </Link>
                     </div>
                   </>
@@ -1797,7 +1800,9 @@ export function Landing() {
 
                     >
 
-                      <span>{faq.q}</span>
+                      <span>
+                        {faq.isDynamic ? <DynamicText>{faq.q}</DynamicText> : faq.q}
+                      </span>
 
                       <span className={`transition-transform duration-300 text-slate-400 ${isOpen ? 'rotate-180 text-[#172263]' : ''}`}>
 
@@ -1819,7 +1824,7 @@ export function Landing() {
 
                       <div className="p-5 text-sm text-[#57585A] leading-relaxed bg-slate-50/50">
 
-                        {faq.a}
+                        {faq.isDynamic ? <DynamicText>{faq.a}</DynamicText> : faq.a}
 
                       </div>
 

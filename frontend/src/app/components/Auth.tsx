@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Mail,
   Lock,
@@ -24,6 +25,7 @@ const INDIAN_STATES = [
 
 // ---- Login Form ----
 function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
+  const { t } = useTranslation(["auth"]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -32,7 +34,7 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
 
   const handleLogin = async (e: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!email || !password) { toast.error("Please fill in all fields"); return; }
+    if (!email || !password) { toast.error(t("login.fillAllFields", { defaultValue: "Please fill in all fields" })); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/login', {
@@ -41,11 +43,11 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error || "Login failed"); return; }
+      if (!res.ok) { toast.error(data.error || t("login.loginFailed", { defaultValue: "Login failed" })); return; }
       localStorage.setItem("tractorsewa_token", data.token);
       localStorage.setItem("tractorsewa_user_role", data.user.role || "user");
       localStorage.removeItem("tractorsewa_preview_mode");
-      toast.success("Welcome back to Tractor Seva!");
+      toast.success(t("login.welcomeBackSuccess", { defaultValue: "Welcome back to Tractor Seva!" }));
       let redirectPath = localStorage.getItem("tractorsewa_redirect_after_auth");
       if (!redirectPath) {
         redirectPath = data.user.role === "admin" ? "/admin" : "/dashboard";
@@ -53,7 +55,7 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
       localStorage.removeItem("tractorsewa_redirect_after_auth");
       navigate(redirectPath);
     } catch {
-      toast.error("Login failed. Please try again.");
+      toast.error(t("login.failedTryAgain", { defaultValue: "Login failed. Please try again." }));
     } finally {
       setLoading(false);
     }
@@ -68,14 +70,14 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
           className="text-2xl text-[#16237A] font-bold text-center"
           style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
         >
-          Welcome Back 👋
+          {t("login.title", { defaultValue: "Login to Tractor Seva" })}
         </h1>
-        <p className="text-[#57585A] text-xs mt-1 text-center">Login to your account</p>
+        <p className="text-[#57585A] text-xs mt-1 text-center">{t("login.loginToAccount", { defaultValue: "Login to your account" })}</p>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label className="block text-xs text-[#57585A] mb-1 font-medium">Email Address</label>
+          <label className="block text-xs text-[#57585A] mb-1 font-medium">{t("login.email")}</label>
           <div className="relative">
             <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
             <input
@@ -89,8 +91,8 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
         </div>
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-[#57585A] font-medium">Password</label>
-            <button type="button" className="text-[10px] text-[#16237A] hover:underline font-medium">Forgot Password?</button>
+            <label className="text-xs text-[#57585A] font-medium">{t("login.password")}</label>
+            <button type="button" className="text-[10px] text-[#16237A] hover:underline font-medium">{t("login.forgotPassword")}</button>
           </div>
           <div className="relative">
             <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#57585A]" />
@@ -119,14 +121,14 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
           {loading ? (
             <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <>Login to Tractor Seva <ArrowRight size={15} /></>
+            <>{t("login.loginButton")} <ArrowRight size={15} /></>
           )}
         </button>
       </form>
 
       <div className="relative my-4">
         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#E2E8F0]" /></div>
-        <div className="relative flex justify-center text-xs text-[#57585A] bg-white px-2">or continue with</div>
+        <div className="relative flex justify-center text-xs text-[#57585A] bg-white px-2">{t("login.orContinueWith", { defaultValue: "or continue with" })}</div>
       </div>
       <button className="w-full py-2.5 border border-[#E2E8F0] rounded-xl text-xs text-[#57585A] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 cursor-pointer">
         <svg width="15" height="15" viewBox="0 0 24 24">
@@ -135,12 +137,12 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
-        Sign in with Google
+        {t("login.loginButton", { defaultValue: "Sign in with Google" })}
       </button>
       <p className="text-center text-xs text-[#57585A] mt-5 md:hidden">
-        New here?{" "}
+        {t("login.noAccount")}{" "}
         <button onClick={onSwitchToRegister} className="text-[#16237A] hover:underline font-semibold cursor-pointer">
-          Create account
+          {t("login.registerLink")}
         </button>
       </p>
     </div>
@@ -149,6 +151,7 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
 
 // ---- Register Form ----
 function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
+  const { t } = useTranslation(["auth", "static"]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -161,9 +164,9 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!name || !email || !password || !phone) { toast.error("Please fill in all required fields"); return; }
-    if (!agreed) { toast.error("Please agree to the Terms of Service"); return; }
-    if (password !== confirmPass) { toast.error("Passwords do not match"); return; }
+    if (!name || !email || !password || !phone) { toast.error(t("register.fillAllFields", { defaultValue: "Please fill in all required fields" })); return; }
+    if (!agreed) { toast.error(t("register.agreeTermsError", { defaultValue: "Please agree to the Terms of Service" })); return; }
+    if (password !== confirmPass) { toast.error(t("register.passwordMismatch", { defaultValue: "Passwords do not match" })); return; }
 
     const cleanedPhone = phone.replace(/\D/g, "");
     let finalPhone = cleanedPhone;
@@ -174,7 +177,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
     }
 
     if (!/^\d{10}$/.test(finalPhone)) {
-      toast.error("Please enter a valid 10-digit mobile number");
+      toast.error(t("register.invalidPhone", { defaultValue: "Please enter a valid 10-digit mobile number" }));
       return;
     }
 
@@ -186,18 +189,18 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
         body: JSON.stringify({ name, email, password, state, phone: finalPhone })
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error || "Registration failed"); return; }
+      if (!res.ok) { toast.error(data.error || t("register.registerFailed", { defaultValue: "Registration failed" })); return; }
       localStorage.setItem("tractorsewa_token", data.token);
       localStorage.setItem("tractorsewa_user_role", data.user.role || "user");
       localStorage.removeItem("tractorsewa_preview_mode");
-      toast.success("Account created! Welcome to Tractor Seva");
+      toast.success(t("register.successWelcome", { defaultValue: "Account created! Welcome to Tractor Seva" }));
       let redirectPath = localStorage.getItem("tractorsewa_redirect_after_auth");
       if (!redirectPath) {
         redirectPath = data.user.role === "admin" ? "/admin" : "/dashboard";
       }
       navigate(redirectPath);
     } catch {
-      toast.error("Registration failed. Please try again.");
+      toast.error(t("register.failedTryAgain", { defaultValue: "Registration failed. Please try again." }));
     } finally {
       setLoading(false);
     }
@@ -212,9 +215,9 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
           className="text-2xl text-[#16237A] font-bold text-center"
           style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }}
         >
-          Create Free Account
+          {t("register.title", { defaultValue: "Create Your Account" })}
         </h1>
-        <p className="text-[#57585A] text-xs mt-1 text-center">Start your harvest journey today</p>
+        <p className="text-[#57585A] text-xs mt-1 text-center">{t("register.joinNetwork", { defaultValue: "Start your harvest journey today" })}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
@@ -224,7 +227,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Full Name"
+            placeholder={t("register.fullName", { defaultValue: "Full Name" })}
             className="w-full pl-9 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
           />
         </div>
@@ -234,7 +237,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email Address"
+            placeholder={t("register.email", { defaultValue: "Email Address" })}
             className="w-full pl-9 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
           />
         </div>
@@ -245,7 +248,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder={t("register.password", { defaultValue: "Password" })}
               className="w-full pl-9 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
             />
           </div>
@@ -255,7 +258,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
               type="password"
               value={confirmPass}
               onChange={(e) => setConfirmPass(e.target.value)}
-              placeholder="Confirm"
+              placeholder={t("register.confirmPassword", { defaultValue: "Confirm" })}
               className="w-full pl-9 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
             />
           </div>
@@ -266,8 +269,8 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
             onChange={(e) => setState(e.target.value)}
             className="w-full px-3 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs text-[#57585A] focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A]"
           >
-            <option value="">Select State</option>
-            {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+            <option value="">{t("register.selectState", { defaultValue: "Select State" })}</option>
+            {INDIAN_STATES.map((s) => <option key={s} value={s}>{t("states." + s, { ns: "static", defaultValue: s })}</option>)}
           </select>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-[#57585A] bg-blue-50 px-1 py-0.5 rounded border border-blue-100">+91</span>
@@ -275,7 +278,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="Phone"
+              placeholder={t("register.phone", { defaultValue: "Phone" })}
               className="w-full pl-12 pr-4 py-2.5 bg-[#F5F5F5] border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#16237A] focus:ring-1 focus:ring-[#16237A] transition-colors"
             />
           </div>
@@ -288,7 +291,10 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
             className="mt-0.5 rounded border-[#E2E8F0] accent-[#16237A]"
           />
           <span className="text-[10px] text-[#57585A] leading-tight">
-            I agree to the <span className="text-[#16237A] hover:underline cursor-pointer font-medium">Terms</span> and <span className="text-[#16237A] hover:underline cursor-pointer font-medium">Privacy</span>.
+            {t("register.agreeTo", { defaultValue: "I agree to the" })}{" "}
+            <span className="text-[#16237A] hover:underline cursor-pointer font-medium">{t("register.terms", { defaultValue: "Terms" })}</span>{" "}
+            {t("register.and", { defaultValue: "and" })}{" "}
+            <span className="text-[#16237A] hover:underline cursor-pointer font-medium">{t("register.privacy", { defaultValue: "Privacy" })}</span>.
           </span>
         </label>
         {/* Agricultural Red Submit Button */}
@@ -301,14 +307,14 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
           {loading ? (
             <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <>Create Free Account <ArrowRight size={15} /></>
+            <>{t("register.registerButton", { defaultValue: "Register" })} <ArrowRight size={15} /></>
           )}
         </button>
       </form>
       <p className="text-center text-xs text-[#57585A] mt-5 md:hidden">
-        Already have an account?{" "}
+        {t("register.haveAccount")}{" "}
         <button onClick={onSwitchToLogin} className="text-[#16237A] hover:underline font-semibold cursor-pointer">
-          Login
+          {t("register.loginLink")}
         </button>
       </p>
     </div>
@@ -317,6 +323,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
 
 // ---- Unified Auth Page with sliding transition ----
 export function AuthPage() {
+  const { t } = useTranslation(["auth"]);
   const location = useLocation();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "register">(
@@ -426,15 +433,15 @@ export function AuthPage() {
               <div className="mb-4">
                 <TractorIllustration size={100} className="stroke-white" />
               </div>
-              <h2 className="text-2xl font-bold font-sora mb-2">Welcome Back! 👋</h2>
+              <h2 className="text-2xl font-bold font-sora mb-2">{t("login.title", { defaultValue: "Login to Tractor Seva" })}</h2>
               <p className="text-slate-250 text-xs leading-relaxed max-w-[280px] mb-6">
-                To stay connected with verified operators and listings, please login with your account info.
+                {t("login.welcomeBackPanelDesc", { defaultValue: "To stay connected with verified operators and listings, please login with your account info." })}
               </p>
               <button
                 onClick={switchToLogin}
                 className="px-8 py-2 bg-transparent border-2 border-white text-white rounded-xl text-xs hover:bg-white hover:text-[#16237A] transition-all duration-200 font-bold uppercase tracking-wider cursor-pointer"
               >
-                Sign In
+                {t("login.loginButton", { defaultValue: "Login" })}
               </button>
             </div>
 
@@ -445,15 +452,15 @@ export function AuthPage() {
               <div className="mb-4">
                 <TractorIllustration size={100} className="stroke-white" />
               </div>
-              <h2 className="text-2xl font-bold font-sora mb-2">Join Tractor Seva!</h2>
+              <h2 className="text-2xl font-bold font-sora mb-2">{t("register.title", { defaultValue: "Create Your Account" })}</h2>
               <p className="text-slate-250 text-xs leading-relaxed max-w-[280px] mb-6">
-                Enter your details to create a free account and start your harvest matching journey today.
+                {t("register.joinDesc", { defaultValue: "Enter your details to create a free account and start your harvest matching journey today." })}
               </p>
               <button
                 onClick={switchToRegister}
                 className="px-8 py-2 bg-transparent border-2 border-white text-white rounded-xl text-xs hover:bg-white hover:text-[#16237A] transition-all duration-200 font-bold uppercase tracking-wider cursor-pointer"
               >
-                Sign Up
+                {t("register.registerButton", { defaultValue: "Register" })}
               </button>
             </div>
           </div>
