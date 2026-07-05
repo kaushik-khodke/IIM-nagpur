@@ -4045,12 +4045,50 @@ app.post('/api/translate', async (req, res) => {
 
 // Analytics Dashboard Endpoint
 app.get('/api/analytics/region', authenticateToken, async (req, res) => {
-  // Placeholder endpoint returning empty data.
-  // Google Analytics has been removed as per user request.
-  res.json({
-    stateData: [],
-    cityData: []
-  });
+  try {
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !process.env.GA4_PROPERTY_ID) {
+      return res.status(400).json({ error: 'Google Analytics credentials not configured' });
+    }
+
+    const { BetaAnalyticsDataClient } = require('@google-analytics/data');
+    const analyticsDataClient = new BetaAnalyticsDataClient(); // Uses GOOGLE_APPLICATION_CREDENTIALS env var automatically
+
+    const [response] = await analyticsDataClient.runReport({
+      property: `properties/${process.env.GA4_PROPERTY_ID}`,
+      dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+      dimensions: [{ name: 'country' }, { name: 'region' }, { name: 'city' }],
+      metrics: [{ name: 'activeUsers' }],
+    });
+
+    const stateData = {};
+    const cityData = [];
+
+    response.rows.forEach(row => {
+      const region = row.dimensionValues[1].value;
+      const city = row.dimensionValues[2].value;
+      const users = parseInt(row.metricValues[0].value, 10);
+      
+      // Accumulate state data
+      if (region !== '(not set)') {
+        stateData[region] = (stateData[region] || 0) + users;
+      }
+      
+      // Add city data (mock lat/lng for simplicity, in a real scenario would use a geocoder)
+      if (city !== '(not set)') {
+        cityData.push({ name: city, users, lat: 20 + Math.random() * 5, lng: 75 + Math.random() * 5 });
+      }
+    });
+
+    const formattedStateData = Object.keys(stateData).map(state => ({ name: state, users: stateData[state] })).sort((a,b) => b.users - a.users);
+
+    res.json({
+      stateData: formattedStateData,
+      cityData: cityData.sort((a,b) => b.users - a.users).slice(0, 10) // Top 10 cities
+    });
+  } catch (error) {
+    console.error('Error fetching analytics data:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics data' });
+  }
 });
 
 // Global Error Handler Middleware
