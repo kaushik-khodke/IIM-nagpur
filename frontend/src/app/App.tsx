@@ -28,7 +28,7 @@ const Messages = lazy(() => import("./components/Messages").then(m => ({ default
 const EditProfile = lazy(() => import("./components/EditProfile").then(m => ({ default: m.EditProfile })));
 const AdminPortal = lazy(() => import("./components/AdminPortal").then(m => ({ default: m.AdminPortal })));
 const EditHarvester = lazy(() => import("./components/EditHarvester").then(m => ({ default: m.EditHarvester })));
-
+const AnalyticsDashboard = lazy(() => import("./components/AnalyticsDashboard").then(m => ({ default: m.AnalyticsDashboard })));
 function ProtectedPage({ children }: { children: React.ReactNode }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
 }
@@ -125,6 +125,14 @@ export default function App() {
             element={
               <ProtectedPage>
                 <Dashboard />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedPage>
+                <AnalyticsDashboard />
               </ProtectedPage>
             }
           />

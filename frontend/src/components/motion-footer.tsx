@@ -248,7 +248,9 @@ export function CinematicFooter() {
                 <div className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white shrink-0 mt-0.5">
                   <MapPin className="w-4 h-4 text-white" />
                 </div>
-                <div className="text-xs md:text-sm text-white/80 leading-relaxed text-center md:text-left" dangerouslySetInnerHTML={{ __html: t("footer.address", { defaultValue: "Bedienung Solution Private Limited (Tractor Seva)<br />C/o- InFED Indian Institute of Management Nagpur Mihan (Non-Sez), Nagpur, Maharashtra, India - 441108" }) }} />
+                <div className="text-xs md:text-sm text-white/80 leading-relaxed text-center md:text-left whitespace-pre-line">
+                  {t("footer.address", { defaultValue: "Bedienung Solution Private Limited (Tractor Seva)\nC/o- InFED Indian Institute of Management Nagpur Mihan (Non-Sez), Nagpur, Maharashtra, India - 441108" }).replace(/<br\s*\/?>/gi, '\n')}
+                </div>
               </div>
 
               {/* Email */}

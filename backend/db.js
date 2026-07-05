@@ -725,7 +725,7 @@ async function seedTranslations(activePool) {
           
           if (placeholders.length > 0) {
             await activePool.query(
-              `INSERT IGNORE INTO translation_overrides (lang, namespace, key_path, value) VALUES ${placeholders.join(',')}`,
+              `INSERT INTO translation_overrides (lang, namespace, key_path, value) VALUES ${placeholders.join(',')} ON DUPLICATE KEY UPDATE value=VALUES(value)`,
               values
             );
           }

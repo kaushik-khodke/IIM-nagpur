@@ -8,17 +8,31 @@ async function translateText(text, targetLang) {
     return null;
   }
 
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+  const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
+  if (!apiKey) {
+    console.warn("GOOGLE_TRANSLATE_API_KEY is not set. Skipping translation to avoid exposing PII to public endpoint.");
+    return null;
+  }
+
+  const url = `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`;
   
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        q: text,
+        target: targetLang,
+        format: 'text'
+      })
+    });
     if (!res.ok) {
       console.warn(`Translation to ${targetLang} failed with status: ${res.status}`);
       return null;
     }
     const json = await res.json();
-    if (json && json[0]) {
-      return json[0].map(item => item[0]).join('');
+    if (json && json.data && json.data.translations && json.data.translations[0]) {
+      return json.data.translations[0].translatedText;
     }
     return null;
   } catch (error) {

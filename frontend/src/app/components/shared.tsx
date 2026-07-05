@@ -147,12 +147,12 @@ export function ProfileCard({ item, currentUserId, t }: { item: any; currentUser
       className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_3px_15px_rgba(0,0,0,0.02)] hover:shadow-[0_10px_30px_rgba(23,34,99,0.07)] transition-all duration-300 flex flex-col overflow-hidden group hover:-translate-y-1"
     >
       <div className="p-3 flex flex-col gap-2 flex-1">
-        <div className="relative w-full h-26 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
+        <div className="relative w-full h-48 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
           {item.image ? (
             <img
               src={item.image}
               alt={item.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform duration-500"
               onError={(e) => {
                 e.currentTarget.src = "";
                 e.currentTarget.className = "hidden";
@@ -196,25 +196,9 @@ export function ProfileCard({ item, currentUserId, t }: { item: any; currentUser
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1 py-1 border-y border-slate-100/80 my-1">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 py-2 border-y border-slate-100/80 my-2">
               {item.type === "harvester" ? (
                 <>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                      {t("landing.directory.company", { ns: "pages" })}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">
-                      <DynamicText>{item.company}</DynamicText>
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                      {t("landing.directory.model", { ns: "pages" })}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-700 line-clamp-1">
-                      <DynamicText>{item.model}</DynamicText>
-                    </span>
-                  </div>
                   <div className="col-span-2">
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
                       {t("landing.directory.year", { ns: "pages" })}
@@ -242,27 +226,6 @@ export function ProfileCard({ item, currentUserId, t }: { item: any; currentUser
                       }`}>
                       {item.availability || "Available"}
                     </span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
-                      {t("landing.directory.expertise", { ns: "pages" })}
-                    </span>
-                    <div className="flex flex-wrap gap-1">
-                      {Array.isArray(item.machineExpertise) && item.machineExpertise.length > 0 ? (
-                        item.machineExpertise.slice(0, 2).map((exp: string, idx: number) => (
-                          <span key={idx} className="bg-slate-50 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-medium border border-slate-200/60 line-clamp-1">
-                            <DynamicText>{exp}</DynamicText>
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-[10px] text-slate-500">General Operator</span>
-                      )}
-                      {Array.isArray(item.machineExpertise) && item.machineExpertise.length > 2 && (
-                        <span className="text-[10px] text-slate-400 font-medium self-center">
-                          +{item.machineExpertise.length - 2}
-                        </span>
-                      )}
-                    </div>
                   </div>
                 </>
               )}
