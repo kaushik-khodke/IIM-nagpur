@@ -4046,21 +4046,12 @@ app.post('/api/translate', async (req, res) => {
 // Analytics Dashboard Endpoint
 app.get('/api/analytics/region', authenticateToken, async (req, res) => {
   try {
-    if ((!process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.GA4_SERVICE_ACCOUNT_JSON) || !process.env.GA4_PROPERTY_ID) {
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !process.env.GA4_PROPERTY_ID) {
       return res.status(400).json({ error: 'Google Analytics credentials not configured' });
     }
 
     const { BetaAnalyticsDataClient } = require('@google-analytics/data');
-    
-    const clientOptions = {};
-    if (process.env.GA4_SERVICE_ACCOUNT_JSON) {
-      try {
-        clientOptions.credentials = JSON.parse(process.env.GA4_SERVICE_ACCOUNT_JSON);
-      } catch (err) {
-        console.error("Failed to parse GA4_SERVICE_ACCOUNT_JSON environment variable.", err);
-      }
-    }
-    const analyticsDataClient = new BetaAnalyticsDataClient(clientOptions);
+    const analyticsDataClient = new BetaAnalyticsDataClient(); // Uses GOOGLE_APPLICATION_CREDENTIALS env var automatically
 
     const [response] = await analyticsDataClient.runReport({
       property: `properties/${process.env.GA4_PROPERTY_ID}`,
