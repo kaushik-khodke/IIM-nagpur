@@ -679,6 +679,9 @@ async function initializeDatabase() {
     // Seed translations if empty
     await seedTranslations(activePool);
 
+    // Clean up testing/duplicate FAQs from the database
+    await cleanupTestingFaqs(activePool);
+
   } catch (error) {
     console.error('Database Initialization Error:', error);
     throw error;
@@ -820,6 +823,29 @@ async function seedData(activePool) {
     console.error('Error seeding blog categories:', err.message);
   }
 }
+
+async function cleanupTestingFaqs(activePool) {
+  try {
+    const badQuestions = [
+      'Testing question',
+      'Can I book a harvester for just a single day, or is there a minimum booking period during harvest season?',
+      'Are there any service charges or commission fees taken by Tractor Seva when I hire an operator?',
+      'How does the service requests portal work?',
+      'Is it free to list my machine or register as an operator?',
+      'How are operators and machines verified?'
+    ];
+    const [result] = await activePool.query(
+      'DELETE FROM faqs WHERE question IN (?)',
+      [badQuestions]
+    );
+    if (result.affectedRows > 0) {
+      console.log(`Cleaned up ${result.affectedRows} testing/duplicate FAQs from database.`);
+    }
+  } catch (err) {
+    console.error('Error cleaning up testing FAQs:', err.message);
+  }
+}
+
 
 module.exports = {
   getPool,

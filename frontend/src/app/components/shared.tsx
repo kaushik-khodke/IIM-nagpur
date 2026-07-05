@@ -36,6 +36,7 @@ import {
   Star,
   Users,
   Search,
+  Smartphone,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -898,6 +899,35 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const [authRequiredOpen, setAuthRequiredOpen] = useState(false);
   const [pendingPath, setPendingPath] = useState("");
 
+  const [isInstallable, setIsInstallable] = useState(!!(window as any).deferredPrompt);
+
+  useEffect(() => {
+    const handleInstallable = () => setIsInstallable(true);
+    const handleInstalled = () => setIsInstallable(false);
+
+    window.addEventListener('pwa-installable', handleInstallable);
+    window.addEventListener('pwa-installed', handleInstalled);
+
+    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
+      setIsInstallable(false);
+    }
+
+    return () => {
+      window.removeEventListener('pwa-installable', handleInstallable);
+      window.removeEventListener('pwa-installed', handleInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    const promptEvent = (window as any).deferredPrompt;
+    if (!promptEvent) return;
+    promptEvent.prompt();
+    const { outcome } = await promptEvent.userChoice;
+    console.log(`PWA install prompt user choice: ${outcome}`);
+    (window as any).deferredPrompt = null;
+    setIsInstallable(false);
+  };
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -1310,6 +1340,14 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
                 )}
               </div>
 
+              {isInstallable && (
+                <button
+                  onClick={handleInstallClick}
+                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#D97706] hover:bg-[#B45F06] text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] mr-2 uppercase tracking-wider cursor-pointer"
+                >
+                  <Smartphone size={13} /> Install App
+                </button>
+              )}
               <LanguageSwitcher />
 
               <DropdownMenu>
@@ -1401,6 +1439,14 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
               >
                 {t("nav.register", { ns: "common" })}
               </Link>
+              {isInstallable && (
+                <button
+                  onClick={handleInstallClick}
+                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#D97706] hover:bg-[#B45F06] text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] mr-2 uppercase tracking-wider cursor-pointer"
+                >
+                  <Smartphone size={13} /> Install App
+                </button>
+              )}
               <LanguageSwitcher />
             </>
           )}
@@ -1483,6 +1529,19 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
               <Link to="/login" onClick={(e) => { handleNavbarAuthClick(e, "login"); setMobileOpen(false); }} className="block py-2 text-[#57585A]">{t("nav.login", { ns: "common", defaultValue: "Login" })}</Link>
               <Link to="/register" onClick={(e) => { handleNavbarAuthClick(e, "register"); setMobileOpen(false); }} className="block py-2 text-[#172263]">{t("nav.register", { ns: "common", defaultValue: "Sign Up" })}</Link>
             </>
+          )}
+          {isInstallable && (
+            <div className="pt-2 mt-2 border-t border-[#E2E8F0]">
+              <button
+                onClick={() => {
+                  handleInstallClick();
+                  setMobileOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#D97706] hover:bg-[#B45F06] text-white font-bold text-sm rounded-xl shadow-xs transition-all active:scale-[0.98] uppercase tracking-wider cursor-pointer"
+              >
+                <Smartphone size={16} /> Install App
+              </button>
+            </div>
           )}
         </div>
       )}

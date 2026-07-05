@@ -215,6 +215,14 @@
       "q6": {
         "question": "Can I use Tractor Seva in my local language?",
         "answer": "Absolutely! Tractor Seva has complete multilingual localization support. You can switch between English, Marathi, and other regional languages using the language toggle in the navigation bar."
+      },
+      "q7": {
+        "question": "Can I book a harvester for a single day, or is there a minimum booking period?",
+        "answer": "Tractor Seva does not enforce a minimum booking period. You can search for and request bookings for any duration. However, individual harvester owners may set their own minimum service periods (e.g., 2-3 days) during peak harvest seasons to cover transportation and setup costs. We recommend discussing this directly with the owner."
+      },
+      "q8": {
+        "question": "Are there any service charges or commission fees taken by Tractor Seva?",
+        "answer": "No, Tractor Seva is a completely free, peer-to-peer platform. We do not charge any booking fees, service fees, or commission cuts from farmers, harvester owners, or operators. All financial transactions and rate negotiations happen directly between you and the service provider."
       }
     }
   },
