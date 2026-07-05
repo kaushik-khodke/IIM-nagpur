@@ -4042,6 +4042,63 @@ app.post('/api/translate', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+// Admin Dashboard Stats Endpoint
+app.get('/api/admin/dashboard-stats', authenticateToken, async (req, res) => {
+  try {
+    const [userRes] = await db.query('SELECT COUNT(*) as count FROM users');
+    const [operatorRes] = await db.query('SELECT COUNT(*) as count FROM operators');
+    const [harvesterRes] = await db.query('SELECT COUNT(*) as count FROM harvesters');
+    const [enquiryRes] = await db.query('SELECT COUNT(*) as count FROM enquiries');
+
+    const [usersChartRes] = await db.query(`
+      SELECT DATE_FORMAT(created_at, '%b %d') as label, COUNT(*) as value 
+      FROM users 
+      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `);
+
+    const [harvestersChartRes] = await db.query(`
+      SELECT DATE_FORMAT(created_at, '%b %d') as label, COUNT(*) as value 
+      FROM harvesters 
+      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `);
+
+    const [recentUsers] = await db.query('SELECT name, created_at FROM users ORDER BY created_at DESC LIMIT 3');
+    const [recentHarvesters] = await db.query('SELECT machine_name as name, created_at FROM harvesters ORDER BY created_at DESC LIMIT 2');
+
+    const recentEvents = [
+      ...recentUsers.map(u => ({ type: 'user', message: `New user registered: ${u.name}`, time: u.created_at })),
+      ...recentHarvesters.map(h => ({ type: 'harvester', message: `New harvester added: ${h.name}`, time: h.created_at }))
+    ].sort((a, b) => new Date(b.time) - new Date(a.time)).map((e, idx) => ({
+      id: idx + 1,
+      type: e.type,
+      message: e.message,
+      time: new Date(e.time).toLocaleDateString(),
+      color: e.type === 'user' ? 'text-blue-600' : 'text-green-600',
+      bg: e.type === 'user' ? 'bg-blue-50' : 'bg-green-50'
+    }));
+
+    res.json({
+      metrics: {
+        totalUsers: userRes[0].count,
+        totalOperators: operatorRes[0].count,
+        totalHarvesters: harvesterRes[0].count,
+        totalEnquiries: enquiryRes[0].count
+      },
+      charts: {
+        newUsers: usersChartRes,
+        newHarvesters: harvestersChartRes
+      },
+      recentEvents
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 // Analytics Dashboard Endpoint
 app.get('/api/analytics/region', authenticateToken, async (req, res) => {
