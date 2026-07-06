@@ -103,10 +103,15 @@ app.use(express.urlencoded({ extended: true }));
 // 4. Rate Limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 2000, // Increased from 100 to 2000 to accommodate message notification polling (which makes 180 requests/15 mins per tab)
-  message: 'Too many requests, please try again later',
+  max: 10000, // Increased to 10000 to accommodate message notification polling for active sessions
+  message: { error: 'Too many requests, please try again later' }, // Return JSON to prevent frontend JSON parsing errors
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting on localhost / local development environments
+  skip: (req) => {
+    const ip = req.ip || req.connection?.remoteAddress || '';
+    return ip.includes('127.0.0.1') || ip.includes('localhost') || ip === '::1';
+  }
 });
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -3786,6 +3791,32 @@ app.delete('/api/admin/faqs/:id', authenticateToken, isAdmin, async (req, res) =
 });
 
 // Dynamic Translation Overrides Endpoints
+app.get('/api/translations/:lang', async (req, res) => {
+  const { lang } = req.params;
+  try {
+    const [rows] = await db.query('SELECT namespace, key_path, value FROM translation_overrides WHERE lang = ?', [lang]);
+    
+    // Group flat key_paths to nested objects under namespace
+    const result = {};
+    rows.forEach(r => {
+      if (!result[r.namespace]) result[r.namespace] = {};
+      
+      const parts = r.key_path.split('.');
+      let current = result[r.namespace];
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (!current[parts[i]]) current[parts[i]] = {};
+        current = current[parts[i]];
+      }
+      current[parts[parts.length - 1]] = r.value;
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching all translations for', lang, error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.get('/api/translations/:lang/:ns', async (req, res) => {
   const { lang, ns } = req.params;
   try {
@@ -3812,6 +3843,17 @@ app.get('/api/translations/:lang/:ns', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Error fetching translations for', lang, ns, error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+app.get('/api/translation-overrides', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT lang, namespace, key_path, value FROM translation_overrides');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching all translation overrides:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -4054,16 +4096,16 @@ app.get('/api/admin/dashboard-stats', authenticateToken, async (req, res) => {
       SELECT DATE_FORMAT(created_at, '%b %d') as label, COUNT(*) as value 
       FROM users 
       WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-      GROUP BY DATE(created_at)
-      ORDER BY DATE(created_at) ASC
+      GROUP BY DATE_FORMAT(created_at, '%b %d')
+      ORDER BY MIN(created_at) ASC
     `);
 
     const [harvestersChartRes] = await db.query(`
       SELECT DATE_FORMAT(created_at, '%b %d') as label, COUNT(*) as value 
       FROM harvesters 
       WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-      GROUP BY DATE(created_at)
-      ORDER BY DATE(created_at) ASC
+      GROUP BY DATE_FORMAT(created_at, '%b %d')
+      ORDER BY MIN(created_at) ASC
     `);
 
     const [recentUsers] = await db.query('SELECT name, created_at FROM users ORDER BY created_at DESC LIMIT 3');
