@@ -4164,6 +4164,69 @@ app.get('/api/analytics/region', authenticateToken, async (req, res) => {
   }
 });
 
+// Realtime Analytics Endpoint — Live active users (updates every few seconds)
+app.get('/api/analytics/realtime', authenticateToken, async (req, res) => {
+  try {
+    if (!process.env.GA4_SERVICE_ACCOUNT_JSON || !process.env.GA4_PROPERTY_ID) {
+      return res.json({ activeUsers: 0, cityData: [] });
+    }
+
+    let credentials;
+    try {
+      credentials = JSON.parse(process.env.GA4_SERVICE_ACCOUNT_JSON);
+    } catch (parseErr) {
+      console.error('Failed to parse GA4_SERVICE_ACCOUNT_JSON for realtime:', parseErr.message);
+      return res.json({ activeUsers: 0, cityData: [] });
+    }
+
+    const { BetaAnalyticsDataClient } = require('@google-analytics/data');
+    const analyticsDataClient = new BetaAnalyticsDataClient({
+      credentials: {
+        client_email: credentials.client_email,
+        private_key: credentials.private_key,
+      },
+      projectId: credentials.project_id,
+    });
+
+    const [response] = await analyticsDataClient.runRealtimeReport({
+      property: `properties/${process.env.GA4_PROPERTY_ID}`,
+      dimensions: [{ name: 'city' }, { name: 'country' }],
+      metrics: [{ name: 'activeUsers' }],
+    });
+
+    let totalActiveUsers = 0;
+    const cityData = [];
+
+    if (response.rows && response.rows.length > 0) {
+      response.rows.forEach(row => {
+        const city = row.dimensionValues[0].value;
+        const country = row.dimensionValues[1].value;
+        const users = parseInt(row.metricValues[0].value, 10);
+        totalActiveUsers += users;
+
+        if (city !== '(not set)') {
+          cityData.push({
+            name: city,
+            country,
+            users,
+            // Approximate coordinates for Indian cities (geocoder would be better for production)
+            lat: 20 + Math.random() * 5,
+            lng: 75 + Math.random() * 5
+          });
+        }
+      });
+    }
+
+    res.json({
+      activeUsers: totalActiveUsers,
+      cityData: cityData.sort((a, b) => b.users - a.users).slice(0, 10),
+    });
+  } catch (error) {
+    console.error('Error fetching realtime analytics:', error);
+    res.json({ activeUsers: 0, cityData: [], error: error.message });
+  }
+});
+
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {
   logger.error('Unhandled server error: ' + (err.stack || err));

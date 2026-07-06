@@ -5,7 +5,7 @@ import {
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import {
   Users, Activity, Bell, Settings, Search, UserPlus,
-  Tractor, MessageCircle, AlertTriangle, CheckCircle2, ChevronDown
+  Tractor, MessageCircle, AlertTriangle, CheckCircle2, ChevronDown, Eye
 } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -37,6 +37,8 @@ export function AnalyticsDashboard() {
   const [events, setEvents] = useState<any[]>([]);
   const [activeRegions, setActiveRegions] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [realtimeUsers, setRealtimeUsers] = useState(0);
+  const [realtimeCities, setRealtimeCities] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -85,6 +87,39 @@ export function AnalyticsDashboard() {
     fetchAnalytics();
   }, []);
 
+  // Poll realtime active users every 30 seconds
+  useEffect(() => {
+    const fetchRealtime = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/analytics/realtime', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setRealtimeUsers(data.activeUsers || 0);
+          if (data.cityData && data.cityData.length > 0) {
+            setRealtimeCities(data.cityData.map((c: any) => ({
+              name: c.name,
+              lat: c.lat,
+              lng: c.lng,
+              count: c.users,
+              isLive: true
+            })));
+          } else {
+            setRealtimeCities([]);
+          }
+        }
+      } catch (err) {
+        console.error('Realtime analytics error:', err);
+      }
+    };
+
+    fetchRealtime();
+    const interval = setInterval(fetchRealtime, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#f3f4f6] text-gray-800 font-sans p-4">
       {/* Top Header */}
@@ -93,6 +128,15 @@ export function AnalyticsDashboard() {
           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500"></span>
             <span className="font-semibold text-sm">System Online</span>
+          </div>
+          <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+            </span>
+            <Eye className="w-3.5 h-3.5 text-orange-500" />
+            <span className="font-bold text-sm text-gray-900">{realtimeUsers}</span>
+            <span className="font-semibold text-sm text-gray-500">Live</span>
           </div>
         </div>
 
@@ -145,9 +189,10 @@ export function AnalyticsDashboard() {
                 attribution=''
                 url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
               />
+              {/* Historical location markers (green) */}
               {locations.map((loc, idx) => (
                 <CircleMarker
-                  key={idx}
+                  key={`hist-${idx}`}
                   center={[loc.lat, loc.lng]}
                   radius={Math.max(10, loc.count / 2)}
                   pathOptions={{
@@ -165,7 +210,33 @@ export function AnalyticsDashboard() {
                   <Popup className="rounded-lg shadow-sm border-0">
                     <div className="text-center p-1">
                       <h4 className="font-bold text-gray-900 mb-1">{loc.name}</h4>
-                      <p className="text-[#7fc241] font-semibold">{loc.count} Active Users</p>
+                      <p className="text-[#7fc241] font-semibold">{loc.count} Users (30 days)</p>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              ))}
+              {/* Live visitor markers (orange pulsing) */}
+              {realtimeCities.map((loc, idx) => (
+                <CircleMarker
+                  key={`live-${idx}`}
+                  center={[loc.lat, loc.lng]}
+                  radius={12}
+                  pathOptions={{
+                    fillColor: '#f97316',
+                    fillOpacity: 0.4,
+                    color: '#f97316',
+                    weight: 2
+                  }}
+                >
+                  <CircleMarker
+                    center={[loc.lat, loc.lng]}
+                    radius={5}
+                    pathOptions={{ fillColor: '#f97316', fillOpacity: 1, color: '#fff', weight: 2 }}
+                  />
+                  <Popup className="rounded-lg shadow-sm border-0">
+                    <div className="text-center p-1">
+                      <h4 className="font-bold text-gray-900 mb-1">🔴 {loc.name}</h4>
+                      <p className="text-orange-500 font-semibold">{loc.count} Live Now</p>
                     </div>
                   </Popup>
                 </CircleMarker>
