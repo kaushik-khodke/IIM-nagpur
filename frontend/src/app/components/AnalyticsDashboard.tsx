@@ -42,10 +42,9 @@ export function AnalyticsDashboard() {
     const fetchAnalytics = async () => {
       try {
         const token = localStorage.getItem('token');
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-        // Fetch DB Stats
-        const statsRes = await fetch(`${apiUrl}/api/admin/dashboard-stats`, {
+        // Fetch DB Stats (uses relative path — main.tsx global fetch override handles backend URL)
+        const statsRes = await fetch(`/api/admin/dashboard-stats`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -57,7 +56,7 @@ export function AnalyticsDashboard() {
         }
 
         // Fetch Google Analytics (Map data)
-        const gaRes = await fetch(`${apiUrl}/api/analytics/region`, {
+        const gaRes = await fetch(`/api/analytics/region`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 

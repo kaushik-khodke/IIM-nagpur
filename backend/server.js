@@ -4103,12 +4103,26 @@ app.get('/api/admin/dashboard-stats', authenticateToken, async (req, res) => {
 // Analytics Dashboard Endpoint
 app.get('/api/analytics/region', authenticateToken, async (req, res) => {
   try {
-    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !process.env.GA4_PROPERTY_ID) {
-      return res.status(400).json({ error: 'Google Analytics credentials not configured' });
+    if (!process.env.GA4_SERVICE_ACCOUNT_JSON || !process.env.GA4_PROPERTY_ID) {
+      return res.status(400).json({ error: 'Google Analytics credentials not configured. Set GA4_SERVICE_ACCOUNT_JSON and GA4_PROPERTY_ID.' });
+    }
+
+    let credentials;
+    try {
+      credentials = JSON.parse(process.env.GA4_SERVICE_ACCOUNT_JSON);
+    } catch (parseErr) {
+      console.error('Failed to parse GA4_SERVICE_ACCOUNT_JSON:', parseErr.message);
+      return res.status(500).json({ error: 'Invalid GA4 service account JSON configuration' });
     }
 
     const { BetaAnalyticsDataClient } = require('@google-analytics/data');
-    const analyticsDataClient = new BetaAnalyticsDataClient(); // Uses GOOGLE_APPLICATION_CREDENTIALS env var automatically
+    const analyticsDataClient = new BetaAnalyticsDataClient({
+      credentials: {
+        client_email: credentials.client_email,
+        private_key: credentials.private_key,
+      },
+      projectId: credentials.project_id,
+    });
 
     const [response] = await analyticsDataClient.runReport({
       property: `properties/${process.env.GA4_PROPERTY_ID}`,
@@ -4120,21 +4134,23 @@ app.get('/api/analytics/region', authenticateToken, async (req, res) => {
     const stateData = {};
     const cityData = [];
 
-    response.rows.forEach(row => {
-      const region = row.dimensionValues[1].value;
-      const city = row.dimensionValues[2].value;
-      const users = parseInt(row.metricValues[0].value, 10);
-      
-      // Accumulate state data
-      if (region !== '(not set)') {
-        stateData[region] = (stateData[region] || 0) + users;
-      }
-      
-      // Add city data (mock lat/lng for simplicity, in a real scenario would use a geocoder)
-      if (city !== '(not set)') {
-        cityData.push({ name: city, users, lat: 20 + Math.random() * 5, lng: 75 + Math.random() * 5 });
-      }
-    });
+    if (response.rows && response.rows.length > 0) {
+      response.rows.forEach(row => {
+        const region = row.dimensionValues[1].value;
+        const city = row.dimensionValues[2].value;
+        const users = parseInt(row.metricValues[0].value, 10);
+        
+        // Accumulate state data
+        if (region !== '(not set)') {
+          stateData[region] = (stateData[region] || 0) + users;
+        }
+        
+        // Add city data (mock lat/lng for simplicity, in a real scenario would use a geocoder)
+        if (city !== '(not set)') {
+          cityData.push({ name: city, users, lat: 20 + Math.random() * 5, lng: 75 + Math.random() * 5 });
+        }
+      });
+    }
 
     const formattedStateData = Object.keys(stateData).map(state => ({ name: state, users: stateData[state] })).sort((a,b) => b.users - a.users);
 
@@ -4144,7 +4160,7 @@ app.get('/api/analytics/region', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching analytics data:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics data' });
+    res.status(500).json({ error: 'Failed to fetch analytics data', details: error.message });
   }
 });
 
