@@ -29,7 +29,6 @@ const Messages = lazy(() => import("./components/Messages").then(m => ({ default
 const EditProfile = lazy(() => import("./components/EditProfile").then(m => ({ default: m.EditProfile })));
 const AdminPortal = lazy(() => import("./components/AdminPortal").then(m => ({ default: m.AdminPortal })));
 const EditHarvester = lazy(() => import("./components/EditHarvester").then(m => ({ default: m.EditHarvester })));
-const AnalyticsDashboard = lazy(() => import("./components/AnalyticsDashboard").then(m => ({ default: m.AnalyticsDashboard })));
 const TermsAndCondition = lazy(() => import("./components/TermsAndCondition").then(m => ({ default: m.TermsAndCondition })));
 const PrivacyPolicy = lazy(() => import("./components/PrivacyPolicy").then(m => ({ default: m.PrivacyPolicy })));
 const ServiceAgreement = lazy(() => import("./components/ServiceAgreement").then(m => ({ default: m.ServiceAgreement })));
@@ -138,14 +137,7 @@ export default function App() {
               </ProtectedPage>
             }
           />
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedPage>
-                <AnalyticsDashboard />
-              </ProtectedPage>
-            }
-          />
+
           <Route
             path="/harvesters"
             element={

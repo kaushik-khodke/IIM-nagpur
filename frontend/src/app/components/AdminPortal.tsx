@@ -112,9 +112,7 @@ import { toast } from "sonner";
 import districtsData from "./districts.json";
 import { detectUserLocation, matchLocationWithDistricts } from "./locationHelper";
 import { ImageCropperDialog } from "./ImageCropperDialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AnalyticsDashboard } from "./AnalyticsDashboard";
 
 import { INDIAN_STATES, MACHINE_TYPES, COMPANIES, HARVESTER_MODELS, HARVESTER_COMPANIES, renderMarkdown, getStatusBadge, getUserVerificationStatusBadge, getAllImages } from "./pagesShared";
 
@@ -1618,7 +1616,6 @@ export function AdminPortal() {
             <nav className="flex flex-col gap-1.5 overflow-y-auto flex-1 pr-1 scrollbar-thin">
               {[
                 { id: "dashboard", label: t("admin.nav.dashboard", { defaultValue: "Dashboard" }), icon: <LayoutGrid size={18} /> },
-                { id: "analytics", label: "Analytics", icon: <PieChart size={18} /> },
                 { id: "directory", label: t("admin.nav.directory", { defaultValue: "User Directory" }), icon: <User size={18} /> },
                 { id: "bulk-import", label: "Bulk User Import", icon: <UserPlus size={18} /> },
                 { id: "harvesters", label: t("admin.nav.machines", { defaultValue: "Machines" }), icon: <Tractor size={18} /> },
@@ -1681,11 +1678,7 @@ export function AdminPortal() {
           {/* ================================== */}
           {/* TAB: DASHBOARD (MAIN OVERVIEW)     */}
           {/* ================================== */}
-          {activeTab === "analytics" && (
-            <div className="-m-6 md:-m-10">
-              <AnalyticsDashboard />
-            </div>
-          )}
+
 
           {activeTab === "dashboard" && (
             <div className="space-y-8">

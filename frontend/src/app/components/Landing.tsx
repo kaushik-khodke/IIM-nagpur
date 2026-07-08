@@ -377,7 +377,7 @@ function ServicingEnquirySection() {
               {t("landing.service.requestTitle", { ns: "pages", defaultValue: "Request Machine Service" })}
             </h3>
             <a
-              href="https://tractorseva.com/franchise"
+              href="https://tractorseva.com"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#172263] hover:bg-[#11194A] text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-900/10 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all w-full cursor-pointer uppercase tracking-wider mt-2"
