@@ -1,7 +1,8 @@
 import { createRoot } from "react-dom/client";
-  import App from "./app/App.tsx";
-  import "./styles/index.css";
-  import "./i18n/config.ts";
+import App from "./app/App.tsx";
+import "./styles/index.css";
+import "./i18n/config.ts";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
   // Override fetch to forward requests to the Render backend when deployed on Vercel
   const originalFetch = window.fetch;
@@ -46,4 +47,9 @@ import { createRoot } from "react-dom/client";
     });
   }
 
-  createRoot(document.getElementById("root")!).render(<App />);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+  createRoot(document.getElementById("root")!).render(
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <App />
+    </GoogleOAuthProvider>
+  );

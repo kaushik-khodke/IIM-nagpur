@@ -505,6 +505,120 @@ app.post('/api/auth/login', authLimiter, validateLogin, async (req, res) => {
   }
 });
 
+// Google Authentication Route
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+app.post('/api/auth/google', authLimiter, async (req, res) => {
+  const { credential, access_token } = req.body;
+
+  if (!credential && !access_token) {
+    return res.status(400).json({ error: 'Google credential or access token is required.' });
+  }
+
+  try {
+    let email, name, picture;
+
+    if (credential) {
+      // Verify the ID token from Google
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      email = payload.email;
+      name = payload.name;
+      picture = payload.picture;
+    } else {
+      // Fetch profile from userinfo endpoint using access token
+      const verifyRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { 'Authorization': `Bearer ${access_token}` }
+      });
+      if (!verifyRes.ok) {
+        return res.status(400).json({ error: 'Invalid Google access token.' });
+      }
+      const payload = await verifyRes.json();
+      email = payload.email;
+      name = payload.name;
+      picture = payload.picture;
+    }
+
+    if (!email) {
+      return res.status(400).json({ error: 'Could not retrieve email from Google account.' });
+    }
+
+    // 2. Check if user already exists
+    const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    let user = users[0];
+    let isNewUser = false;
+    let userId;
+
+    if (user) {
+      userId = user.id;
+      // If user exists but is blocked
+      if (user.is_blocked) {
+        return res.status(403).json({ error: 'Your account has been blocked by an administrator.' });
+      }
+
+      // If user has no profile photo, update it with Google profile photo
+      if (!user.image_path && picture) {
+        await db.query('UPDATE users SET image_path = ? WHERE id = ?', [picture, userId]);
+        user.image_path = picture;
+      }
+    } else {
+      // 3. User does not exist, auto-register them
+      isNewUser = true;
+      userId = require('crypto').randomUUID();
+      const cleanName = sanitizeInput(name || 'Google User');
+      
+      // Generate a securely hashed random password
+      const hashedPassword = await bcrypt.hash(require('crypto').randomBytes(16).toString('hex'), 10);
+
+      await db.query(
+        'INSERT INTO users (id, name, email, password, role, image_path) VALUES (?, ?, ?, ?, ?, ?)',
+        [userId, cleanName, email, hashedPassword, 'user', picture || null]
+      );
+
+      user = { id: userId, name: cleanName, email, role: 'user', image_path: picture || null };
+    }
+
+    // 4. Log active session
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      await db.query('INSERT IGNORE INTO login_logs (user_id, login_date) VALUES (?, ?)', [userId, today]);
+    } catch (err) {
+      console.error('Failed to log Google login activity:', err);
+    }
+
+    // 5. Generate session token
+    const token = jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    res.json({
+      token,
+      user: {
+        id: userId,
+        name: user.name,
+        email: user.email,
+        role: user.role || 'user',
+        image_path: user.image_path || null,
+        phone: user.phone || null,
+        state: user.state || null
+      },
+      isNewUser
+    });
+  } catch (error) {
+    console.error('Error verifying Google token:', error.message);
+    res.status(400).json({ error: 'Authentication failed: Invalid Google ID token.' });
+  }
+});
+
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
     const [users] = await db.query('SELECT id, name, email, role, state, phone, bio, image_path, is_blocked, created_at FROM users WHERE id = ?', [req.user.id]);
