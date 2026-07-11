@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment, useMemo } from "react";
+import { useState, useEffect, useRef, Fragment, useMemo, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
@@ -1975,7 +1975,7 @@ export function AdminPortal() {
                         )}
                         
                         {/* Points & Labels */}
-                        {points.map((p, idx) => (
+                        {points.map((p: { count: any; displayDate: any; x: number; y: number; }, idx: number) => (
                           <g 
                             key={idx} 
                             className="group cursor-pointer"
