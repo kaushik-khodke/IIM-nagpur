@@ -7,7 +7,7 @@ import { execSync } from 'child_process'
 
 function log(msg: string) {
   try {
-    const logFile = 'C:\\Users\\ASUS\\.gemini\\antigravity-ide\\brain\\3fef9d02-e986-4415-bee0-48265cb9be52/scratch/vite_log.txt'
+    const logFile = path.resolve(__dirname, 'vite_log.txt');
     fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`)
   } catch (e) {}
 }
@@ -66,9 +66,6 @@ downloadBackgroundVideos();
 function copyStaticAssets() {
   log('Starting custom assets copy...');
   try {
-    const fs = require('fs');
-    const path = require('path');
-    
     // Copy favicon.ico from icon-192x192.png if it doesn't exist
     const faviconDest = path.resolve(__dirname, 'public', 'favicon.ico');
     const faviconSrc = path.resolve(__dirname, 'public', 'icons', 'icon-192x192.png');

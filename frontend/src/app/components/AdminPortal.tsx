@@ -4093,6 +4093,9 @@ export function AdminPortal() {
                               try {
                                 const res = await fetch('/api/upload', {
                                   method: 'POST',
+                                  headers: {
+                                    'Authorization': `Bearer ${token}`
+                                  },
                                   body: formData
                                 });
                                 
@@ -4101,8 +4104,14 @@ export function AdminPortal() {
                                   setAdminEnquiryBg(data.url);
                                   toast.success('Image uploaded successfully. Click Save Settings to apply.', { id: uploadToast });
                                 } else {
-                                  const err = await res.json();
-                                  toast.error(err.error || 'Failed to upload image.', { id: uploadToast });
+                                  let errorMsg = 'Failed to upload image.';
+                                  try {
+                                    const err = await res.json();
+                                    if (err && err.error) {
+                                      errorMsg = err.error;
+                                    }
+                                  } catch (_) {}
+                                  toast.error(errorMsg, { id: uploadToast });
                                 }
                               } catch (err) {
                                 console.error(err);

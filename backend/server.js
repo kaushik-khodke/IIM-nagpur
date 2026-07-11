@@ -357,9 +357,12 @@ app.post('/api/upload', authenticateToken, (req, res) => {
       
       const uploadUrl = `https://${ref}.supabase.co/storage/v1/object/${bucket}/${fileName}`;
       
-      // Map image/webp to image/png for the Supabase upload call
-      // because the Supabase bucket configuration excludes image/webp from its whitelist.
-      const supabaseMimeType = mimeType === 'image/webp' ? 'image/png' : mimeType;
+      // Map image/webp and image/jpg to whitelisted MIME types for the Supabase upload call
+      // because the Supabase bucket configuration only whitelists image/jpeg and image/png.
+      let supabaseMimeType = mimeType === 'image/webp' ? 'image/png' : mimeType;
+      if (supabaseMimeType === 'image/jpg') {
+        supabaseMimeType = 'image/jpeg';
+      }
 
       const response = await fetch(uploadUrl, {
         method: 'POST',
