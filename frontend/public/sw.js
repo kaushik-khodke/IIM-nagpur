@@ -43,6 +43,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.includes('/@vite') || 
     url.pathname.includes('/node_modules') || 
     url.pathname.includes('chrome-extension') ||
+    url.pathname.startsWith('/src/') ||
     req.method !== 'GET'
   ) {
     return;

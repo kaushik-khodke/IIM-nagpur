@@ -17,6 +17,19 @@ const HARVESTER_SCALE = 0.26;
 export function TractorModel() {
   const { gl } = useThree();
 
+  // Prevent default warning on WebGL context loss
+  useEffect(() => {
+    const canvasEl = gl.domElement;
+    const handleContextLost = (e: Event) => {
+      e.preventDefault();
+      console.warn("WebGL context lost handled gracefully.");
+    };
+    canvasEl.addEventListener("webglcontextlost", handleContextLost, false);
+    return () => {
+      canvasEl.removeEventListener("webglcontextlost", handleContextLost);
+    };
+  }, [gl]);
+
   // Set up KTX2Loader singleton for KHR_texture_basisu extension
   const ktx2Loader = useMemo(() => {
     if (!ktx2LoaderInstance) {

@@ -63,6 +63,35 @@ function downloadBackgroundVideos() {
 // Trigger loop video downloads
 downloadBackgroundVideos();
 
+function copyStaticAssets() {
+  log('Starting custom assets copy...');
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Copy favicon.ico from icon-192x192.png if it doesn't exist
+    const faviconDest = path.resolve(__dirname, 'public', 'favicon.ico');
+    const faviconSrc = path.resolve(__dirname, 'public', 'icons', 'icon-192x192.png');
+    if (fs.existsSync(faviconSrc) && !fs.existsSync(faviconDest)) {
+      fs.copyFileSync(faviconSrc, faviconDest);
+      log('Successfully copied favicon.ico');
+    }
+
+    // Copy generated blog-punjab-farmers.png to public directory
+    const blogDest = path.resolve(__dirname, 'public', 'blog-punjab-farmers.png');
+    const blogSrc = 'C:\\Users\\ASUS\\.gemini\\antigravity-ide\\brain\\1af138df-da10-48ca-a2cc-9df8f2a5c6f2\\blog_punjab_farmers_1783801147760.png';
+    if (fs.existsSync(blogSrc) && !fs.existsSync(blogDest)) {
+      fs.copyFileSync(blogSrc, blogDest);
+      log('Successfully copied blog-punjab-farmers.png');
+    }
+  } catch (e: any) {
+    log(`Error copying assets: ${e.message}`);
+  }
+}
+
+// Trigger assets copy
+copyStaticAssets();
+
 function uploadAssetServer() {
   return {
     name: 'upload-asset-server',
