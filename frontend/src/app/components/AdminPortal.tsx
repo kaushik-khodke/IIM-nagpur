@@ -49,7 +49,9 @@ import {
   Image,
   Globe,
   PieChart,
+  Lock,
 } from "lucide-react";
+import { SecurityDashboard } from "./SecurityDashboard";
 
 import enPages from "../../locales/en/pages.json";
 import hiPages from "../../locales/hi/pages.json";
@@ -347,6 +349,31 @@ export function AdminPortal() {
   const [confirmTargetName, setConfirmTargetName] = useState("");
 
   const token = localStorage.getItem("tractorsewa_token");
+  const [criticalSecurityCount, setCriticalSecurityCount] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+    const fetchSecurityStatsForBadge = async () => {
+      try {
+        const res = await fetch("/api/admin/security/dashboard", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const count = (data.stats?.criticalIssues || 0) + (data.stats?.totalWarnings || 0);
+          setCriticalSecurityCount(count);
+        }
+      } catch (err) {
+        console.error("Failed to fetch security stats for badge:", err);
+      }
+    };
+
+    fetchSecurityStatsForBadge();
+    const interval = setInterval(fetchSecurityStatsForBadge, 30000);
+    return () => clearInterval(interval);
+  }, [token]);
 
   useEffect(() => {
     if (!token) {
@@ -1626,7 +1653,8 @@ export function AdminPortal() {
                 { id: "blogs", label: t("admin.nav.blogs", { defaultValue: "Blogs Management" }), icon: <BookOpen size={18} /> },
                 { id: "faqs", label: "FAQ Management", icon: <HelpCircle size={18} /> },
                 { id: "backgrounds", label: "Background Settings", icon: <Image size={18} /> },
-                { id: "edit-content", label: t("admin.nav.editContent", { defaultValue: "Edit Site Content" }), icon: <Globe size={18} /> }
+                { id: "edit-content", label: t("admin.nav.editContent", { defaultValue: "Edit Site Content" }), icon: <Globe size={18} /> },
+                { id: "security", label: "Security & Monitoring", icon: <Lock size={18} /> }
               ].map(item => (
                 <button
                   key={item.id}
@@ -1645,6 +1673,16 @@ export function AdminPortal() {
                   )}
                   {item.id === "dashboard" && !isSidebarOpen && (
                     <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
+                  )}
+                  {item.id === "security" && criticalSecurityCount > 0 && isSidebarOpen && (
+                    <span className="ml-auto bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 animate-pulse">
+                      {criticalSecurityCount}
+                    </span>
+                  )}
+                  {item.id === "security" && criticalSecurityCount > 0 && !isSidebarOpen && (
+                    <span className="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shrink-0 scale-75 origin-top-right">
+                      {criticalSecurityCount}
+                    </span>
                   )}
                 </button>
               ))}
@@ -4522,6 +4560,12 @@ export function AdminPortal() {
                 </div>
               )}
             </div>
+          )}
+          {/* ================================== */}
+          {/* TAB: SECURITY & MONITORING         */}
+          {/* ================================== */}
+          {activeTab === "security" && (
+            <SecurityDashboard token={token} />
           )}
 
         </div>
