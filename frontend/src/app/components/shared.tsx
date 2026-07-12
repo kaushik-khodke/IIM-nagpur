@@ -51,6 +51,31 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
+// ---- Web Push Unsubscription Helper ----
+export const unsubscribeFromPush = async () => {
+  if ("serviceWorker" in navigator && "PushManager" in window) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        // 1. Unsubscribe locally in browser
+        await subscription.unsubscribe();
+        
+        // 2. Notify backend to prune subscription
+        await fetch("/api/notifications/unsubscribe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ endpoint: subscription.endpoint })
+        });
+      }
+    } catch (err) {
+      console.error("Error unsubscribing from push notifications:", err);
+    }
+  }
+};
+
 // ---- Availability Badge ----
 export function AvailabilityBadge({ status }: { status: string }) {
   const { t } = useTranslation(["static"]);
@@ -932,6 +957,9 @@ export function Navbar({ variant = "public" }: { variant?: "public" | "auth" }) 
   const location = useLocation();
 
   const logout = async () => {
+    // Unsubscribe from push notifications on logout
+    await unsubscribeFromPush();
+
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch (err) {

@@ -182,11 +182,13 @@ export function Settings() {
   const [activeSection, setActiveSection] = useState(() => {
     if (tabParam === "support") return "support";
     if (tabParam === "verification") return "verification";
+    if (tabParam === "notifications") return "notifications";
     return "account";
   });
   const [mobileOpen, setMobileOpen] = useState<string | null>(() => {
     if (tabParam === "support") return "support";
     if (tabParam === "verification") return "verification";
+    if (tabParam === "notifications") return "notifications";
     return "account";
   });
 
@@ -206,11 +208,111 @@ export function Settings() {
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && ["account", "verification", "support"].includes(tab)) {
+    if (tab && ["account", "verification", "support", "notifications"].includes(tab)) {
       setActiveSection(tab);
       setMobileOpen(tab);
     }
   }, [searchParams]);
+
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [togglingPush, setTogglingPush] = useState(false);
+
+  // Check if push notifications are enabled on component mount
+  useEffect(() => {
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.pushManager.getSubscription().then((subscription) => {
+          setPushEnabled(!!subscription);
+        });
+      });
+    }
+  }, []);
+
+  const handlePushToggle = async (checked: boolean) => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      toast.error(t("settings.notifications.unsupported", { defaultValue: "Push notifications are not supported on this browser/device." }));
+      return;
+    }
+
+    setTogglingPush(true);
+    try {
+      if (checked) {
+        // 1. Fetch public VAPID key
+        const keyRes = await fetch("/api/notifications/vapid-key");
+        if (!keyRes.ok) throw new Error("Failed to fetch VAPID key");
+        const { vapidKey } = await keyRes.json();
+
+        if (!vapidKey) {
+          throw new Error("VAPID key not configured on backend");
+        }
+
+        // 2. Request browser permission
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          toast.error(t("settings.notifications.permissionDenied", { defaultValue: "Notification permission was denied." }));
+          setPushEnabled(false);
+          return;
+        }
+
+        // 3. Subscribe with PushManager
+        const registration = await navigator.serviceWorker.ready;
+        
+        // Convert Base64 VAPID key to Uint8Array
+        const padding = "=".repeat((4 - (vapidKey.length % 4)) % 4);
+        const base64 = (vapidKey + padding).replace(/\-/g, "+").replace(/_/g, "/");
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: outputArray
+        });
+
+        // 4. Save subscription to backend
+        const subRes = await fetch("/api/notifications/subscribe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("tractorsewa_token")}`
+          },
+          body: JSON.stringify({ subscription })
+        });
+
+        if (subRes.ok) {
+          setPushEnabled(true);
+          toast.success(t("settings.notifications.enabledSuccess", { defaultValue: "Push notifications enabled successfully!" }));
+        } else {
+          throw new Error("Failed to register subscription on backend");
+        }
+      } else {
+        // Unsubscribe
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await subscription.unsubscribe();
+          
+          // Notify backend
+          await fetch("/api/notifications/unsubscribe", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ endpoint: subscription.endpoint })
+          });
+        }
+        setPushEnabled(false);
+        toast.success(t("settings.notifications.disabledSuccess", { defaultValue: "Push notifications disabled successfully." }));
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || t("settings.notifications.errorToggling", { defaultValue: "Error toggling push notifications." }));
+    } finally {
+      setTogglingPush(false);
+    }
+  };
 
   useEffect(() => {
     const fetch_ = async () => {
@@ -338,6 +440,7 @@ export function Settings() {
   const navItems = [
     { id: "account", label: t("settings.menu.account", { defaultValue: "Account" }), icon: <User size={16} /> },
     { id: "verification", label: t("settings.menu.verification", { defaultValue: "Verification" }), icon: <ShieldCheck size={16} /> },
+    { id: "notifications", label: t("settings.menu.notifications", { defaultValue: "Notifications" }), icon: <Bell size={16} /> },
     { id: "support", label: t("settings.menu.support", { defaultValue: "Support & Help" }), icon: <HelpCircle size={16} /> },
   ];
 
@@ -683,9 +786,47 @@ export function Settings() {
     </div>
   );
 
+  const renderNotifications = () => (
+    <div className="space-y-6">
+      <SectionCard title={t("settings.notifications.pushAlerts", { defaultValue: "Push Notifications" })}>
+        <p className="text-sm text-zinc-500 mb-6">
+          {t("settings.notifications.pushDesc", {
+            defaultValue: "Receive real-time alerts on your phone or laptop even when you are not actively browsing the site. Stay updated on verification approvals, reviews, and direct messages."
+          })}
+        </p>
+
+        <div className="flex items-center justify-between p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-sm">
+              <Bell size={16} className={pushEnabled ? "text-[#172263]" : "text-zinc-400"} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#1A1A1A]">
+                {t("settings.notifications.enableWebPush", { defaultValue: "Enable Desktop & Mobile Push Alerts" })}
+              </p>
+              <p className="text-xs text-zinc-400">
+                {pushEnabled
+                  ? t("settings.notifications.activeStatus", { defaultValue: "Subscribed and active on this device" })
+                  : t("settings.notifications.inactiveStatus", { defaultValue: "Not active on this device" })}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center">
+            {togglingPush ? (
+              <div className="w-5 h-5 border-2 border-[#172263] border-t-transparent rounded-full animate-spin mr-2" />
+            ) : (
+              <Toggle checked={pushEnabled} onChange={handlePushToggle} />
+            )}
+          </div>
+        </div>
+      </SectionCard>
+    </div>
+  );
+
   const sectionContent: Record<string, React.ReactNode> = {
     account: renderAccount(),
     verification: renderVerification(),
+    notifications: renderNotifications(),
     support: renderSupport(),
   };
 

@@ -1,4 +1,5 @@
 const express = require('express');
+const dns = require('dns').promises;
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -324,6 +325,40 @@ const sanitizeInput = (val) => {
     .replace(/'/g, '&#x27;');
 };
 
+const isEmailDomainValid = async (email) => {
+  if (!email || typeof email !== 'string') return false;
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Bypass DNS verification for administrator accounts
+  if (normalizedEmail === 'tractorsewaadmin@gmail.com' || normalizedEmail === 'admin@gmail.com') {
+    return true;
+  }
+
+  const domain = normalizedEmail.split('@')[1];
+  if (!domain) return false;
+
+  try {
+    const mx = await dns.resolveMx(domain);
+    return mx && mx.length > 0;
+  } catch (err) {
+    // If the lookup failed explicitly because domain wasn't found (ENOTFOUND or ENODATA)
+    if (err.code === 'ENOTFOUND' || err.code === 'ENODATA') {
+      try {
+        const addresses = await dns.resolve4(domain);
+        return addresses && addresses.length > 0;
+      } catch (aErr) {
+        if (aErr.code === 'ENOTFOUND' || aErr.code === 'ENODATA') {
+          return false; // Domain definitely does not exist
+        }
+      }
+    }
+    // Log other DNS-specific network errors but fail-safe to let the user log in/register
+    logger.warn(`DNS check failed with code ${err.code} for domain ${domain}. Allowed access under fail-safe policy.`);
+    return true;
+  }
+};
+
 // --- API ROUTES ---
 
 // 1. Image Upload Endpoint
@@ -427,6 +462,11 @@ app.post('/api/auth/register', authLimiter, validateRegister, async (req, res) =
   }
 
   try {
+    const domainValid = await isEmailDomainValid(email);
+    if (!domainValid) {
+      return res.status(400).json({ error: 'The email domain does not appear to exist or cannot receive mail.' });
+    }
+
     const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Email already registered' });
@@ -470,6 +510,11 @@ app.post('/api/auth/login', authLimiter, validateLogin, async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    const domainValid = await isEmailDomainValid(email);
+    if (!domainValid) {
+      return res.status(400).json({ error: 'The email domain is invalid or inactive.' });
+    }
+
     const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (users.length === 0) {
       return res.status(400).json({ error: 'Invalid email or password' });
@@ -616,6 +661,133 @@ app.post('/api/auth/google', authLimiter, async (req, res) => {
   } catch (error) {
     console.error('Error verifying Google token:', error.message);
     res.status(400).json({ error: 'Authentication failed: Invalid Google ID token.' });
+  }
+});
+
+// ---- WEB PUSH NOTIFICATIONS SETUP ----
+const webpush = require('web-push');
+
+if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+  console.log('VAPID environment keys are missing. Generating fresh VAPID keys...');
+  try {
+    const keys = webpush.generateVAPIDKeys();
+    process.env.VAPID_PUBLIC_KEY = keys.publicKey;
+    process.env.VAPID_PRIVATE_KEY = keys.privateKey;
+
+    // Persist VAPID keys in .env
+    const envPath = path.resolve(__dirname, '../.env');
+    const localEnvPath = path.resolve(__dirname, '.env');
+    const targetPath = fs.existsSync(envPath) ? envPath : localEnvPath;
+
+    if (fs.existsSync(targetPath)) {
+      fs.appendFileSync(targetPath, `\nVAPID_PUBLIC_KEY=${keys.publicKey}\nVAPID_PRIVATE_KEY=${keys.privateKey}\n`);
+      console.log(`VAPID keys automatically appended to: ${targetPath}`);
+    } else {
+      fs.writeFileSync(targetPath, `VAPID_PUBLIC_KEY=${keys.publicKey}\nVAPID_PRIVATE_KEY=${keys.privateKey}\n`);
+      console.log(`Created new .env file with VAPID keys at: ${targetPath}`);
+    }
+  } catch (err) {
+    console.error('Failed to generate VAPID keys:', err.message);
+  }
+}
+
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    'mailto:tractorsewaadmin@gmail.com',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+  console.log('Web Push VAPID configuration initialized.');
+}
+
+// Helper function to send push notifications to a user
+const sendPushNotification = async (userId, title, body, url = '/dashboard') => {
+  try {
+    const [subscriptions] = await db.query(
+      'SELECT id, endpoint, p256dh, auth FROM user_push_subscriptions WHERE user_id = ?',
+      [userId]
+    );
+
+    if (subscriptions.length === 0) return;
+
+    const payload = JSON.stringify({ title, body, url });
+
+    for (const sub of subscriptions) {
+      const pushSubscription = {
+        endpoint: sub.endpoint,
+        keys: {
+          p256dh: sub.p256dh,
+          auth: sub.auth
+        }
+      };
+
+      webpush.sendNotification(pushSubscription, payload)
+        .catch(async (err) => {
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            console.log(`Pruning expired/revoked subscription endpoint ID: ${sub.id}`);
+            await db.query('DELETE FROM user_push_subscriptions WHERE id = ?', [sub.id]);
+          } else {
+            console.error(`Web Push sending failed for subscription ID ${sub.id}:`, err.message);
+          }
+        });
+    }
+  } catch (err) {
+    console.error('Error in sendPushNotification helper:', err);
+  }
+};
+
+// API: Get VAPID Public Key
+app.get('/api/notifications/vapid-key', (req, res) => {
+  res.json({ vapidKey: process.env.VAPID_PUBLIC_KEY || '' });
+});
+
+// API: Subscribe to Push Notifications
+app.post('/api/notifications/subscribe', authenticateToken, async (req, res) => {
+  const { subscription } = req.body;
+  if (!subscription || !subscription.endpoint || !subscription.keys || !subscription.keys.p256dh || !subscription.keys.auth) {
+    return res.status(400).json({ error: 'Invalid subscription payload.' });
+  }
+
+  try {
+    // Check if endpoint subscription already exists
+    const [existing] = await db.query(
+      'SELECT id FROM user_push_subscriptions WHERE endpoint = ?',
+      [subscription.endpoint]
+    );
+
+    if (existing.length > 0) {
+      // Update User ID in case a different user logs in on the same browser device
+      await db.query(
+        'UPDATE user_push_subscriptions SET user_id = ? WHERE endpoint = ?',
+        [req.user.id, subscription.endpoint]
+      );
+    } else {
+      await db.query(
+        'INSERT INTO user_push_subscriptions (user_id, endpoint, p256dh, auth) VALUES (?, ?, ?, ?)',
+        [req.user.id, subscription.endpoint, subscription.keys.p256dh, subscription.keys.auth]
+      );
+    }
+
+    res.status(201).json({ message: 'Subscribed to push notifications successfully.' });
+  } catch (err) {
+    console.error('Error registering push subscription:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// API: Unsubscribe from Push Notifications
+app.post('/api/notifications/unsubscribe', async (req, res) => {
+  const { endpoint } = req.body;
+  if (!endpoint) {
+    return res.status(400).json({ error: 'Endpoint is required for unsubscription.' });
+  }
+
+  try {
+    await db.query('DELETE FROM user_push_subscriptions WHERE endpoint = ?', [endpoint]);
+    res.json({ message: 'Unsubscribed from push notifications successfully.' });
+  } catch (err) {
+    console.error('Error unsubscribing push notifications:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -1708,6 +1880,17 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
     );
     
     const [newMessage] = await db.query('SELECT * FROM messages WHERE id = ?', [messageId]);
+
+    // Send Web Push Notification to the receiver
+    try {
+      const [senderRows] = await db.query('SELECT name FROM users WHERE id = ?', [req.user.id]);
+      const senderName = senderRows.length > 0 ? senderRows[0].name : 'Someone';
+      const bodyPreview = cleanContent.length > 100 ? `${cleanContent.substring(0, 97)}...` : cleanContent;
+      await sendPushNotification(receiverId, `New message from ${senderName}`, bodyPreview, '/messages');
+    } catch (pushErr) {
+      console.error('Failed to send chat push notification:', pushErr.message);
+    }
+
     res.status(201).json(newMessage[0]);
   } catch (error) {
     console.error(error);
@@ -2504,6 +2687,11 @@ app.put('/api/admin/listings/:type/:id/verify', authenticateToken, isAdmin, asyn
         'INSERT INTO notifications (id, user_id, type, message, target_id) VALUES (?, ?, ?, ?, ?)',
         [notifId, ownerId, `${type}_verification`, notifMessage, id]
       );
+      try {
+        await sendPushNotification(ownerId, `${type === 'harvester' ? 'Harvester' : 'Operator'} Verification`, notifMessage, '/dashboard');
+      } catch (pushErr) {
+        console.error('Failed to send verification push notification:', pushErr.message);
+      }
     }
 
     res.json({ message: `${type === 'harvester' ? 'Harvester' : 'Operator'} verification status updated to ${status} successfully.` });
@@ -3289,6 +3477,11 @@ app.post('/api/ratings', authenticateToken, async (req, res) => {
         'INSERT INTO notifications (id, user_id, type, message, target_id) VALUES (?, ?, ?, ?, ?)',
         [rateNotifId, targetOwnerId, `rating_${targetType}`, rateNotifMsg, targetId]
       );
+      try {
+        await sendPushNotification(targetOwnerId, 'New Post Review', rateNotifMsg, '/dashboard');
+      } catch (pushErr) {
+        console.error('Failed to send rating push notification:', pushErr.message);
+      }
 
       // 2. Comments count notification
       const [cmtCountRows] = await db.query(
@@ -3312,6 +3505,11 @@ app.post('/api/ratings', authenticateToken, async (req, res) => {
           'INSERT INTO notifications (id, user_id, type, message, target_id) VALUES (?, ?, ?, ?, ?)',
           [commentNotifId, targetOwnerId, `comment_${targetType}`, commentNotifMsg, targetId]
         );
+        try {
+          await sendPushNotification(targetOwnerId, 'New Post Comment', commentNotifMsg, '/dashboard');
+        } catch (pushErr) {
+          console.error('Failed to send comment push notification:', pushErr.message);
+        }
       }
     }
 

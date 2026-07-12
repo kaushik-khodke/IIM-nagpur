@@ -393,13 +393,17 @@ async function initializeDatabase() {
 
     // Seed hardcoded administrator account if not exists
     try {
-      const [admins] = await activePool.query("SELECT id FROM users WHERE email = 'admin@gmail.com'");
+      const [admins] = await activePool.query("SELECT id FROM users WHERE email = 'tractorsewaadmin@gmail.com'");
       if (admins.length === 0) {
+        const defaultAdminPass = process.env.DEFAULT_ADMIN_PASSWORD;
+        if (!defaultAdminPass) {
+          throw new Error('DEFAULT_ADMIN_PASSWORD environment variable is not defined. Administrator account seeding skipped.');
+        }
         const adminId = require('crypto').randomUUID();
-        const hashedAdminPassword = await require('bcryptjs').hash('123123pass', 10);
+        const hashedAdminPassword = await require('bcryptjs').hash(defaultAdminPass, 10);
         await activePool.query(
           "INSERT INTO users (id, name, email, password, role, state, phone, is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          [adminId, 'System Administrator', 'admin@gmail.com', hashedAdminPassword, 'admin', 'Maharashtra', '9999999999', 0]
+          [adminId, 'System Administrator', 'tractorsewaadmin@gmail.com', hashedAdminPassword, 'admin', 'Maharashtra', '9999999999', 0]
         );
         console.log('Successfully seeded hardcoded administrator account.');
       }
@@ -418,6 +422,19 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create User Push Subscriptions Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS user_push_subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        endpoint TEXT NOT NULL,
+        p256dh VARCHAR(255) NOT NULL,
+        auth VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 

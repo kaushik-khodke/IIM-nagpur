@@ -145,6 +145,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  optimizeDeps: {
+    exclude: ['i18next-http-backend'],
+  },
   resolve: {
     alias: {
       // Alias @ to the src directory

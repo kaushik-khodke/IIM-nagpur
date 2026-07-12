@@ -103,6 +103,13 @@ export function Profile() {
   }, [tabParam]);
 
   const logout = () => {
+    // Unsubscribe from push notifications on logout
+    import("./shared").then(({ unsubscribeFromPush }) => {
+      unsubscribeFromPush();
+    }).catch(err => {
+      console.error("Failed to load push helper:", err);
+    });
+
     localStorage.removeItem("tractorsewa_token");
     localStorage.removeItem("tractorsewa_preview_mode");
     navigate("/");

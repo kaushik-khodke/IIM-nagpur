@@ -90,13 +90,42 @@ function MessageNotifier() {
   return null;
 }
 
+function PushSubscriptionManager() {
+  useEffect(() => {
+    const token = localStorage.getItem("tractorsewa_token");
+    if (!token) return;
 
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+      navigator.serviceWorker.ready.then(async (registration) => {
+        try {
+          const subscription = await registration.pushManager.getSubscription();
+          if (subscription) {
+            // Keep backend subscription in sync with active session
+            await fetch("/api/notifications/subscribe", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ subscription })
+            });
+          }
+        } catch (err) {
+          console.error("Auto-syncing push subscription failed:", err);
+        }
+      });
+    }
+  }, []);
+
+  return null;
+}
 
 export default function App() {
 
   return (
     <BrowserRouter>
       <MessageNotifier />
+      <PushSubscriptionManager />
       <Toaster
         position="top-right"
         richColors

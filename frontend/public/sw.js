@@ -90,3 +90,49 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
+// Handle background Web Push Notifications
+self.addEventListener('push', (event) => {
+  try {
+    const data = event.data ? event.data.json() : {};
+    const title = data.title || 'Tractor Seva';
+    const options = {
+      body: data.body || '',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-192x192-maskable.png',
+      data: {
+        url: data.url || '/dashboard'
+      }
+    };
+    event.waitUntil(
+      self.registration.showNotification(title, options)
+    );
+  } catch (err) {
+    console.error('Error in service worker push listener:', err);
+  }
+});
+
+// Handle notification click redirects
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data.url;
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Check if there is already a window open with this app
+      for (const client of windowClients) {
+        if ('focus' in client) {
+          return client.focus().then(() => {
+            if ('navigate' in client) {
+              return client.navigate(targetUrl);
+            }
+          });
+        }
+      }
+      // If no window is open, open a new one
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
