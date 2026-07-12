@@ -537,7 +537,9 @@ export function OperatorCard({
             >
               <span><DynamicText>{name}</DynamicText></span>
               {verification_status === 'Approved' && (
-                <ShieldCheck size={14} className="text-emerald-600 shrink-0 animate-pulse" title="Verified Operator" />
+                <span title="Verified Operator">
+                  <ShieldCheck size={14} className="text-emerald-600 shrink-0 animate-pulse" />
+                </span>
               )}
             </h3>
 

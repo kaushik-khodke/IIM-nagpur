@@ -1,0 +1,131 @@
+[2026-07-11T20:42:21.450Z] Starting downloader via curl...
+[2026-07-11T20:42:21.451Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:21.452Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:21.453Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:21.454Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:21.455Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:21.455Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:21.456Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:21.457Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:21.458Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:21.458Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:21.459Z] Starting custom assets copy...
+[2026-07-11T20:42:21.460Z] Error copying assets: Dynamic require of "fs" is not supported
+[2026-07-11T20:42:21.946Z] Supabase buckets check: [{"id":"TractorSeva","name":"TractorSeva","owner":"","public":true,"type":"STANDARD","file_size_limit":5242880,"allowed_mime_types":["image/jpeg","image/png"],"created_at":"2026-06-15T08:21:39.391Z","updated_at":"2026-06-15T08:21:39.391Z"},{"id":"Private_data","name":"Private_data","owner":"","public":false,"type":"STANDARD","file_size_limit":10485760,"allowed_mime_types":["image/jpeg","image/png","image/jpg"],"created_at":"2026-06-27T08:46:05.037Z","updated_at":"2026-06-27T08:46:05.037Z"}]
+[2026-07-11T20:42:30.761Z] Starting downloader via curl...
+[2026-07-11T20:42:30.762Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:30.763Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:30.764Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:30.765Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:30.765Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:30.766Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:30.767Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:30.767Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:30.768Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:30.768Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:30.769Z] Starting custom assets copy...
+[2026-07-11T20:42:30.770Z] Error copying assets: Dynamic require of "fs" is not supported
+[2026-07-11T20:42:38.960Z] Starting downloader via curl...
+[2026-07-11T20:42:38.961Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:38.962Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:38.963Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:38.963Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:38.964Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:38.965Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:38.965Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:38.966Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:38.967Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:38.967Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:42:38.968Z] Starting custom assets copy...
+[2026-07-11T20:42:38.972Z] Successfully copied favicon.ico
+[2026-07-11T20:42:38.975Z] Successfully copied blog-punjab-farmers.png
+[2026-07-11T20:43:52.310Z] Testing GET/POST requests to backend upload...
+[2026-07-11T20:43:52.313Z] Starting downloader via curl...
+[2026-07-11T20:43:52.314Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:43:52.315Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:43:52.315Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:43:52.316Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:43:52.316Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:43:52.317Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:43:52.317Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:43:52.318Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:43:52.318Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:43:52.319Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:43:52.320Z] Starting custom assets copy...
+[2026-07-11T20:43:52.351Z] Backend /api/upload response status: 401
+[2026-07-11T20:43:52.352Z] Backend /api/upload response body: {"error":"Access token missing"}
+[2026-07-11T20:44:02.322Z] Testing Supabase direct upload...
+[2026-07-11T20:44:02.327Z] Starting downloader via curl...
+[2026-07-11T20:44:02.328Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:02.329Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:02.329Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:02.330Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:02.331Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:02.331Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:02.332Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:02.333Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:02.333Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:02.334Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:02.334Z] Starting custom assets copy...
+[2026-07-11T20:44:02.862Z] Supabase upload status: 200
+[2026-07-11T20:44:02.865Z] Supabase upload response: {"Key":"TractorSeva/test-1783802642322.png","Id":"3a478d62-6daf-41df-8f94-d4dcef7a749f"}
+[2026-07-11T20:44:18.245Z] Starting downloader via curl...
+[2026-07-11T20:44:18.246Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:18.247Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:18.247Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:18.248Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:18.248Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:18.249Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:18.249Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:18.250Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:18.251Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:18.251Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:44:18.252Z] Starting custom assets copy...
+[2026-07-11T20:54:59.518Z] Starting downloader via curl...
+[2026-07-11T20:54:59.519Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:54:59.520Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:54:59.520Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:54:59.521Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:54:59.521Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:54:59.522Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:54:59.522Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:54:59.522Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:54:59.523Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:54:59.523Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-11T20:54:59.524Z] Starting custom assets copy...
+[2026-07-12T05:59:08.647Z] Starting downloader via curl...
+[2026-07-12T05:59:08.650Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-12T05:59:08.650Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-12T05:59:08.651Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-12T05:59:08.652Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-12T05:59:08.653Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-12T05:59:08.653Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-12T05:59:08.654Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-12T05:59:08.660Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-12T05:59:08.661Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-12T05:59:08.662Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-12T05:59:08.662Z] Starting custom assets copy...
+[2026-07-12T06:02:37.704Z] Starting downloader via curl...
+[2026-07-12T06:02:37.707Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:02:37.708Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:02:37.709Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:02:37.710Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:02:37.711Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:02:37.712Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:02:37.713Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:02:37.713Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:02:37.714Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:02:37.715Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:02:37.715Z] Starting custom assets copy...
+[2026-07-12T06:05:44.310Z] Starting downloader via curl...
+[2026-07-12T06:05:44.312Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:05:44.313Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:05:44.314Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:05:44.315Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:05:44.316Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:05:44.316Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:05:44.317Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:05:44.319Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:05:44.320Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:05:44.321Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-12T06:05:44.322Z] Starting custom assets copy...

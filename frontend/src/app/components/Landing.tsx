@@ -229,7 +229,13 @@ const Tractor3DCanvas = memo(function Tractor3DCanvas() {
 
   return (
 
-    <Canvas camera={{ position: [0, 0, 5], fov: 53 }}>
+    <Canvas 
+      camera={{ position: [0, 0, 5], fov: 53 }}
+      gl={{ 
+        precision: "mediump", 
+        powerPreference: "high-performance"
+      }}
+    >
 
       <Suspense fallback={null}>
 

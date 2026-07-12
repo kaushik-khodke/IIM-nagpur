@@ -252,7 +252,9 @@ export function OperatorProfile() {
               >
                 <span>{operator.name}</span>
                 {operator.verification_status === 'Approved' && (
-                  <ShieldCheck size={22} className="text-emerald-600 animate-pulse" title="Verified Operator" />
+                  <span title="Verified Operator">
+                    <ShieldCheck size={22} className="text-emerald-600 animate-pulse" />
+                  </span>
                 )}
               </h1>
               <p className="text-[#57585A] flex items-center gap-1 text-sm">

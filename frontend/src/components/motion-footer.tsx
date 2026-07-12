@@ -31,12 +31,13 @@ export function CinematicFooter() {
   };
 
   return (
-    <footer className="w-full bg-[#002855] text-white py-10 px-6 md:px-12 relative overflow-hidden font-sans border-t border-[#001D3D] z-10">
+    <footer className="w-full bg-[#002855] text-white py-6 md:py-10 px-4 md:px-12 relative overflow-hidden font-sans border-t border-[#001D3D] z-10">
       {/* Subtle Aurora Glow background overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(232,114,12,0.05),transparent_40%)] pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(23,34,99,0.2),transparent_50%)] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto relative z-10 space-y-8">
+      {/* Desktop Footer (unmodified) */}
+      <div className="hidden md:block max-w-7xl mx-auto relative z-10 space-y-8">
         {/* 1. Top Section: Have a Question & Franchise Inquiry */}
         <div className="flex flex-col md:flex-row items-stretch justify-between gap-6 pb-6 border-b border-white/10">
           
@@ -323,6 +324,114 @@ export function CinematicFooter() {
 
         </div>
 
+      </div>
+
+      {/* Mobile/PWA Optimized Footer (Compact native look) */}
+      <div className="block md:hidden max-w-md mx-auto relative z-10 flex flex-col items-center text-center space-y-4 px-2">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 group">
+          <img 
+            src={tractorSevaLogo} 
+            alt="Tractor Seva" 
+            className="h-10 w-auto brightness-0 invert object-contain transition-transform duration-300 group-hover:scale-105" 
+          />
+        </Link>
+
+        {/* Follow Us (social media icons) */}
+        <div className="flex flex-col items-center gap-1.5 mt-1">
+          <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">
+            {t("footer.followUs", { defaultValue: "Follow Us" })}
+          </span>
+          <div className="flex justify-center gap-3">
+            <a 
+              href="https://www.facebook.com/tractorsevaindia?mibextid=LQQJ4d" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white hover:bg-[#E8720C] hover:border-[#E8720C] hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm"
+              title="Facebook"
+            >
+              <Facebook className="w-3.5 h-3.5" />
+            </a>
+            <a 
+              href="https://www.instagram.com/tractorseva/?igsh=MXBsZGk3ajkyMTA4NQ%3D%3D" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white hover:bg-[#E8720C] hover:border-[#E8720C] hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm"
+              title="Instagram"
+            >
+              <Instagram className="w-3.5 h-3.5" />
+            </a>
+            <a 
+              href="https://twitter.com/TractorSeva" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white hover:bg-[#E8720C] hover:border-[#E8720C] hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm"
+              title="X (Twitter)"
+            >
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+            </a>
+            <a 
+              href="https://www.linkedin.com/company/tractor-seva/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="w-8 h-8 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-white hover:bg-[#E8720C] hover:border-[#E8720C] hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm"
+              title="LinkedIn"
+            >
+              <Linkedin className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        </div>
+
+        {/* Contact Us Details */}
+        <div className="flex flex-col items-center gap-2 pt-2 border-t border-white/10 w-full text-center">
+          <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">
+            {t("footer.contactUsHeader", { defaultValue: "Contact Us" })}
+          </span>
+          <div className="space-y-1.5 text-xs text-white/70">
+            {/* Phone */}
+            <div className="flex items-center justify-center gap-2">
+              <Phone className="w-3.5 h-3.5 text-white/80 shrink-0" />
+              <a href="tel:+919209392096" className="hover:text-[#E8720C] transition-colors font-semibold">
+                +91 92093 92096
+              </a>
+            </div>
+
+            {/* Email */}
+            <div className="flex items-center justify-center gap-2">
+              <Mail className="w-3.5 h-3.5 text-white/80 shrink-0" />
+              <a href="mailto:customercare@tractorseva.com" className="hover:text-[#E8720C] transition-colors">
+                customercare@tractorseva.com
+              </a>
+            </div>
+
+            {/* Short Address (2-3 lines max) */}
+            <div className="flex items-start justify-center gap-2 max-w-[280px] mx-auto text-[11px] leading-relaxed pt-1">
+              <MapPin className="w-3.5 h-3.5 text-white/80 shrink-0 mt-0.5" />
+              <span className="text-left text-[11px]">
+                Bedienung Solution (Tractor Seva)<br />
+                C/o- InFED, IIM Nagpur, Mihan (Non-Sez),<br />
+                Nagpur, Maharashtra, India - 441108
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Inquiry Button (Full-width Call-To-Action) */}
+        <div className="w-full pt-1">
+          <Link
+            to="/enquiry"
+            className="block w-full py-2.5 bg-[#E8720C] text-white font-extrabold rounded-lg hover:bg-white hover:text-[#002855] transition-all duration-300 shadow-md active:scale-[0.98] text-center text-xs tracking-wider uppercase"
+          >
+            {t("footer.inquiry", { defaultValue: "Inquiry" })}
+          </Link>
+        </div>
+
+        {/* Copyright section */}
+        <div className="text-[10px] text-white/40 pt-2 border-t border-white/5 w-full text-center">
+          {t("footer.allRightsReserved", { defaultValue: "All rights reserved to Tractor seva" })}
+        </div>
       </div>
     </footer>
   );

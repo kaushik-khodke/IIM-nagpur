@@ -688,6 +688,22 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create Security Logs Table
+    await activePool.query(`
+      CREATE TABLE IF NOT EXISTS security_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        event_type VARCHAR(100) NOT NULL,
+        severity VARCHAR(20) NOT NULL,
+        username VARCHAR(255) DEFAULT NULL,
+        ip_address VARCHAR(45) DEFAULT NULL,
+        request_url TEXT DEFAULT NULL,
+        user_agent TEXT DEFAULT NULL,
+        description TEXT NOT NULL,
+        metadata TEXT DEFAULT NULL
+      )
+    `);
+
     console.log('Database tables verified/created successfully.');
 
     // Seed tables if empty
