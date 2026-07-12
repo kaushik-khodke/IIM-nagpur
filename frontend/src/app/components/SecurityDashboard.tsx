@@ -342,6 +342,20 @@ export function SecurityDashboard({ token }: { token: string | null }) {
             </span>
           )}
           <button 
+            onClick={() => {
+              // -------------------------------------------------------------
+              // DEVELOPER NOTE: Write your custom analytics URL redirect here.
+              // Example: window.location.href = "https://your-analytics-dashboard.com";
+              // -------------------------------------------------------------
+              toast.info("Analytics redirection not configured yet.");
+             //Replace this line with the above line window.open("https://your-deployed-render-or-vercel-url.com", "_blank"); // Opens link in a new tab
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#172263] hover:bg-[#11194A] text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer shrink-0"
+          >
+            <Activity size={14} />
+            View Analytics
+          </button>
+          <button 
             onClick={() => fetchDashboardData(true)}
             className="flex items-center gap-1.5 px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
           >
