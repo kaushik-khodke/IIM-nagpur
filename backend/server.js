@@ -221,9 +221,17 @@ app.use((req, res, next) => {
 });
 
 // Create uploads directory if not exists
-const uploadsDir = path.join(__dirname, 'uploads');
+const os = require('os');
+const uploadsDir = process.env.NODE_ENV === 'production'
+  ? path.join(os.tmpdir(), 'uploads')
+  : path.join(__dirname, 'uploads');
+
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  } catch (err) {
+    console.error('Failed to create uploads directory:', err.message);
+  }
 }
 // Serve uploads statically
 app.use('/uploads', express.static(uploadsDir));
@@ -437,11 +445,12 @@ app.post('/api/upload', authenticateToken, (req, res) => {
       const fileBuffer = fs.readFileSync(localPath);
       
       // Supabase project constants
-      const ref = 'nwlhjvthqggfzvnukagg';
-      const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53bGhqdnRocWdnZnp2bnVrYWdnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTYyMDY4OCwiZXhwIjoyMDg1MTk2Njg4fQ.P3aSVSC5zhDCDMxfHnpPkUFqFYTunjrEZ5AsyXkpt14';
-      const bucket = 'TractorSeva';
+      const supabaseUrl = process.env.SUPABASE_URL || '';
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const bucket = process.env.SUPABASE_BUCKET_NAME || 'TractorSeva';
       
-      const uploadUrl = `https://${ref}.supabase.co/storage/v1/object/${bucket}/${fileName}`;
+      const base = supabaseUrl.endsWith('/') ? supabaseUrl.slice(0, -1) : supabaseUrl;
+      const uploadUrl = `${base}/storage/v1/object/${bucket}/${fileName}`;
       
       // Map image/webp and image/jpg to whitelisted MIME types for the Supabase upload call
       // because the Supabase bucket configuration only whitelists image/jpeg and image/png.
@@ -466,7 +475,7 @@ app.post('/api/upload', authenticateToken, (req, res) => {
         return res.status(500).json({ error: 'Supabase upload failed. Please try again later.' });
       }
 
-      const publicUrl = `https://${ref}.supabase.co/storage/v1/object/public/${bucket}/${fileName}`;
+      const publicUrl = `${base}/storage/v1/object/public/${bucket}/${fileName}`;
       
       // Delete local temp file
       fs.unlink(localPath, (err) => {
@@ -737,17 +746,22 @@ if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
     process.env.VAPID_PUBLIC_KEY = keys.publicKey;
     process.env.VAPID_PRIVATE_KEY = keys.privateKey;
 
-    // Persist VAPID keys in .env
+    // Persist VAPID keys in .env if in writable environment
     const envPath = path.resolve(__dirname, '../.env');
     const localEnvPath = path.resolve(__dirname, '.env');
     const targetPath = fs.existsSync(envPath) ? envPath : localEnvPath;
 
-    if (fs.existsSync(targetPath)) {
-      fs.appendFileSync(targetPath, `\nVAPID_PUBLIC_KEY=${keys.publicKey}\nVAPID_PRIVATE_KEY=${keys.privateKey}\n`);
-      console.log(`VAPID keys automatically appended to: ${targetPath}`);
-    } else {
-      fs.writeFileSync(targetPath, `VAPID_PUBLIC_KEY=${keys.publicKey}\nVAPID_PRIVATE_KEY=${keys.privateKey}\n`);
-      console.log(`Created new .env file with VAPID keys at: ${targetPath}`);
+    try {
+      if (fs.existsSync(targetPath)) {
+        fs.appendFileSync(targetPath, `\nVAPID_PUBLIC_KEY=${keys.publicKey}\nVAPID_PRIVATE_KEY=${keys.privateKey}\n`);
+        console.log(`VAPID keys automatically appended to: ${targetPath}`);
+      } else {
+        fs.writeFileSync(targetPath, `VAPID_PUBLIC_KEY=${keys.publicKey}\nVAPID_PRIVATE_KEY=${keys.privateKey}\n`);
+        console.log(`Created new .env file with VAPID keys at: ${targetPath}`);
+      }
+    } catch (writeErr) {
+      console.warn(`Could not save VAPID keys to file (expected in read-only production environments): ${writeErr.message}`);
+      console.warn('Please configure VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY directly in your hosting provider dashboard.');
     }
   } catch (err) {
     console.error('Failed to generate VAPID keys:', err.message);
@@ -4265,6 +4279,26 @@ app.put('/api/admin/translation-overrides', authenticateToken, isAdmin, async (r
       'INSERT INTO translation_overrides (lang, namespace, key_path, value) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?',
       [lang, namespace, key_path, value, value]
     );
+
+    // If English translation is updated, auto-translate and propagate to other active languages in the database
+    if (lang === 'en') {
+      try {
+        const [langRows] = await db.query('SELECT DISTINCT lang FROM translation_overrides WHERE lang != ?', ['en']);
+        for (const row of langRows) {
+          const targetLang = row.lang;
+          const translatedArr = await translateTexts([value], targetLang);
+          const translatedValue = translatedArr[0] || value;
+
+          await db.query(
+            'INSERT INTO translation_overrides (lang, namespace, key_path, value) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?',
+            [targetLang, namespace, key_path, translatedValue, translatedValue]
+          );
+        }
+      } catch (transErr) {
+        console.error('Auto-propagation of translations failed:', transErr.message);
+      }
+    }
+
     res.json({ success: true, message: 'Translation override saved successfully.' });
   } catch (error) {
     console.error('Error saving translation override:', error);
