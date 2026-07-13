@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // 1. Environment Variables Check
-const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_BUCKET_NAME'];
+const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECRET', 'AWS_S3_BUCKET_NAME', 'AWS_REGION'];
 requiredEnvVars.forEach(envVar => {
   if (!process.env[envVar]) {
     console.error(`FATAL: Environment variable ${envVar} is not set`);
@@ -33,19 +33,16 @@ requiredEnvVars.forEach(envVar => {
   }
 });
 
-// Initialize Supabase Client
-const { createClient } = require('@supabase/supabase-js');
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseBucket = process.env.SUPABASE_BUCKET_NAME;
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false
-  }
+// Initialize AWS S3 Client
+const { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'us-east-1',
+  endpoint: process.env.AWS_ENDPOINT_URL || undefined,
+  forcePathStyle: !!process.env.AWS_ENDPOINT_URL
 });
-console.log('Supabase storage client initialized successfully.');
+const s3Bucket = process.env.AWS_S3_BUCKET_NAME;
+console.log('AWS S3 storage client initialized successfully.');
 if (JWT_SECRET.length < 32) {
   console.error('FATAL: JWT_SECRET must be at least 32 characters long');
   process.exit(1);
@@ -147,15 +144,26 @@ app.use('/api/', apiLimiter);
 
 
 // Structured Logger with Winston
+const transports = [
+  new winston.transports.Console({ 
+    format: process.env.NODE_ENV === 'production' 
+      ? winston.format.combine(winston.format.timestamp(), winston.format.json()) 
+      : winston.format.simple() 
+  })
+];
+
+if (process.env.NODE_ENV !== 'production' && process.env.DISABLE_FILE_LOGGING !== 'true') {
+  transports.push(
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' })
+  );
+}
+
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
   defaultMeta: { service: 'tractor-seva-api' },
-  transports: [
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' }),
-    new winston.transports.Console({ format: winston.format.simple() })
-  ],
+  transports
 });
 
 // Reusable Security and Monitoring Logger
@@ -444,38 +452,24 @@ app.post('/api/upload', authenticateToken, (req, res) => {
     try {
       const fileBuffer = fs.readFileSync(localPath);
       
-      // Supabase project constants
-      const supabaseUrl = process.env.SUPABASE_URL || '';
-      const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      const bucket = process.env.SUPABASE_BUCKET_NAME || 'TractorSeva';
-      
-      const base = supabaseUrl.endsWith('/') ? supabaseUrl.slice(0, -1) : supabaseUrl;
-      const uploadUrl = `${base}/storage/v1/object/${bucket}/${fileName}`;
-      
-      // Map image/webp and image/jpg to whitelisted MIME types for the Supabase upload call
-      // because the Supabase bucket configuration only whitelists image/jpeg and image/png.
-      let supabaseMimeType = mimeType === 'image/webp' ? 'image/png' : mimeType;
-      if (supabaseMimeType === 'image/jpg') {
-        supabaseMimeType = 'image/jpeg';
-      }
-
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'apikey': key,
-          'Content-Type': supabaseMimeType
-        },
-        body: fileBuffer
+      const s3Path = `uploads/${fileName}`;
+      const command = new PutObjectCommand({
+        Bucket: s3Bucket,
+        Key: s3Path,
+        Body: fileBuffer,
+        ContentType: mimeType,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Supabase upload error:', response.status, errorText);
-        return res.status(500).json({ error: 'Supabase upload failed. Please try again later.' });
-      }
+      await s3Client.send(command);
 
-      const publicUrl = `${base}/storage/v1/object/public/${bucket}/${fileName}`;
+      // Generate S3 public URL dynamically based on environment configuration
+      let publicUrl;
+      if (process.env.AWS_ENDPOINT_URL) {
+        const browserEndpoint = process.env.AWS_ENDPOINT_URL.replace('localstack', 'localhost');
+        publicUrl = `${browserEndpoint}/${s3Bucket}/${s3Path}`;
+      } else {
+        publicUrl = `https://${s3Bucket}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${s3Path}`;
+      }
       
       // Delete local temp file
       fs.unlink(localPath, (err) => {
@@ -740,6 +734,10 @@ app.post('/api/auth/google', authLimiter, async (req, res) => {
 const webpush = require('web-push');
 
 if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables are required in production.');
+    process.exit(1);
+  }
   console.log('VAPID environment keys are missing. Generating fresh VAPID keys...');
   try {
     const keys = webpush.generateVAPIDKeys();
@@ -964,7 +962,7 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
 
     // If old avatar exists and is different from the newly set one, delete it from storage
     if (oldAvatar && oldAvatar !== imagePath) {
-      await deleteFromSupabase(oldAvatar);
+      await deleteFromS3(oldAvatar);
     }
 
     res.json({ message: 'Profile updated successfully' });
@@ -1074,7 +1072,7 @@ app.get('/api/operators', async (req, res) => {
       ...r,
       avgRating: parseFloat(r.avgRating || 0).toFixed(1),
       ratingCount: parseInt(r.ratingCount || 0),
-      descriptionTranslations: JSON.parse(r.description_translations || '{}'),
+      descriptionTranslations: typeof r.description_translations === 'object' && r.description_translations !== null ? r.description_translations : JSON.parse(r.description_translations || '{}'),
       machineExpertise: JSON.parse(r.machine_expertise || '[]'),
       verificationStatus: r.verification_status,
       verificationFeedback: r.verification_feedback,
@@ -1109,7 +1107,7 @@ app.get('/api/operators/:id', async (req, res) => {
       ...op,
       ownerName: op.ownerName,
       ownerProfilePic: op.ownerProfilePic,
-      descriptionTranslations: JSON.parse(op.description_translations || '{}'),
+      descriptionTranslations: typeof op.description_translations === 'object' && op.description_translations !== null ? op.description_translations : JSON.parse(op.description_translations || '{}'),
       machineExpertise: JSON.parse(op.machine_expertise || '[]'),
       verificationStatus: op.verification_status,
       verificationFeedback: op.verification_feedback,
@@ -1255,55 +1253,22 @@ app.post('/api/operators/verify-id', authenticateToken, (req, res, next) => {
     const licenseFrontPath = `verifications/${req.user.id}/licenseFront-${uuid}.png`;
     const licenseBackPath = `verifications/${req.user.id}/licenseBack-${uuid}.png`;
 
-    // Upload to Supabase Private Storage with MIME type fallback retry mechanism
-    const uploadToSupabase = async (file, path) => {
-      let result = await supabase.storage
-        .from(supabaseBucket)
-        .upload(path, file.buffer, {
-          contentType: file.mimetype,
-          upsert: true
-        });
-
-      let error = result.error;
-      let data = result.data;
-
-      // If unsupported MIME type error (e.g. image/png is blocked by bucket restrictions), retry with image/jpeg
-      if (error && (error.status === 400 || error.statusCode === '415' || String(error.message).toLowerCase().includes('mime type') || String(error.message).toLowerCase().includes('not supported'))) {
-        console.warn(`MIME type ${file.mimetype} rejected by Supabase bucket. Retrying with image/jpeg...`);
-        const retryResult = await supabase.storage
-          .from(supabaseBucket)
-          .upload(path, file.buffer, {
-            contentType: 'image/jpeg',
-            upsert: true
-          });
-        error = retryResult.error;
-        data = retryResult.data;
-      }
-
-      // If still rejected, retry with application/octet-stream (general binary format, widely accepted)
-      if (error && (error.status === 400 || error.statusCode === '415' || String(error.message).toLowerCase().includes('mime type') || String(error.message).toLowerCase().includes('not supported'))) {
-        console.warn(`MIME type retry failed. Retrying with application/octet-stream...`);
-        const octetResult = await supabase.storage
-          .from(supabaseBucket)
-          .upload(path, file.buffer, {
-            contentType: 'application/octet-stream',
-            upsert: true
-          });
-        error = octetResult.error;
-        data = octetResult.data;
-      }
-
-      if (error) {
-        console.error('Supabase upload final error:', error);
-        throw error;
-      }
+    // Upload to AWS S3 Private Storage
+    const uploadToS3 = async (file, path) => {
+      const command = new PutObjectCommand({
+        Bucket: s3Bucket,
+        Key: path,
+        Body: file.buffer,
+        ContentType: file.mimetype
+      });
+      await s3Client.send(command);
       uploadedPaths.push(path);
       return path;
     };
 
-    await uploadToSupabase(selfie, selfiePath);
-    await uploadToSupabase(licenseFront, licenseFrontPath);
-    await uploadToSupabase(licenseBack, licenseBackPath);
+    await uploadToS3(selfie, selfiePath);
+    await uploadToS3(licenseFront, licenseFrontPath);
+    await uploadToS3(licenseBack, licenseBackPath);
 
     // Cryptographic signature
     const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -1335,8 +1300,10 @@ app.post('/api/operators/verify-id', authenticateToken, (req, res, next) => {
     console.error('Error in operator verify-id:', error);
     if (uploadedPaths.length > 0) {
       try {
-        await supabase.storage.from(supabaseBucket).remove(uploadedPaths);
-        console.log('Successfully rolled back uploaded files from Supabase:', uploadedPaths);
+        for (const pathToDelete of uploadedPaths) {
+          await s3Client.send(new DeleteObjectCommand({ Bucket: s3Bucket, Key: pathToDelete }));
+        }
+        console.log('Successfully rolled back uploaded files from S3:', uploadedPaths);
       } catch (cleanupErr) {
         console.error('Failed to cleanup uploaded files during rollback:', cleanupErr);
       }
@@ -1442,7 +1409,7 @@ app.get('/api/harvesters', async (req, res) => {
       phone: r.phone,
       whatsapp: r.whatsapp,
       description: r.description,
-      descriptionTranslations: JSON.parse(r.description_translations || '{}'),
+      descriptionTranslations: typeof r.description_translations === 'object' && r.description_translations !== null ? r.description_translations : JSON.parse(r.description_translations || '{}'),
       imagePath: r.image_path,
       ownerName: r.ownerName,
       ownerProfilePic: r.ownerProfilePic,
@@ -1497,7 +1464,7 @@ app.get('/api/harvesters/:id', async (req, res) => {
       phone: r.phone,
       whatsapp: r.whatsapp,
       description: r.description,
-      descriptionTranslations: JSON.parse(r.description_translations || '{}'),
+      descriptionTranslations: typeof r.description_translations === 'object' && r.description_translations !== null ? r.description_translations : JSON.parse(r.description_translations || '{}'),
       imagePath: r.image_path,
       ownerName: r.ownerName,
       ownerProfilePic: r.ownerProfilePic,
@@ -1711,8 +1678,9 @@ app.delete('/api/harvesters/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized to delete this machine listing' });
     }
 
+    // Cleanup old image files from storage
     if (harvester.image_path) {
-      await deleteFromSupabase(parseImagePaths(harvester.image_path));
+      await deleteFromS3(parseImagePaths(harvester.image_path));
     }
 
     const activePool = await db.getPool();
@@ -2512,14 +2480,14 @@ app.delete('/api/admin/users/:id/data', authenticateToken, isAdmin, async (req, 
   const activePool = await db.getPool();
   const conn = await activePool.getConnection();
   try {
-    // 1. Gather all files to delete from Supabase
-    const supabaseFiles = [];
+    // 1. Gather all files to delete from storage
+    const s3Files = [];
     
     // Get harvester images
     const [harvesters] = await db.query('SELECT image_path FROM harvesters WHERE user_id = ?', [userId]);
     harvesters.forEach(h => {
       if (h.image_path) {
-        supabaseFiles.push(...parseImagePaths(h.image_path));
+        s3Files.push(...parseImagePaths(h.image_path));
       }
     });
 
@@ -2529,15 +2497,15 @@ app.delete('/api/admin/users/:id/data', authenticateToken, isAdmin, async (req, 
       [userId]
     );
     operators.forEach(op => {
-      if (op.image_path) supabaseFiles.push(op.image_path);
-      if (op.selfie_image_path) supabaseFiles.push(op.selfie_image_path);
-      if (op.license_front_path) supabaseFiles.push(op.license_front_path);
-      if (op.license_back_path) supabaseFiles.push(op.license_back_path);
+      if (op.image_path) s3Files.push(op.image_path);
+      if (op.selfie_image_path) s3Files.push(op.selfie_image_path);
+      if (op.license_front_path) s3Files.push(op.license_front_path);
+      if (op.license_back_path) s3Files.push(op.license_back_path);
     });
 
-    // Perform Supabase Storage Cleanup
-    if (supabaseFiles.length > 0) {
-      await deleteFromSupabase(supabaseFiles);
+    // Perform S3 Storage Cleanup
+    if (s3Files.length > 0) {
+      await deleteFromS3(s3Files);
     }
 
     await conn.beginTransaction();
@@ -2588,7 +2556,7 @@ app.delete('/api/admin/harvesters/:id', authenticateToken, isAdmin, async (req, 
   try {
     const [rows] = await db.query('SELECT image_path FROM harvesters WHERE id = ?', [req.params.id]);
     if (rows.length > 0 && rows[0].image_path) {
-      await deleteFromSupabase(parseImagePaths(rows[0].image_path));
+      await deleteFromS3(parseImagePaths(rows[0].image_path));
     }
     const activePool = await db.getPool();
     const conn = await activePool.getConnection();
@@ -2659,30 +2627,39 @@ app.get('/api/admin/operators/:id/verification-details', authenticateToken, isAd
     const [logs] = await db.query('SELECT * FROM operator_consent_logs WHERE operator_id = ? ORDER BY timestamp DESC LIMIT 1', [id]);
     const auditLog = logs.length > 0 ? logs[0] : null;
 
-    // Generate signed URLs from Supabase
+    // Generate signed URLs from AWS S3
     let selfieUrl = null;
     let licenseFrontUrl = null;
     let licenseBackUrl = null;
 
     if (operator.selfie_image_path) {
-      const { data, error } = await supabase.storage
-        .from(supabaseBucket)
-        .createSignedUrl(operator.selfie_image_path, 900); // 15 mins expiry
-      if (!error && data) selfieUrl = data.signedUrl;
+      try {
+        const command = new GetObjectCommand({ Bucket: s3Bucket, Key: operator.selfie_image_path });
+        const rawUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 }); // 15 mins expiry
+        selfieUrl = rawUrl.replace('localstack', 'localhost');
+      } catch (err) {
+        console.error('Failed to generate S3 signed URL for selfie:', err.message);
+      }
     }
 
     if (operator.license_front_path) {
-      const { data, error } = await supabase.storage
-        .from(supabaseBucket)
-        .createSignedUrl(operator.license_front_path, 900);
-      if (!error && data) licenseFrontUrl = data.signedUrl;
+      try {
+        const command = new GetObjectCommand({ Bucket: s3Bucket, Key: operator.license_front_path });
+        const rawUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+        licenseFrontUrl = rawUrl.replace('localstack', 'localhost');
+      } catch (err) {
+        console.error('Failed to generate S3 signed URL for licenseFront:', err.message);
+      }
     }
 
     if (operator.license_back_path) {
-      const { data, error } = await supabase.storage
-        .from(supabaseBucket)
-        .createSignedUrl(operator.license_back_path, 900);
-      if (!error && data) licenseBackUrl = data.signedUrl;
+      try {
+        const command = new GetObjectCommand({ Bucket: s3Bucket, Key: operator.license_back_path });
+        const rawUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+        licenseBackUrl = rawUrl.replace('localstack', 'localhost');
+      } catch (err) {
+        console.error('Failed to generate S3 signed URL for licenseBack:', err.message);
+      }
     }
 
     res.json({
@@ -2931,8 +2908,8 @@ function parseImagePaths(imagePath) {
   return [trimmed];
 }
 
-// Helper to remove files from Supabase storage
-async function deleteFromSupabase(paths) {
+// Helper to remove files from S3 storage
+async function deleteFromS3(paths) {
   if (!paths || paths.length === 0) return;
   const filePaths = Array.isArray(paths) ? paths : [paths];
   const targets = filePaths
@@ -2941,10 +2918,18 @@ async function deleteFromSupabase(paths) {
       if (p.startsWith('http')) {
         try {
           const url = new URL(p);
-          const searchStr = `/storage/v1/object/public/${supabaseBucket}/`;
-          const index = url.pathname.indexOf(searchStr);
-          if (index !== -1) {
-            return url.pathname.slice(index + searchStr.length);
+          // Extract the object key from the S3 URL
+          // If URL is LocalStack: http://localhost:4566/tractor-seva-media/uploads/filename
+          // If URL is AWS S3: https://bucket.s3.region.amazonaws.com/uploads/filename
+          if (process.env.AWS_ENDPOINT_URL) {
+            const prefix = `/${s3Bucket}/`;
+            const index = url.pathname.indexOf(prefix);
+            if (index !== -1) {
+              return url.pathname.slice(index + prefix.length);
+            }
+          } else {
+            // Pathname starts with a slash, e.g. /uploads/filename
+            return url.pathname.slice(1);
           }
         } catch (e) {
           return null;
@@ -2956,15 +2941,18 @@ async function deleteFromSupabase(paths) {
     .filter(Boolean);
   
   if (targets.length === 0) return;
+  
   try {
-    const { error } = await supabase.storage.from(supabaseBucket).remove(targets);
-    if (error) {
-      console.error('Failed to remove files from Supabase:', error);
-    } else {
-      console.log('Successfully removed files from Supabase:', targets);
+    for (const key of targets) {
+      const command = new DeleteObjectCommand({
+        Bucket: s3Bucket,
+        Key: key
+      });
+      await s3Client.send(command);
     }
+    console.log('Successfully removed files from S3:', targets);
   } catch (err) {
-    console.error('Error during Supabase file removal:', err);
+    console.error('Error during S3 file removal:', err);
   }
 }
 
@@ -3432,20 +3420,20 @@ app.delete('/api/settings/account', authenticateToken, async (req, res) => {
     const valid = await bcrypt.compare(password, rows[0].password);
     if (!valid) return res.status(401).json({ error: 'Incorrect password' });
 
-    // 1. Gather all files to delete from Supabase
-    const supabaseFiles = [];
+    // 1. Gather all files to delete from S3
+    const s3Files = [];
     
     // Get user avatar
     const [userRows] = await db.query('SELECT image_path FROM users WHERE id = ?', [req.user.id]);
     if (userRows.length > 0 && userRows[0].image_path) {
-      supabaseFiles.push(userRows[0].image_path);
+      s3Files.push(userRows[0].image_path);
     }
     
     // Get harvester images
     const [harvesterRows] = await db.query('SELECT image_path FROM harvesters WHERE user_id = ?', [req.user.id]);
     harvesterRows.forEach(h => {
       if (h.image_path) {
-        supabaseFiles.push(...parseImagePaths(h.image_path));
+        s3Files.push(...parseImagePaths(h.image_path));
       }
     });
     
@@ -3455,15 +3443,15 @@ app.delete('/api/settings/account', authenticateToken, async (req, res) => {
       [req.user.id]
     );
     operatorRows.forEach(op => {
-      if (op.image_path) supabaseFiles.push(op.image_path);
-      if (op.selfie_image_path) supabaseFiles.push(op.selfie_image_path);
-      if (op.license_front_path) supabaseFiles.push(op.license_front_path);
-      if (op.license_back_path) supabaseFiles.push(op.license_back_path);
+      if (op.image_path) s3Files.push(op.image_path);
+      if (op.selfie_image_path) s3Files.push(op.selfie_image_path);
+      if (op.license_front_path) s3Files.push(op.license_front_path);
+      if (op.license_back_path) s3Files.push(op.license_back_path);
     });
 
-    // Perform Supabase Storage Cleanup
-    if (supabaseFiles.length > 0) {
-      await deleteFromSupabase(supabaseFiles);
+    // Perform S3 Storage Cleanup
+    if (s3Files.length > 0) {
+      await deleteFromS3(s3Files);
     }
 
     const activePool = await db.getPool();
@@ -4020,9 +4008,9 @@ app.delete('/api/admin/blogs/:id', authenticateToken, isAdmin, async (req, res) 
       return res.status(404).json({ error: 'Blog not found' });
     }
 
-    // Clean up blog cover image from Supabase storage
+    // Clean up blog cover image from S3 storage
     if (existing[0].image_url) {
-      await deleteFromSupabase(existing[0].image_url);
+      await deleteFromS3(existing[0].image_url);
     }
 
     const activePool = await db.getPool();
@@ -4060,16 +4048,16 @@ app.delete('/api/admin/operators/:id', authenticateToken, isAdmin, async (req, r
       return res.status(404).json({ error: 'Operator listing not found' });
     }
 
-    // Gather and delete files from Supabase
-    const supabaseFiles = [];
+    // Gather and delete files from S3
+    const s3Files = [];
     const op = existing[0];
-    if (op.image_path) supabaseFiles.push(op.image_path);
-    if (op.selfie_image_path) supabaseFiles.push(op.selfie_image_path);
-    if (op.license_front_path) supabaseFiles.push(op.license_front_path);
-    if (op.license_back_path) supabaseFiles.push(op.license_back_path);
+    if (op.image_path) s3Files.push(op.image_path);
+    if (op.selfie_image_path) s3Files.push(op.selfie_image_path);
+    if (op.license_front_path) s3Files.push(op.license_front_path);
+    if (op.license_back_path) s3Files.push(op.license_back_path);
     
-    if (supabaseFiles.length > 0) {
-      await deleteFromSupabase(supabaseFiles);
+    if (s3Files.length > 0) {
+      await deleteFromS3(s3Files);
     }
 
     const activePool = await db.getPool();
@@ -4665,7 +4653,7 @@ app.get('/api/admin/security/dashboard', authenticateToken, isAdmin, async (req,
     // 3. System Status Live Checks
     const systemStatus = {
       database: 'Healthy',
-      storage: process.env.SUPABASE_URL ? 'Healthy' : 'Warning',
+      storage: s3Bucket ? 'Healthy' : 'Warning',
       authentication: 'Healthy',
       api: 'Healthy',
       website: 'Healthy',
@@ -4678,7 +4666,7 @@ app.get('/api/admin/security/dashboard', authenticateToken, isAdmin, async (req,
     const warnings = [];
     
     // Check missing environment variables
-    const requiredEnv = ['JWT_SECRET', 'DB_HOST', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+    const requiredEnv = ['JWT_SECRET', 'DB_HOST', 'AWS_S3_BUCKET_NAME', 'AWS_REGION'];
     const missingEnv = requiredEnv.filter(env => !process.env[env]);
     if (missingEnv.length > 0) {
       warnings.push({
@@ -4710,22 +4698,19 @@ app.get('/api/admin/security/dashboard', authenticateToken, isAdmin, async (req,
 
     // Measure Storage latency
     let storageLatency = 0;
-    if (process.env.SUPABASE_URL) {
+    if (s3Bucket) {
       try {
         const storageStart = Date.now();
-        const res = await fetch(process.env.SUPABASE_URL, { method: 'HEAD', signal: AbortSignal.timeout(1500) });
+        await s3Client.send(new ListObjectsV2Command({ Bucket: s3Bucket, MaxKeys: 1 }));
         storageLatency = Date.now() - storageStart;
-        if (!res.ok) {
-          systemStatus.storage = 'Warning';
-        }
       } catch (err) {
         storageLatency = 999;
         systemStatus.storage = 'Offline';
         warnings.push({
           id: 'warn-storage',
           severity: 'high',
-          title: 'Supabase Storage Unreachable',
-          description: `Ping to Supabase Storage endpoint failed: ${err.message}`,
+          title: 'AWS S3 Storage Unreachable',
+          description: `AWS S3 Bucket access failed: ${err.message}`,
           timestamp: new Date().toISOString()
         });
       }

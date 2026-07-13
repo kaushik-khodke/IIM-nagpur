@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: tractor-seva-db-local
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: local_secure_password
+      MYSQL_DATABASE: tractorsewa
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  localstack:
+    image: localstack/localstack:3.8.0
+    container_name: tractor-seva-aws-local
+    restart: always
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - "./backend/scripts/localstack-init.sh:/etc/localstack/init/ready.d/localstack-init.sh"
+      - localstack_data:/var/lib/localstack
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tractor-seva-backend-local
+    restart: always
+    depends_on:
+      - db
+      - localstack
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=local_secure_password
+      - DB_NAME=tractorsewa
+      - DB_SSL_REQUIRED=false
+      - AWS_REGION=us-east-1
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=mock-key
+      - AWS_SECRET_ACCESS_KEY=mock-secret
+      - AWS_S3_BUCKET_NAME=tractor-seva-media
+      - JWT_SECRET=bd42bbff0cd4600cf162f69b20dbdf40980a52225a7331acbaf6c13d4e2c58cb
+      - DEFAULT_ADMIN_EMAIL=tractorsewaadmin@gmail.com
+      - DEFAULT_ADMIN_PASSWORD=admin_secure_password
+      - GOOGLE_CLIENT_ID=793511031225-2gckqhekembukl2bs69q9ui92k7mjthl.apps.googleusercontent.com
+      - VAPID_PUBLIC_KEY=BDMAyN1AasvgAZHB4fV-G_deNFhHCBHEaCVEIwJToX_B-w2dNHRm9k3EfAUsbaRki7gjfmVgupOe3zEhi2UL1ms
+      - VAPID_PRIVATE_KEY=eq0neysOhKDIh2TxcRjSZ2W3WmCXnz1RQajabfdG7so
+      - GEMINI_API_KEY=AIzaSyCcIUB85psdhjaFsmKLNCSbZpZGxaLnH-k
+    volumes:
+      - ./frontend/src/locales:/app/locales
+
+volumes:
+  mysql_data:
+  localstack_data:
