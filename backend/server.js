@@ -36,11 +36,23 @@ requiredEnvVars.forEach(envVar => {
 // Initialize AWS S3 Client
 const { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const s3Client = new S3Client({
+const s3Config = {
   region: process.env.AWS_REGION || 'us-east-1',
-  endpoint: process.env.AWS_ENDPOINT_URL || undefined,
-  forcePathStyle: !!process.env.AWS_ENDPOINT_URL
-});
+};
+
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  s3Config.credentials = {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  };
+}
+
+if (process.env.AWS_ENDPOINT_URL) {
+  s3Config.endpoint = process.env.AWS_ENDPOINT_URL;
+  s3Config.forcePathStyle = true;
+}
+
+const s3Client = new S3Client(s3Config);
 const s3Bucket = process.env.AWS_S3_BUCKET_NAME;
 console.log('AWS S3 storage client initialized successfully.');
 if (JWT_SECRET.length < 32) {
@@ -136,6 +148,42 @@ const adminBulkUploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // Max 10 bulk upload requests per 15 minutes per IP
   message: { error: 'Too many bulk user import requests. Please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Dedicated rate limiter for AWS S3 upload endpoints to prevent bucket flooding
+const s3UploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 20, // Max 20 image uploads per 15 minutes per user/IP
+  message: { error: 'Upload rate limit reached. Too many files uploaded in a short time. Please wait 15 minutes before uploading again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiter for harvester, operator, and requirement request creation
+const listingCreationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { error: 'Listing creation limit reached. Please wait a few minutes before submitting another listing.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiter for user ratings and reviews
+const ratingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { error: 'Too many rating submissions. Please wait a few minutes before rating again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiter for dynamic translation requests
+const translationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  message: { error: 'Translation request limit reached. Please try again after 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -428,8 +476,8 @@ const isEmailDomainValid = async (email) => {
 
 // --- API ROUTES ---
 
-// 1. Image Upload Endpoint
-app.post('/api/upload', authenticateToken, (req, res) => {
+// 1. Image Upload Endpoint (Protected with Authentication & S3 Rate Limiter)
+app.post('/api/upload', authenticateToken, s3UploadLimiter, (req, res) => {
   upload.single('image')(req, res, async (err) => {
     if (err) {
       if (err instanceof multer.MulterError) {
@@ -465,8 +513,7 @@ app.post('/api/upload', authenticateToken, (req, res) => {
       // Generate S3 public URL dynamically based on environment configuration
       let publicUrl;
       if (process.env.AWS_ENDPOINT_URL) {
-        const browserEndpoint = process.env.AWS_ENDPOINT_URL.replace('localstack', 'localhost');
-        publicUrl = `${browserEndpoint}/${s3Bucket}/${s3Path}`;
+        publicUrl = `${process.env.AWS_ENDPOINT_URL}/${s3Bucket}/${s3Path}`;
       } else {
         publicUrl = `https://${s3Bucket}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${s3Path}`;
       }
@@ -1120,7 +1167,7 @@ app.get('/api/operators/:id', async (req, res) => {
   }
 });
 
-app.post('/api/operators', authenticateToken, async (req, res) => {
+app.post('/api/operators', authenticateToken, listingCreationLimiter, async (req, res) => {
   const { name, experience, location, state, machineExpertise, availability, description, phone, whatsapp, imagePath } = req.body;
   if (!name || !experience || !location || !state || !machineExpertise) {
     return res.status(400).json({ error: 'Please provide all required fields' });
@@ -1192,7 +1239,7 @@ const verifyUploadFields = memoryUpload.fields([
   { name: 'licenseBack', maxCount: 1 }
 ]);
 
-app.post('/api/operators/verify-id', authenticateToken, (req, res, next) => {
+app.post('/api/operators/verify-id', authenticateToken, s3UploadLimiter, (req, res, next) => {
   verifyUploadFields(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {
@@ -1487,7 +1534,7 @@ app.get('/api/harvesters/:id', async (req, res) => {
   }
 });
 
-app.post('/api/harvesters', authenticateToken, async (req, res) => {
+app.post('/api/harvesters', authenticateToken, listingCreationLimiter, async (req, res) => {
   const { 
     machineName, company, model, year, location, state, phone, whatsapp, description, imagePath,
     serialNo, chassisNo, mfgMonthYear, engineNo, enginePower, engineMake, engineModel, serviceHotlineNo 
@@ -1805,7 +1852,7 @@ app.get('/api/requests/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/requests', authenticateToken, async (req, res) => {
+app.post('/api/requests', authenticateToken, listingCreationLimiter, async (req, res) => {
   const { type, location, state, machineType, duration, startDate, description } = req.body;
 
   // Look up user role to enforce harvester-only requests for non-admin users
@@ -2635,8 +2682,7 @@ app.get('/api/admin/operators/:id/verification-details', authenticateToken, isAd
     if (operator.selfie_image_path) {
       try {
         const command = new GetObjectCommand({ Bucket: s3Bucket, Key: operator.selfie_image_path });
-        const rawUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 }); // 15 mins expiry
-        selfieUrl = rawUrl.replace('localstack', 'localhost');
+        selfieUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 }); // 15 mins expiry
       } catch (err) {
         console.error('Failed to generate S3 signed URL for selfie:', err.message);
       }
@@ -2645,8 +2691,7 @@ app.get('/api/admin/operators/:id/verification-details', authenticateToken, isAd
     if (operator.license_front_path) {
       try {
         const command = new GetObjectCommand({ Bucket: s3Bucket, Key: operator.license_front_path });
-        const rawUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
-        licenseFrontUrl = rawUrl.replace('localstack', 'localhost');
+        licenseFrontUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
       } catch (err) {
         console.error('Failed to generate S3 signed URL for licenseFront:', err.message);
       }
@@ -2655,8 +2700,7 @@ app.get('/api/admin/operators/:id/verification-details', authenticateToken, isAd
     if (operator.license_back_path) {
       try {
         const command = new GetObjectCommand({ Bucket: s3Bucket, Key: operator.license_back_path });
-        const rawUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
-        licenseBackUrl = rawUrl.replace('localstack', 'localhost');
+        licenseBackUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
       } catch (err) {
         console.error('Failed to generate S3 signed URL for licenseBack:', err.message);
       }
@@ -3489,7 +3533,7 @@ app.delete('/api/settings/account', authenticateToken, async (req, res) => {
 // =============================================
 
 // POST /api/ratings — Submit a new rating/review
-app.post('/api/ratings', authenticateToken, async (req, res) => {
+app.post('/api/ratings', authenticateToken, ratingLimiter, async (req, res) => {
   const { targetType, targetId, rating, review } = req.body;
   const raterId = req.user.id;
 
@@ -4465,7 +4509,7 @@ app.post('/api/admin/languages/add', authenticateToken, isAdmin, async (req, res
 });
 
 // Real-time Dynamic translation endpoint (caching enabled)
-app.post('/api/translate', async (req, res) => {
+app.post('/api/translate', translationLimiter, async (req, res) => {
   const { text, targetLang } = req.body;
   if (!text || !targetLang) {
     return res.status(400).json({ error: 'text and targetLang are required.' });
