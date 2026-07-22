@@ -14,9 +14,13 @@ const dbConfig = {
   password: process.env.DB_PASSWORD || '',
 };
 
-// Auto-detect and configure SSL if ca.pem exists in the server folder
-const caPath = process.env.DB_SSL_CA_PATH || path.join(__dirname, 'ca.pem');
-if (process.env.DB_SSL_REQUIRED === 'true' || fs.existsSync(caPath)) {
+// Auto-detect and configure SSL for AWS RDS or fallback (ca.pem)
+const caPath = process.env.DB_SSL_CA_PATH || 
+  (fs.existsSync(path.join(__dirname, 'global-bundle.pem')) 
+    ? path.join(__dirname, 'global-bundle.pem') 
+    : path.join(__dirname, 'ca.pem'));
+
+if (process.env.DB_SSL_REQUIRED === 'true' || (process.env.DB_SSL_REQUIRED !== 'false' && fs.existsSync(caPath))) {
   dbConfig.ssl = {
     rejectUnauthorized: true,
     ca: fs.readFileSync(caPath).toString()
@@ -391,21 +395,24 @@ async function initializeDatabase() {
     } catch (err) {}
 
 
-    // Seed hardcoded administrator account if not exists
+    // Seed administrator account if not exists
     try {
-      const [admins] = await activePool.query("SELECT id FROM users WHERE email = 'tractorsewaadmin@gmail.com'");
-      if (admins.length === 0) {
-        const defaultAdminPass = process.env.DEFAULT_ADMIN_PASSWORD;
-        if (!defaultAdminPass) {
-          throw new Error('DEFAULT_ADMIN_PASSWORD environment variable is not defined. Administrator account seeding skipped.');
+      const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL;
+      const defaultAdminPass = process.env.DEFAULT_ADMIN_PASSWORD;
+
+      if (defaultAdminEmail && defaultAdminPass) {
+        const [admins] = await activePool.query("SELECT id FROM users WHERE email = ?", [defaultAdminEmail]);
+        if (admins.length === 0) {
+          const adminId = require('crypto').randomUUID();
+          const hashedAdminPassword = await require('bcryptjs').hash(defaultAdminPass, 10);
+          await activePool.query(
+            "INSERT INTO users (id, name, email, password, role, state, phone, is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [adminId, 'System Administrator', defaultAdminEmail, hashedAdminPassword, 'admin', 'Maharashtra', '9999999999', 0]
+          );
+          console.log(`Successfully seeded administrator account (${defaultAdminEmail}).`);
         }
-        const adminId = require('crypto').randomUUID();
-        const hashedAdminPassword = await require('bcryptjs').hash(defaultAdminPass, 10);
-        await activePool.query(
-          "INSERT INTO users (id, name, email, password, role, state, phone, is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          [adminId, 'System Administrator', 'tractorsewaadmin@gmail.com', hashedAdminPassword, 'admin', 'Maharashtra', '9999999999', 0]
-        );
-        console.log('Successfully seeded hardcoded administrator account.');
+      } else {
+        console.log('Administrator account seeding skipped: DEFAULT_ADMIN_EMAIL or DEFAULT_ADMIN_PASSWORD not set in env.');
       }
     } catch (err) {
       console.error('Error seeding admin user:', err.message);
@@ -726,7 +733,10 @@ async function seedTranslations(activePool) {
     console.log('Synchronizing translation_overrides table from local JSON files...');
 
     console.log('Seeding translation_overrides table from local JSON files...');
-    const localesDir = path.resolve(__dirname, '../frontend/src/locales');
+    const localesDir = fs.existsSync(path.resolve(__dirname, 'locales'))
+      ? path.resolve(__dirname, 'locales')
+      : path.resolve(__dirname, '../frontend/src/locales');
+    
     if (!fs.existsSync(localesDir)) {
       console.warn('Warning: Locales directory not found at', localesDir);
       return;

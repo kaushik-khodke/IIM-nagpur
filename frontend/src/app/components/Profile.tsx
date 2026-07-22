@@ -141,7 +141,7 @@ export function Profile() {
         });
         if (harvsRes.ok) {
           const harvsData = await harvsRes.json();
-          setHarvesters(harvsData.filter((h: any) => h.ownerName === userData.name));
+          setHarvesters(harvsData);
         }
       } catch (err) {
         console.error(err);
