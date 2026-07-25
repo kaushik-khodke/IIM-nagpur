@@ -46,3 +46,14 @@ coverage/
 
 # Server logs
 backend/logs/
+
+# SSL Certificates & Security Keys
+*.pem
+*.crt
+*.key
+*.cer
+
+# Local Database Dumps
+*.sql
+*.dump
+

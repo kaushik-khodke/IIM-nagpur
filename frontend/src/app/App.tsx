@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster, toast } from "sonner";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { ProtectedRoute } from "./components/shared";
+import { OfflinePage } from "./components/OfflinePage";
 import i18n from "../i18n/config";
 
 // Lazy-loaded page components
@@ -120,30 +121,88 @@ function PushSubscriptionManager() {
   return null;
 }
 
-export default function App() {
+function NetworkOfflineDetector({ children }: { children: React.ReactNode }) {
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
-  return (
-    <BrowserRouter>
-      <MessageNotifier />
-      <PushSubscriptionManager />
-      <Toaster
-        position="top-right"
-        richColors
-        closeButton
-        toastOptions={{
-          style: {
-            fontFamily: "'Inter', sans-serif",
-            borderRadius: "0.75rem",
-            border: "1px solid #E7E0D5",
-          },
+  useEffect(() => {
+    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => {
+      fetch("/api/site-settings", { cache: "no-store" })
+        .then(res => {
+          if (res.ok) setIsOffline(false);
+        })
+        .catch(() => setIsOffline(true));
+    };
+
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+
+    const interval = setInterval(async () => {
+      if (!navigator.onLine) {
+        setIsOffline(true);
+        return;
+      }
+      try {
+        const res = await fetch("/api/site-settings", { cache: "no-store" });
+        if (res.ok) {
+          setIsOffline(false);
+        }
+      } catch (err) {
+        setIsOffline(true);
+      }
+    }, 8000);
+
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+      clearInterval(interval);
+    };
+  }, []);
+
+  if (isOffline) {
+    return (
+      <OfflinePage
+        onRetry={async () => {
+          try {
+            const res = await fetch("/api/site-settings", { cache: "no-store" });
+            if (res.ok) {
+              setIsOffline(false);
+            }
+          } catch (err) {
+            setIsOffline(true);
+          }
         }}
       />
-      <Suspense fallback={
-        <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
-          <div className="w-10 h-10 border-4 border-blue-200 border-t-[#172263] rounded-full animate-spin" />
-        </div>
-      }>
-        <Routes>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+export default function App() {
+  return (
+    <NetworkOfflineDetector>
+      <BrowserRouter>
+        <MessageNotifier />
+        <PushSubscriptionManager />
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          toastOptions={{
+            style: {
+              fontFamily: "'Inter', sans-serif",
+              borderRadius: "0.75rem",
+              border: "1px solid #E7E0D5",
+            },
+          }}
+        />
+        <Suspense fallback={
+          <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
+            <div className="w-10 h-10 border-4 border-blue-200 border-t-[#172263] rounded-full animate-spin" />
+          </div>
+        }>
+          <Routes>
           {/* Public */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<AuthPage />} />
@@ -290,5 +349,6 @@ export default function App() {
         </Routes>
       </Suspense>
     </BrowserRouter>
+    </NetworkOfflineDetector>
   );
 }

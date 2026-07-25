@@ -33,7 +33,18 @@ if (process.env.DATABASE_URL) {
   pgConfig.connectionString = process.env.DATABASE_URL;
 }
 
-if (process.env.DB_SSL_REQUIRED === 'true' || process.env.DATABASE_URL || (process.env.DB_HOST && process.env.DB_HOST.includes('supabase'))) {
+// Auto-detect Supabase SSL CA certificate
+const caCertPath = process.env.DB_SSL_CA_PATH || 
+  (fs.existsSync(path.join(__dirname, 'prod-ca-2021.crt')) 
+    ? path.join(__dirname, 'prod-ca-2021.crt') 
+    : (fs.existsSync(path.join(__dirname, '../prod-ca-2021.crt')) ? path.join(__dirname, '../prod-ca-2021.crt') : null));
+
+if (caCertPath && fs.existsSync(caCertPath)) {
+  pgConfig.ssl = {
+    rejectUnauthorized: true,
+    ca: fs.readFileSync(caCertPath).toString()
+  };
+} else if (process.env.DB_SSL_REQUIRED === 'true' || process.env.DATABASE_URL || (process.env.DB_HOST && process.env.DB_HOST.includes('supabase'))) {
   pgConfig.ssl = {
     rejectUnauthorized: false
   };
@@ -432,23 +443,37 @@ async function initializeDatabase() {
       await activePool.query("CREATE INDEX IF NOT EXISTS idx_consent_op_timestamp ON operator_consent_logs (operator_id, timestamp DESC)");
     } catch (err) {}
 
-    // Seed administrator account if not exists
+    // Synchronize administrator account dynamically with .env
     try {
-      const [admins] = await activePool.query("SELECT id FROM users WHERE email = 'tractorsewaadmin@gmail.com'");
-      if (admins.length === 0) {
-        const defaultAdminPass = process.env.DEFAULT_ADMIN_PASSWORD;
-        if (defaultAdminPass) {
-          const adminId = require('crypto').randomUUID();
-          const hashedAdminPassword = await require('bcryptjs').hash(defaultAdminPass, 10);
+      const adminEmail = (process.env.DEFAULT_ADMIN_EMAIL || 'tractorsewaadmin@gmail.com').toLowerCase().trim();
+      const adminPass = process.env.DEFAULT_ADMIN_PASSWORD;
+
+      if (adminEmail && adminPass) {
+        const bcrypt = require('bcryptjs');
+        const hashedAdminPassword = await bcrypt.hash(adminPass, 10);
+
+        const [existingAdmins] = await activePool.query(
+          "SELECT id FROM users WHERE role = 'admin' OR email = ?",
+          [adminEmail]
+        );
+
+        if (existingAdmins.length > 0) {
           await activePool.query(
-            "INSERT INTO users (id, name, email, password, role, state, phone, is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [adminId, 'System Administrator', 'tractorsewaadmin@gmail.com', hashedAdminPassword, 'admin', 'Maharashtra', '9999999999', 0]
+            "UPDATE users SET email = ?, password = ?, role = 'admin', is_blocked = 0 WHERE id = ?",
+            [adminEmail, hashedAdminPassword, existingAdmins[0].id]
           );
-          console.log('Successfully seeded administrator account.');
+          console.log(`Successfully synchronized administrator account credentials for: ${adminEmail}`);
+        } else {
+          const adminId = require('crypto').randomUUID();
+          await activePool.query(
+            "INSERT INTO users (id, name, email, password, role, state, phone, is_blocked) VALUES (?, ?, ?, ?, 'admin', 'Maharashtra', '9999999999', 0)",
+            [adminId, 'System Administrator', adminEmail, hashedAdminPassword]
+          );
+          console.log(`Successfully created administrator account for: ${adminEmail}`);
         }
       }
     } catch (err) {
-      console.error('Error seeding admin user:', err.message);
+      console.error('Error synchronizing admin credentials:', err.message);
     }
 
     // Seed default tables if empty
@@ -509,11 +534,15 @@ async function seedData(activePool) {
 
 async function seedTranslations(activePool) {
   try {
-    const localesDir = path.resolve(__dirname, '../frontend/src/locales');
-    if (!fs.existsSync(localesDir)) {
+    const [countRow] = await activePool.query('SELECT COUNT(*) as count FROM translation_overrides');
+    if (countRow.length > 0 && parseInt(countRow[0].count) > 0) {
       return;
     }
 
+    const localesDir = path.resolve(__dirname, '../frontend/src/locales');
+    if (!fs.existsSync(localesDir)) return;
+
+    const entriesToInsert = [];
     const langs = fs.readdirSync(localesDir);
     for (const lang of langs) {
       const langPath = path.join(localesDir, lang);
@@ -527,19 +556,37 @@ async function seedTranslations(activePool) {
         const fileContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
         const flatTranslations = flattenObject(fileContent);
-        const entries = Object.entries(flatTranslations);
-        
-        for (const [keyPath, value] of entries) {
-          await activePool.query(
-            `INSERT INTO translation_overrides (lang, namespace, key_path, value) 
-             VALUES (?, ?, ?, ?) 
-             ON CONFLICT (lang, namespace, key_path) DO UPDATE SET value = EXCLUDED.value`,
-            [lang, namespace, keyPath, typeof value === 'string' ? value : JSON.stringify(value)]
-          );
+        for (const [keyPath, value] of Object.entries(flatTranslations)) {
+          entriesToInsert.push({
+            lang,
+            namespace,
+            keyPath,
+            val: typeof value === 'string' ? value : JSON.stringify(value)
+          });
         }
       }
     }
-    console.log('Successfully synchronized translation overrides.');
+
+    const batchSize = 200;
+    for (let i = 0; i < entriesToInsert.length; i += batchSize) {
+      const chunk = entriesToInsert.slice(i, i + batchSize);
+      const valueClauses = [];
+      const params = [];
+      let paramIdx = 0;
+
+      for (const item of chunk) {
+        valueClauses.push(`($${++paramIdx}, $${++paramIdx}, $${++paramIdx}, $${++paramIdx})`);
+        params.push(item.lang, item.namespace, item.keyPath, item.val);
+      }
+
+      await activePool.pgPool.query(
+        `INSERT INTO translation_overrides (lang, namespace, key_path, value) 
+         VALUES ${valueClauses.join(', ')} 
+         ON CONFLICT (lang, namespace, key_path) DO UPDATE SET value = EXCLUDED.value`,
+        params
+      );
+    }
+    console.log(`Successfully synchronized ${entriesToInsert.length} translation overrides.`);
   } catch (err) {
     console.error('Error seeding translations:', err.message);
   }

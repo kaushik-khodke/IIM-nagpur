@@ -390,6 +390,11 @@ export function Dashboard() {
             }
             setUserName(userProfile.name);
             setCurrentUser(userProfile);
+          } else if (userRes.status === 401 || userRes.status === 403 || userRes.status === 404) {
+            localStorage.removeItem("tractorsewa_token");
+            localStorage.removeItem("tractorsewa_user_role");
+            navigate("/login", { replace: true });
+            return;
           }
 
           const scoreRes = await fetch('/api/ratings/my-score', {
@@ -423,6 +428,12 @@ export function Dashboard() {
                 setMyOperatorProfile(allOps[0]);
               }
             }
+          }
+        } else {
+          const isPreview = localStorage.getItem("tractorsewa_preview_mode") === "true";
+          if (!isPreview) {
+            navigate("/login", { replace: true });
+            return;
           }
         }
 

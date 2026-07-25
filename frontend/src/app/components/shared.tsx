@@ -1628,36 +1628,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  // No token and not in preview mode - show login screen
-  return (
-    <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
-      <div className="text-center max-w-md px-6">
-        <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }} className="text-2xl text-[#1A1A1A] mb-2">
-          Explore Tractor Seva
-        </h2>
-        <p className="text-[#57585A] text-sm mb-6">
-          Log in or register to connect with farmers and operators, or explore the platform first.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-          <Link
-            to="/login"
-            className="px-6 py-3 bg-[#172263] text-white rounded-xl hover:bg-[#11194A] transition-all font-medium text-sm shadow-md"
-          >
-            Log In / Register
-          </Link>
-          <button
-            onClick={() => {
-              localStorage.setItem("tractorsewa_preview_mode", "true");
-              window.location.reload();
-            }}
-            className="px-6 py-3 border-2 border-[#172263] text-[#172263] rounded-xl hover:bg-blue-50 transition-colors font-medium text-sm cursor-pointer"
-          >
-            Continue without Login
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  // No token and not in preview mode - redirect directly to login screen
+  return <Navigate to="/login" replace />;
 }
 
 // ---- Dynamic Translation Component ----
