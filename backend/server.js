@@ -547,7 +547,7 @@ app.post('/api/auth/register', authLimiter, validateRegister, async (req, res) =
     const token = jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
     try {
       const today = new Date().toISOString().slice(0, 10);
-      await db.query('INSERT IGNORE INTO login_logs (user_id, login_date) VALUES (?, ?)', [userId, today]);
+      await db.query('INSERT INTO login_logs (user_id, login_date) VALUES (?, ?) ON CONFLICT DO NOTHING', [userId, today]);
     } catch (err) {
       console.error('Failed to log signup activity:', err);
     }
@@ -599,7 +599,7 @@ app.post('/api/auth/login', authLimiter, validateLogin, async (req, res) => {
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
     try {
       const today = new Date().toISOString().slice(0, 10);
-      await db.query('INSERT IGNORE INTO login_logs (user_id, login_date) VALUES (?, ?)', [user.id, today]);
+      await db.query('INSERT INTO login_logs (user_id, login_date) VALUES (?, ?) ON CONFLICT DO NOTHING', [user.id, today]);
     } catch (err) {
       console.error('Failed to log login activity:', err);
     }
@@ -702,7 +702,7 @@ app.post('/api/auth/google', authLimiter, async (req, res) => {
     // 4. Log active session
     try {
       const today = new Date().toISOString().slice(0, 10);
-      await db.query('INSERT IGNORE INTO login_logs (user_id, login_date) VALUES (?, ?)', [userId, today]);
+      await db.query('INSERT INTO login_logs (user_id, login_date) VALUES (?, ?) ON CONFLICT DO NOTHING', [userId, today]);
     } catch (err) {
       console.error('Failed to log Google login activity:', err);
     }
@@ -877,7 +877,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 
     try {
       const today = new Date().toISOString().slice(0, 10);
-      await db.query('INSERT IGNORE INTO login_logs (user_id, login_date) VALUES (?, ?)', [req.user.id, today]);
+      await db.query('INSERT INTO login_logs (user_id, login_date) VALUES (?, ?) ON CONFLICT DO NOTHING', [req.user.id, today]);
     } catch (err) {
       console.error('Failed to log active session:', err);
     }
@@ -1160,18 +1160,18 @@ app.post('/api/operators', authenticateToken, async (req, res) => {
     await db.query(
       `INSERT INTO operators (id, user_id, name, experience, location, state, machine_expertise, availability, description, description_translations, phone, whatsapp, image_path, verification_status, is_profile_completed)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Unverified', 1)
-       ON DUPLICATE KEY UPDATE 
-         name = VALUES(name),
-         experience = VALUES(experience),
-         location = VALUES(location),
-         state = VALUES(state),
-         machine_expertise = VALUES(machine_expertise),
-         availability = VALUES(availability),
-         description = VALUES(description),
-         description_translations = VALUES(description_translations),
-         phone = VALUES(phone),
-         whatsapp = VALUES(whatsapp),
-         image_path = VALUES(image_path),
+       ON CONFLICT (user_id) DO UPDATE SET 
+         name = EXCLUDED.name,
+         experience = EXCLUDED.experience,
+         location = EXCLUDED.location,
+         state = EXCLUDED.state,
+         machine_expertise = EXCLUDED.machine_expertise,
+         availability = EXCLUDED.availability,
+         description = EXCLUDED.description,
+         description_translations = EXCLUDED.description_translations,
+         phone = EXCLUDED.phone,
+         whatsapp = EXCLUDED.whatsapp,
+         image_path = EXCLUDED.image_path,
          is_profile_completed = 1`,
       [require('crypto').randomUUID(), req.user.id, cleanName, experience, cleanLocation, cleanState, expertiseStr, cleanAvailability || 'Available', cleanDescription || null, descTranslationsStr, cleanedPhone, cleanedWhatsapp, imagePath || null]
     );
@@ -2136,8 +2136,7 @@ app.get('/api/blogs', async (req, res) => {
   }
 
   if (seed) {
-    const parsedSeed = parseInt(seed) || 42;
-    queryStr += ` ORDER BY RAND(${parsedSeed})`;
+    queryStr += ' ORDER BY RANDOM()';
   } else {
     queryStr += ' ORDER BY b.id DESC';
   }
@@ -2207,7 +2206,7 @@ app.post('/api/blogs/:id/like', authenticateToken, async (req, res) => {
 
   try {
     if (liked) {
-      await db.query('INSERT IGNORE INTO blog_likes (blog_id, user_id) VALUES (?, ?)', [blogId, userId]);
+      await db.query('INSERT INTO blog_likes (blog_id, user_id) VALUES (?, ?) ON CONFLICT DO NOTHING', [blogId, userId]);
     } else {
       await db.query('DELETE FROM blog_likes WHERE blog_id = ? AND user_id = ?', [blogId, userId]);
     }
@@ -2360,8 +2359,8 @@ app.put('/api/admin/settings', authenticateToken, isAdmin, async (req, res) => {
 
   try {
     await db.query(
-      'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
-      ['enquiry_background', enquiry_background, enquiry_background]
+      'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value',
+      ['enquiry_background', enquiry_background]
     );
     res.json({ message: 'Settings updated successfully' });
   } catch (error) {
@@ -3540,11 +3539,10 @@ app.post('/api/ratings', authenticateToken, async (req, res) => {
 
     const ratingId = crypto.randomUUID();
     const cleanReview = sanitizeInput(review);
-    // Upsert rating using ON DUPLICATE KEY UPDATE:
     await db.query(
       `INSERT INTO ratings (id, rater_id, target_type, target_id, rating, review)
        VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE rating = VALUES(rating), review = VALUES(review)`,
+       ON CONFLICT (rater_id, target_type, target_id) DO UPDATE SET rating = EXCLUDED.rating, review = EXCLUDED.review`,
       [ratingId, raterId, targetType, targetId, numRating, cleanReview || null]
     );
 
@@ -4276,8 +4274,8 @@ app.put('/api/admin/translation-overrides', authenticateToken, isAdmin, async (r
 
   try {
     await db.query(
-      'INSERT INTO translation_overrides (lang, namespace, key_path, value) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?',
-      [lang, namespace, key_path, value, value]
+      'INSERT INTO translation_overrides (lang, namespace, key_path, value) VALUES (?, ?, ?, ?) ON CONFLICT (lang, namespace, key_path) DO UPDATE SET value = EXCLUDED.value',
+      [lang, namespace, key_path, value]
     );
 
     // If English translation is updated, auto-translate and propagate to other active languages in the database
@@ -4290,8 +4288,8 @@ app.put('/api/admin/translation-overrides', authenticateToken, isAdmin, async (r
           const translatedValue = translatedArr[0] || value;
 
           await db.query(
-            'INSERT INTO translation_overrides (lang, namespace, key_path, value) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?',
-            [targetLang, namespace, key_path, translatedValue, translatedValue]
+            'INSERT INTO translation_overrides (lang, namespace, key_path, value) VALUES (?, ?, ?, ?) ON CONFLICT (lang, namespace, key_path) DO UPDATE SET value = EXCLUDED.value',
+            [targetLang, namespace, key_path, translatedValue]
           );
         }
       } catch (transErr) {
@@ -4503,7 +4501,7 @@ app.post('/api/translate', async (req, res) => {
     const translatedText = translated[0] || text;
 
     await db.query(
-      'INSERT IGNORE INTO dynamic_translations (source_hash, source_text, lang, translated_text) VALUES (?, ?, ?, ?)',
+      'INSERT INTO dynamic_translations (source_hash, source_text, lang, translated_text) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
       [sourceHash, text, targetLang, translatedText]
     );
 
