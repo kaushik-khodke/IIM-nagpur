@@ -297,3 +297,27 @@
 [2026-07-25T16:38:05.430Z] browse_matches.mp4 already exists, is non-empty and valid.
 [2026-07-25T16:38:05.430Z] connect_harvested.mp4 already exists, is non-empty and valid.
 [2026-07-25T16:38:05.430Z] Starting custom assets copy...
+[2026-07-25T17:28:38.774Z] Starting downloader via curl...
+[2026-07-25T17:28:38.796Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-25T17:28:38.797Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-25T17:28:38.799Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-25T17:28:38.801Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-25T17:28:38.803Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-25T17:28:38.804Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-25T17:28:38.805Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-25T17:28:38.807Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-25T17:28:38.810Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-25T17:28:38.814Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-25T17:28:38.815Z] Starting custom assets copy...
+[2026-07-27T07:10:51.155Z] Starting downloader via curl...
+[2026-07-27T07:10:51.157Z] operator_search.mp4 already exists, is non-empty and valid.
+[2026-07-27T07:10:51.157Z] harvester_directory.mp4 already exists, is non-empty and valid.
+[2026-07-27T07:10:51.157Z] direct_messaging.mp4 already exists, is non-empty and valid.
+[2026-07-27T07:10:51.158Z] availability_tracking.mp4 already exists, is non-empty and valid.
+[2026-07-27T07:10:51.159Z] requirements_board.mp4 already exists, is non-empty and valid.
+[2026-07-27T07:10:51.159Z] location_filters.mp4 already exists, is non-empty and valid.
+[2026-07-27T07:10:51.159Z] farmer_registration.mp4 already exists, is non-empty and valid.
+[2026-07-27T07:10:51.160Z] post_requirement.mp4 already exists, is non-empty and valid.
+[2026-07-27T07:10:51.160Z] browse_matches.mp4 already exists, is non-empty and valid.
+[2026-07-27T07:10:51.161Z] connect_harvested.mp4 already exists, is non-empty and valid.
+[2026-07-27T07:10:51.161Z] Starting custom assets copy...

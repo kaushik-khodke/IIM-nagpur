@@ -234,7 +234,7 @@ function RegisterForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!name || !email || !password || !phone) { toast.error(t("error.fillAllFields", { ns: "messages", defaultValue: "Please fill in all required fields" })); return; }
+    if (!name || !email || !password || !state || !phone) { toast.error(t("error.fillAllFields", { ns: "messages", defaultValue: "Please fill in all required fields including State" })); return; }
     if (!agreed) { toast.error(t("error.agreeTerms", { ns: "messages", defaultValue: "Please agree to the Terms of Service" })); return; }
     if (password !== confirmPass) { toast.error(t("error.passwordMismatch", { ns: "messages", defaultValue: "Passwords do not match" })); return; }
 
@@ -263,6 +263,7 @@ function RegisterForm({
       localStorage.setItem("tractorsewa_token", data.token);
       localStorage.setItem("tractorsewa_user_role", data.user.role || "user");
       localStorage.removeItem("tractorsewa_preview_mode");
+      window.dispatchEvent(new Event("auth-changed"));
       toast.success(t("success.register", { ns: "messages", defaultValue: "Account created! Welcome to Tractor Seva" }));
       let redirectPath = localStorage.getItem("tractorsewa_redirect_after_auth");
       if (!redirectPath) {

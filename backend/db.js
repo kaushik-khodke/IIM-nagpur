@@ -95,7 +95,11 @@ async function getPool() {
 
   try {
     const rawPool = new Pool(pgConfig);
-    
+    rawPool.on('error', (err) => {
+      console.error('Unexpected PostgreSQL pool error, resetting pool:', err.message);
+      pool = null;
+    });
+
     // Verify pool connection
     const client = await rawPool.connect();
     console.log(`Connected to Supabase / PostgreSQL database: ${pgConfig.database || 'postgres'}`);

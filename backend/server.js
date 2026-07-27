@@ -119,15 +119,22 @@ async function uploadToStorage(fileBuffer, mimeType, keyPath) {
 async function getImageUrl(filePath) {
   if (!filePath) return null;
 
-  let s3Key = filePath;
-  const s3Prefix = `https://${s3BucketName}.s3.${s3Region}.amazonaws.com/`;
-  if (filePath.startsWith(s3Prefix)) {
-    s3Key = filePath.replace(s3Prefix, '');
-  } else if (filePath.startsWith('http://') || (filePath.startsWith('https://') && !filePath.includes('s3.amazonaws.com')) || filePath.startsWith('/uploads/')) {
-    return filePath;
-  }
+  // If it's already a local uploads path or non-S3 external URL, return as-is
+  if (filePath.startsWith('/uploads/')) return filePath;
+  if (filePath.startsWith('http://')) return filePath;
 
-  if (s3Client && s3Key) {
+  let s3Key = filePath;
+
+  // Only attempt S3 prefix stripping when S3 is actually configured
+  if (s3Client) {
+    const s3Prefix = `https://${s3BucketName}.s3.${s3Region}.amazonaws.com/`;
+    if (filePath.startsWith(s3Prefix)) {
+      s3Key = filePath.replace(s3Prefix, '');
+    } else if (filePath.startsWith('https://') && !filePath.includes('s3.amazonaws.com')) {
+      // External HTTPS URL not related to our S3 — return as-is
+      return filePath;
+    }
+
     try {
       const command = new GetObjectCommand({
         Bucket: s3BucketName,
@@ -140,6 +147,9 @@ async function getImageUrl(filePath) {
       return `https://${s3BucketName}.s3.${s3Region}.amazonaws.com/${s3Key}`;
     }
   }
+
+  // No S3 client — if it's an external HTTPS URL, return as-is
+  if (filePath.startsWith('https://')) return filePath;
 
   if (supabase) {
     try {
@@ -327,9 +337,7 @@ app.use((req, res, next) => {
 
 // Create uploads directory if not exists
 const os = require('os');
-const uploadsDir = process.env.NODE_ENV === 'production'
-  ? path.join(os.tmpdir(), 'uploads')
-  : path.join(__dirname, 'uploads');
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 
 if (!fs.existsSync(uploadsDir)) {
   try {
@@ -595,14 +603,18 @@ app.post('/api/auth/register', authLimiter, validateRegister, async (req, res) =
   if (!cleanedPhone) {
     return res.status(400).json({ error: 'Invalid phone number. Must be exactly 10 digits.' });
   }
-
   try {
-    const domainValid = await isEmailDomainValid(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!state || typeof state !== 'string' || state.trim() === '') {
+      return res.status(400).json({ error: 'Please select your state' });
+    }
+
+    const domainValid = await isEmailDomainValid(normalizedEmail);
     if (!domainValid) {
       return res.status(400).json({ error: 'The email domain does not appear to exist or cannot receive mail.' });
     }
 
-    const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [existing] = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', [normalizedEmail]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Email already registered' });
     }
@@ -613,10 +625,10 @@ app.post('/api/auth/register', authLimiter, validateRegister, async (req, res) =
     const cleanState = sanitizeInput(state);
     await db.query(
       'INSERT INTO users (id, name, email, password, role, state, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [userId, cleanName, email, hashedPassword, 'user', cleanState || null, cleanedPhone]
+      [userId, cleanName, normalizedEmail, hashedPassword, 'user', cleanState || null, cleanedPhone]
     );
 
-    const token = jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: userId, email: normalizedEmail }, JWT_SECRET, { expiresIn: '7d' });
     try {
       const today = new Date().toISOString().slice(0, 10);
       await db.query('INSERT INTO login_logs (user_id, login_date) VALUES (?, ?) ON CONFLICT DO NOTHING', [userId, today]);
@@ -645,14 +657,15 @@ app.post('/api/auth/login', authLimiter, validateLogin, async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const domainValid = await isEmailDomainValid(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    const domainValid = await isEmailDomainValid(normalizedEmail);
     if (!domainValid) {
       return res.status(400).json({ error: 'The email domain is invalid or inactive.' });
     }
 
-    const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [users] = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', [normalizedEmail]);
     if (users.length === 0) {
-      await logSecurityEvent('Failed Login Attempts', 'medium', email, req.ip, `Failed login attempt: Email ${email} not found`, req.originalUrl, req.headers['user-agent']);
+      await logSecurityEvent('Failed Login Attempts', 'medium', normalizedEmail, req.ip, `Failed login attempt: Email ${normalizedEmail} not found`, req.originalUrl, req.headers['user-agent']);
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
@@ -1048,7 +1061,7 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
 
 app.get('/api/users/:id', authenticateToken, async (req, res) => {
   try {
-    const [users] = await db.query('SELECT id, name, role, image_path as imagePath FROM users WHERE id = ?', [req.params.id]);
+    const [users] = await db.query('SELECT id, name, role, image_path as "imagePath" FROM users WHERE id = ?', [req.params.id]);
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -1066,8 +1079,8 @@ app.get('/api/operators', async (req, res) => {
   const userRole = caller ? caller.role : null;
   let queryStr = `
     SELECT o.*,
-           COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'operator' AND target_id = o.id), 0) as avgRating,
-           (SELECT COUNT(*) FROM ratings WHERE target_type = 'operator' AND target_id = o.id) as ratingCount
+           COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'operator' AND target_id = o.id), 0) as "avgRating",
+           (SELECT COUNT(*) FROM ratings WHERE target_type = 'operator' AND target_id = o.id) as "ratingCount"
     FROM operators o
     WHERE 1=1
   `;
@@ -1129,7 +1142,7 @@ app.get('/api/operators', async (req, res) => {
   }
 
   if (sortBy === 'ratingHighest') {
-    queryStr += ' ORDER BY avgRating DESC, ratingCount DESC, o.id DESC';
+    queryStr += ' ORDER BY "avgRating" DESC, "ratingCount" DESC, o.id DESC';
   } else {
     queryStr += ' ORDER BY o.id DESC';
   }
@@ -1163,7 +1176,7 @@ app.get('/api/operators', async (req, res) => {
 app.get('/api/operators/:id', async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT o.*, u.name as ownerName, u.image_path as ownerProfilePic FROM operators o JOIN users u ON o.user_id = u.id WHERE o.id = ?', 
+      'SELECT o.*, u.name as "ownerName", u.image_path as "ownerProfilePic" FROM operators o JOIN users u ON o.user_id = u.id WHERE o.id = ?', 
       [req.params.id]
     );
     if (rows.length === 0) {
@@ -1371,9 +1384,9 @@ app.get('/api/harvesters', async (req, res) => {
   const caller = await getOptionalUser(req);
   const userRole = caller ? caller.role : null;
   let queryStr = `
-    SELECT h.*, u.name as ownerName, u.image_path as ownerProfilePic,
-           COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'machine' AND target_id = h.id), 0) as avgRating,
-           (SELECT COUNT(*) FROM ratings WHERE target_type = 'machine' AND target_id = h.id) as ratingCount
+    SELECT h.*, u.name as "ownerName", u.image_path as "ownerProfilePic",
+           COALESCE((SELECT AVG(rating) FROM ratings WHERE target_type = 'machine' AND target_id = h.id), 0) as "avgRating",
+           (SELECT COUNT(*) FROM ratings WHERE target_type = 'machine' AND target_id = h.id) as "ratingCount"
     FROM harvesters h 
     JOIN users u ON h.user_id = u.id 
     WHERE 1=1
@@ -1435,7 +1448,7 @@ app.get('/api/harvesters', async (req, res) => {
   }
 
   if (sortBy === 'ratingHighest') {
-    queryStr += ' ORDER BY avgRating DESC, ratingCount DESC, h.id DESC';
+    queryStr += ' ORDER BY "avgRating" DESC, "ratingCount" DESC, h.id DESC';
   } else {
     queryStr += ' ORDER BY h.id DESC';
   }
@@ -1489,7 +1502,7 @@ app.get('/api/harvesters', async (req, res) => {
 app.get('/api/harvesters/:id', async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT h.*, u.name as ownerName, u.image_path as ownerProfilePic FROM harvesters h JOIN users u ON h.user_id = u.id WHERE h.id = ?', 
+      'SELECT h.*, u.name as "ownerName", u.image_path as "ownerProfilePic" FROM harvesters h JOIN users u ON h.user_id = u.id WHERE h.id = ?', 
       [req.params.id]
     );
     if (rows.length === 0) {
@@ -1760,7 +1773,7 @@ app.get('/api/requests', authenticateToken, async (req, res) => {
     const userRole = req.user.role || 'user';
 
     const { tab, userId, location, state, limit } = req.query;
-    let queryStr = 'SELECT r.*, u.name as requesterName, u.phone as requesterPhone, u.image_path as requesterProfilePic FROM requests r JOIN users u ON r.user_id = u.id WHERE 1=1';
+    let queryStr = 'SELECT r.*, u.name as "requesterName", u.phone as "requesterPhone", u.image_path as "requesterProfilePic" FROM requests r JOIN users u ON r.user_id = u.id WHERE 1=1';
     const queryParams = [];
 
     if (userRole !== 'admin') {
@@ -1938,10 +1951,10 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
       // Fetch conversation messages between current user and partner
       const [messages] = await db.query(`
         SELECT m.*, 
-               s.name as senderName, 
-               s.role as senderRole,
-               s.image_path as senderImagePath,
-               r.name as receiverName
+               s.name as "senderName", 
+               s.role as "senderRole",
+               s.image_path as "senderImagePath",
+               r.name as "receiverName"
         FROM messages m
         JOIN users s ON m.sender_id = s.id
         JOIN users r ON m.receiver_id = r.id
@@ -1955,22 +1968,22 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
 
     // Default: Get list of users the current user has chatted with
     const [chatPartners] = await db.query(`
-      SELECT DISTINCT u.id, u.name, u.role, u.image_path as imagePath,
+      SELECT DISTINCT u.id, u.name, u.role, u.image_path as "imagePath",
              (SELECT content FROM messages 
               WHERE (sender_id = u.id AND receiver_id = ?) 
                  OR (sender_id = ? AND receiver_id = u.id) 
-              ORDER BY created_at DESC LIMIT 1) as lastMessage,
+              ORDER BY created_at DESC LIMIT 1) as "lastMessage",
              (SELECT created_at FROM messages 
               WHERE (sender_id = u.id AND receiver_id = ?) 
                  OR (sender_id = ? AND receiver_id = u.id) 
-              ORDER BY created_at DESC LIMIT 1) as lastMessageTime
+              ORDER BY created_at DESC LIMIT 1) as "lastMessageTime"
       FROM users u
-      WHERE u.id != ? AND u.id IN (
+      WHERE u.id != ? AND u.is_blocked = 0 AND u.id IN (
         SELECT DISTINCT sender_id FROM messages WHERE receiver_id = ?
         UNION
         SELECT DISTINCT receiver_id FROM messages WHERE sender_id = ?
       )
-      ORDER BY lastMessageTime DESC
+      ORDER BY "lastMessageTime" DESC
     `, [currentUserId, currentUserId, currentUserId, currentUserId, currentUserId, currentUserId, currentUserId]);
 
     res.json(chatPartners);
@@ -2017,7 +2030,7 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
 app.get('/api/messages/unread', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT m.*, u.name as senderName, u.image_path as senderProfilePic
+      SELECT m.*, u.name as "senderName", u.image_path as "senderProfilePic"
       FROM messages m 
       JOIN users u ON m.sender_id = u.id 
       WHERE m.receiver_id = ? AND m.is_read = 0
@@ -2049,13 +2062,13 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
   try {
     // 1. Fetch DB notifications (only unread notifications)
     const [dbNotifications] = await db.query(
-      'SELECT id, type, message, target_id as targetId, is_read as isRead, created_at as createdAt, NULL as senderId FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY created_at DESC',
+      'SELECT id, type, message, target_id as "targetId", is_read as "isRead", created_at as "createdAt", NULL as "senderId" FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY created_at DESC',
       [req.user.id]
     );
 
     // 2. Fetch unread messages to dynamically construct "You got an message from..." notifications
     const [unreadMessages] = await db.query(
-      `SELECT m.id, m.sender_id, m.created_at, u.name as senderName 
+      `SELECT m.id, m.sender_id, m.created_at, u.name as "senderName" 
        FROM messages m 
        JOIN users u ON m.sender_id = u.id 
        WHERE m.receiver_id = ? AND m.is_read = 0`,
@@ -2074,7 +2087,7 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
     const msgNotifications = Array.from(uniqueSenders.values()).map(msg => ({
       id: msg.id,
       type: 'message',
-      message: `You got an message from ${msg.senderName}`,
+      message: `You got a message from ${msg.senderName}`,
       isRead: 0,
       createdAt: msg.created_at,
       senderId: msg.sender_id
@@ -2138,7 +2151,7 @@ app.get('/api/blogs', async (req, res) => {
     SELECT b.*,
       (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id) AS likes_count,
       (SELECT COUNT(*) FROM blog_comments WHERE blog_id = b.id) AS comments_count,
-      CAST(CASE WHEN ? IS NULL THEN 0 ELSE (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id AND user_id = ?) END AS INTEGER) AS has_liked
+      CAST(CASE WHEN ?::text IS NULL THEN 0 ELSE (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id AND user_id = ?) END AS INTEGER) AS has_liked
     FROM blogs b
     WHERE 1=1
   `;
@@ -2187,7 +2200,7 @@ app.get('/api/blogs/:id', async (req, res) => {
       SELECT b.*,
         (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id) AS likes_count,
         (SELECT COUNT(*) FROM blog_comments WHERE blog_id = b.id) AS comments_count,
-        CAST(CASE WHEN ? IS NULL THEN 0 ELSE (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id AND user_id = ?) END AS INTEGER) AS has_liked
+        CAST(CASE WHEN ?::text IS NULL THEN 0 ELSE (SELECT COUNT(*) FROM blog_likes WHERE blog_id = b.id AND user_id = ?) END AS INTEGER) AS has_liked
       FROM blogs b
       WHERE b.id = ?
     `, [currentUserId, currentUserId, blogId]);
@@ -2256,12 +2269,12 @@ app.post('/api/blogs/:id/comments', authenticateToken, async (req, res) => {
     const cleanUserName = sanitizeInput(userName);
 
     const [result] = await db.query(
-      'INSERT INTO blog_comments (blog_id, user_id, user_name, content) VALUES (?, ?, ?, ?)',
+      'INSERT INTO blog_comments (blog_id, user_id, user_name, content) VALUES (?, ?, ?, ?) RETURNING id',
       [blogId, userId, cleanUserName, cleanContent]
     );
 
     res.status(201).json({
-      id: result.insertId,
+      id: result[0].id,
       blog_id: parseInt(blogId, 10),
       user_id: userId,
       user_name: cleanUserName,
@@ -2305,45 +2318,10 @@ app.post('/api/enquiries', enquiryLimiter, async (req, res) => {
     const cleanRequirement = sanitizeInput(requirement);
     const cleanMessage = sanitizeInput(message);
 
-    // Dynamic column lookup to handle all versions of database schemas safely
-    const [columns] = await db.query('DESCRIBE enquiries');
-    const colNames = columns.map(c => c.Field);
-
-    const insertData = {
-      id: enquiryId,
-      name: cleanName,
-      location: cleanLocation,
-      status: 'Active'
-    };
-
-    if (colNames.includes('phone')) {
-      insertData.phone = cleanedPhone;
-    }
-    if (colNames.includes('number')) {
-      insertData.number = cleanedPhone;
-    }
-    if (colNames.includes('requirement')) {
-      insertData.requirement = cleanRequirement;
-    }
-    if (colNames.includes('requirement_type')) {
-      insertData.requirement_type = cleanRequirement;
-    }
-    if (colNames.includes('message') && message !== undefined) {
-      insertData.message = cleanMessage || null;
-    }
-    if (colNames.includes('date_needed')) {
-      insertData.date_needed = formattedDate;
-    }
-    if (colNames.includes('dates_needed')) {
-      insertData.dates_needed = formattedDate;
-    }
-
-    const fields = Object.keys(insertData);
-    const placeholders = fields.map(() => '?').join(', ');
-    const values = Object.values(insertData);
-
-    const queryStr = `INSERT INTO enquiries (${fields.join(', ')}) VALUES (${placeholders})`;
-    await db.query(queryStr, values);
+    await db.query(
+      'INSERT INTO enquiries (id, name, phone, location, requirement, message, date_needed, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [enquiryId, cleanName, cleanedPhone, cleanLocation, cleanRequirement, cleanMessage || null, formattedDate, 'Active']
+    );
 
     res.status(201).json({ message: 'Enquiry submitted successfully' });
   } catch (error) {
@@ -2454,15 +2432,15 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
 
     // Query performers (user metrics)
     const [performers] = await db.query(`
-      SELECT u.id, u.name, u.email, u.image_path as imagePath, u.created_at as createdAt,
-             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as harvesterCount,
-             (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as requestCount,
+      SELECT u.id, u.name, u.email, u.image_path as "imagePath", u.created_at as "createdAt",
+             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as "harvesterCount",
+             (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as "requestCount",
              COALESCE((
                SELECT AVG(rating) 
                FROM ratings 
                WHERE (target_type = 'machine' AND target_id IN (SELECT id FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved'))
                   OR (target_type = 'operator' AND target_id IN (SELECT id FROM operators WHERE user_id = u.id AND verification_status = 'Approved' AND is_profile_completed = 1))
-             ), 0) as avgRating
+             ), 0) as "avgRating"
       FROM users u
       WHERE u.role != 'admin'
     `);
@@ -2496,9 +2474,9 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
   try {
     const [users] = await db.query(`
       SELECT u.id, u.name, u.email, u.role, u.state, u.phone, u.is_blocked, u.created_at,
-             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as harvesterCount,
-             (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as requestCount,
-             (SELECT COUNT(*) FROM operators WHERE user_id = u.id AND verification_status = 'Approved' AND is_profile_completed = 1) as isOperator
+             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as "harvesterCount",
+             (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as "requestCount",
+             (SELECT COUNT(*) FROM operators WHERE user_id = u.id AND verification_status = 'Approved' AND is_profile_completed = 1) as "isOperator"
       FROM users u
       WHERE u.role != 'admin'
       ORDER BY u.created_at DESC
@@ -2664,7 +2642,7 @@ app.get('/api/admin/operators/:id/verification-details', authenticateToken, isAd
   const { id } = req.params;
   try {
     const [rows] = await db.query(
-      'SELECT o.*, u.name as signupName, u.email as signupEmail, u.image_path as signupProfilePic FROM operators o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?',
+      'SELECT o.*, u.name as "signupName", u.email as "signupEmail", u.image_path as "signupProfilePic" FROM operators o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?',
       [id]
     );
     if (rows.length === 0) {
@@ -2763,9 +2741,9 @@ app.put('/api/admin/listings/:type/:id/verify', authenticateToken, isAdmin, asyn
     let notifMessage = '';
     if (type === 'harvester') {
       if (status === 'Approved') {
-        notifMessage = `Your post for harvestor ${postName} has been accepted.`;
+        notifMessage = `Your post for harvester ${postName} has been accepted.`;
       } else if (status === 'Rejected') {
-        notifMessage = `Your post for harvestor ${postName} has been rejected.`;
+        notifMessage = `Your post for harvester ${postName} has been rejected.`;
       }
     } else if (type === 'operator') {
       if (status === 'Approved') {
@@ -2870,9 +2848,9 @@ app.get('/api/admin/users/query', authenticateToken, isAdmin, async (req, res) =
 
     let queryStr = `
       SELECT u.id, u.name, u.email, u.role, u.state, u.phone, u.is_blocked, u.created_at,
-             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as harvesterCount,
-             (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as requestCount,
-             (SELECT COUNT(*) FROM operators WHERE user_id = u.id AND verification_status = 'Approved' AND is_profile_completed = 1) as isOperator
+             (SELECT COUNT(*) FROM harvesters WHERE user_id = u.id AND verification_status = 'Approved') as "harvesterCount",
+             (SELECT COUNT(*) FROM requests WHERE user_id = u.id) as "requestCount",
+             (SELECT COUNT(*) FROM operators WHERE user_id = u.id AND verification_status = 'Approved' AND is_profile_completed = 1) as "isOperator"
       FROM users u
       WHERE u.role != 'admin'
     `;
@@ -3516,12 +3494,14 @@ app.post('/api/ratings', authenticateToken, async (req, res) => {
 
   try {
     // Self-rating checks:
+    let targetOwnerId = '';
     if (targetType === 'operator') {
       const [ops] = await db.query('SELECT user_id FROM operators WHERE id = ?', [targetId]);
       if (ops.length === 0) {
         return res.status(404).json({ error: 'Operator not found' });
       }
-      if (ops[0].user_id === raterId) {
+      targetOwnerId = ops[0].user_id;
+      if (targetOwnerId === raterId) {
         return res.status(400).json({ error: 'You cannot rate your own operator profile' });
       }
     } else if (targetType === 'machine') {
@@ -3529,7 +3509,8 @@ app.post('/api/ratings', authenticateToken, async (req, res) => {
       if (harvs.length === 0) {
         return res.status(404).json({ error: 'Harvester not found' });
       }
-      if (harvs[0].user_id === raterId) {
+      targetOwnerId = harvs[0].user_id;
+      if (targetOwnerId === raterId) {
         return res.status(400).json({ error: 'You cannot rate your own harvester listing' });
       }
     }
@@ -3543,16 +3524,7 @@ app.post('/api/ratings', authenticateToken, async (req, res) => {
       [ratingId, raterId, targetType, targetId, numRating, cleanReview || null]
     );
 
-    // Dynamic Notifications Triggering
-    let targetOwnerId = '';
-    if (targetType === 'operator') {
-      const [ops] = await db.query('SELECT user_id FROM operators WHERE id = ?', [targetId]);
-      if (ops.length > 0) targetOwnerId = ops[0].user_id;
-    } else if (targetType === 'machine') {
-      const [harvs] = await db.query('SELECT user_id FROM harvesters WHERE id = ?', [targetId]);
-      if (harvs.length > 0) targetOwnerId = harvs[0].user_id;
-    }
-
+    // Dynamic Notifications Triggering using targetOwnerId obtained during self-rating check
     if (targetOwnerId) {
       // Clear any existing rating notification for this specific target post to prevent duplication
       await db.query(
@@ -3670,7 +3642,7 @@ app.get('/api/ratings', async (req, res) => {
     );
 
     const [reviews] = await db.query(
-      `SELECT r.rating, r.review, r.created_at, u.name as raterName, u.id as raterId
+      `SELECT r.rating, r.review, r.created_at, u.name as "raterName", u.id as "raterId"
        FROM ratings r
        JOIN users u ON r.rater_id = u.id
        WHERE r.target_type = ? AND r.target_id = ?
@@ -3943,14 +3915,14 @@ app.post('/api/admin/blogs', authenticateToken, isAdmin, async (req, res) => {
 
   try {
     const [result] = await db.query(
-      'INSERT INTO blogs (title, category, short_description, content, date, image_url, views) VALUES (?, ?, ?, ?, ?, ?, 0)',
+      'INSERT INTO blogs (title, category, short_description, content, date, image_url, views) VALUES (?, ?, ?, ?, ?, ?, 0) RETURNING id',
       [title, category, short_description, content, blogDate, image_url || null]
     );
 
     res.status(201).json({
       success: true,
       blog: {
-        id: result.insertId,
+        id: result[0].id,
         title,
         category,
         short_description,

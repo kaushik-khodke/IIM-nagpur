@@ -192,7 +192,7 @@ export function ExploreHarvesters() {
   }, [search, selectedDistrict, selectedState, company]);
 
   const filtered = tab === "mine"
-    ? harvesters.filter((h) => currentUser && h.ownerName === currentUser.name)
+    ? harvesters.filter((h) => currentUser && h.userId === currentUser?.id)
     : harvesters;
 
   return (
